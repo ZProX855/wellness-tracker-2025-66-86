@@ -22,8 +22,8 @@ import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
-// Google Client ID - In a real app, this should come from environment variables
-const GOOGLE_CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID"; // Replace with your actual Google Client ID
+// Google Client ID from the provided credentials
+const GOOGLE_CLIENT_ID = "200715478376-gkm3iv6safptugc1enc7nlk184b5dafm.apps.googleusercontent.com";
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
