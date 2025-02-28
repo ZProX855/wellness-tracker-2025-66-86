@@ -11,6 +11,7 @@ import FoodCompare from "./pages/FoodCompare";
 import BMICalculator from "./pages/BMICalculator";
 import MealRecognition from "./pages/MealRecognition";
 import WellnessJourney from "./pages/WellnessJourney";
+import SleepTracker from "./pages/SleepTracker";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +28,7 @@ const App = () => (
           <Route path="/bmi-calculator" element={<BMICalculator />} />
           <Route path="/meal-recognition" element={<MealRecognition />} />
           <Route path="/wellness-journey" element={<WellnessJourney />} />
+          <Route path="/sleep-tracker" element={<SleepTracker />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

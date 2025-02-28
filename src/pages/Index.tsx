@@ -1,7 +1,8 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
-import { MessageSquare, Apple, ActivitySquare, Camera, Target, HeartPulse } from 'lucide-react';
+import { MessageSquare, Apple, ActivitySquare, Camera, Target, HeartPulse, Moon } from 'lucide-react';
 const Index = () => {
   const navigate = useNavigate();
   const [isVisible, setIsVisible] = useState(false);
@@ -47,6 +48,13 @@ const Index = () => {
     color: 'from-purple-100 to-purple-200',
     path: '/wellness-journey',
     delay: 500
+  }, {
+    title: 'Sleep Tracker',
+    description: 'Monitor sleep patterns and get AI-powered tips',
+    icon: Moon,
+    color: 'from-indigo-100 to-indigo-200',
+    path: '/sleep-tracker',
+    delay: 600
   }];
   return <div className="min-h-screen bg-gradient-to-b from-wellness-softBeige to-wellness-softGreen/30">
       <Header />
