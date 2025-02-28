@@ -1,6 +1,6 @@
 
 import React, { useState, useRef } from 'react';
-import { Upload, Camera, Image, X, CheckCircle, EggIcon, Loader, AlertCircle, InfoIcon } from 'lucide-react';
+import { Upload, Camera, Image as ImageIcon, X, CheckCircle, EggIcon, Loader, AlertCircle, InfoIcon } from 'lucide-react';
 import { recognizeMeal } from '../services/api';
 import { toast } from 'sonner';
 
@@ -41,7 +41,7 @@ const MealRecognition: React.FC = () => {
       }
       
       // Create image for resizing
-      const img = new Image();
+      const img = document.createElement('img');
       img.onload = () => {
         const canvas = document.createElement('canvas');
         let width = img.width;
@@ -284,7 +284,7 @@ const MealRecognition: React.FC = () => {
             ) : (
               <div className="flex flex-col items-center justify-center space-y-4 py-8">
                 <div className="w-20 h-20 rounded-full bg-wellness-softGreen/50 flex items-center justify-center">
-                  <Image className="h-10 w-10 text-wellness-darkGreen" />
+                  <ImageIcon className="h-10 w-10 text-wellness-darkGreen" />
                 </div>
                 <div>
                   <p className="text-wellness-darkGreen font-medium">Drag and drop an image here, or</p>
