@@ -6,6 +6,7 @@ export interface User {
   avatar?: string;
   createdAt: string;
   preferences?: UserPreferences;
+  googleId?: string;
 }
 
 export interface UserPreferences {

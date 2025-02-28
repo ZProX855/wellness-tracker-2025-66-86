@@ -6,6 +6,21 @@ import { v4 as uuidv4 } from 'uuid';
 const AUTH_STORAGE_KEY = 'wellness_tracker_auth';
 const USER_DATA_KEY = 'wellness_tracker_user_data';
 
+// Decode JWT token to get user info
+const decodeJwt = (token: string) => {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    return JSON.parse(jsonPayload);
+  } catch (e) {
+    console.error('Failed to decode JWT token:', e);
+    return null;
+  }
+};
+
 // Mock AI API for authentication (this would be replaced with actual API calls)
 export const authService = {
   // Register a new user
@@ -80,6 +95,65 @@ export const authService = {
       return userWithoutPassword;
     } catch (error) {
       console.error('Login error:', error);
+      throw error;
+    }
+  },
+  
+  // Login with Google token (real)
+  async loginWithGoogleToken(credential: string): Promise<User> {
+    try {
+      // Decode the Google JWT token
+      const payload = decodeJwt(credential);
+      
+      if (!payload) {
+        throw new Error('Invalid Google token');
+      }
+      
+      const { email, name, picture, sub } = payload;
+      
+      if (!email) {
+        throw new Error('Email not provided in Google token');
+      }
+      
+      // Check if this Google user already exists
+      const existingUsers = JSON.parse(localStorage.getItem(AUTH_STORAGE_KEY) || '[]');
+      let existingUser = existingUsers.find((user: any) => user.email === email);
+      
+      // Create a new user if it doesn't exist
+      if (!existingUser) {
+        const googleUser: User = {
+          id: uuidv4(),
+          email,
+          name: name || email.split('@')[0],
+          avatar: picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(name || email)}&background=random`,
+          createdAt: new Date().toISOString(),
+          googleId: sub,
+        };
+        
+        // Store new Google user
+        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify([...existingUsers, googleUser]));
+        this.initializeUserData(googleUser.id);
+        
+        existingUser = googleUser;
+      } else if (!existingUser.avatar && picture) {
+        // Update the user's avatar if they don't have one but Google provided one
+        existingUser.avatar = picture;
+        // Update the user in storage
+        const updatedUsers = existingUsers.map((user: any) => 
+          user.email === email ? { ...user, avatar: picture } : user
+        );
+        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(updatedUsers));
+      }
+      
+      // Set session
+      sessionStorage.setItem('currentUser', JSON.stringify({
+        user: existingUser,
+        expiresAt: null,
+      }));
+      
+      return existingUser;
+    } catch (error) {
+      console.error('Google token login error:', error);
       throw error;
     }
   },

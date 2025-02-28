@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 interface AuthContextType extends AuthState {
   login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
+  loginWithGoogleToken: (credential: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (updates: Partial<User>) => Promise<void>;
@@ -93,11 +94,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
   
-  // Login with Google
+  // Login with Google (mock - used as fallback)
   const loginWithGoogle = async () => {
     try {
       setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
       const user = await authService.loginWithGoogle();
+      setAuthState({
+        user,
+        isLoading: false,
+        error: null,
+      });
+      toast.success('Logged in with Google!');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Google login failed';
+      setAuthState(prev => ({
+        ...prev,
+        isLoading: false,
+        error: errorMessage,
+      }));
+      toast.error(errorMessage);
+      throw error;
+    }
+  };
+  
+  // Login with Google token (real)
+  const loginWithGoogleToken = async (credential: string) => {
+    try {
+      setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
+      const user = await authService.loginWithGoogleToken(credential);
       setAuthState({
         user,
         isLoading: false,
@@ -210,6 +234,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     ...authState,
     login,
     loginWithGoogle,
+    loginWithGoogleToken,
     register,
     logout,
     updateProfile,
