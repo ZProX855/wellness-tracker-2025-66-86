@@ -152,8 +152,8 @@ export const getAllFoods = () => {
 // Helper function for Gemini API calls with better error handling and retry logic
 async function callGeminiAPI(prompt: string, temperature: number = 0.7, isVision: boolean = false, imageData?: string, retryCount: number = 2) {
   try {
-    // Use gemini-2.0 or gemini-2.0-vision for improved vision capabilities
-    const model = isVision ? "gemini-1.5-vision-preview" : "gemini-2.0-flash";
+    // Always use gemini-2.0-flash as requested
+    const model = "gemini-2.0-flash";
     const url = `${GEMINI_API_URL}/${model}:generateContent?key=${GEMINI_API_KEY}`;
     
     let requestBody: any = {
@@ -172,7 +172,7 @@ async function callGeminiAPI(prompt: string, temperature: number = 0.7, isVision
       }
     };
     
-    // Add image data for vision model if provided
+    // Add image data for vision analysis if provided
     if (isVision && imageData) {
       try {
         // Extract mime type and base64 data properly
@@ -245,7 +245,7 @@ async function callGeminiAPI(prompt: string, temperature: number = 0.7, isVision
   } catch (error) {
     console.error("Error calling Gemini API:", error);
     
-    // Check if we can retry with a different model
+    // Check if we can retry with a different approach
     if (retryCount > 0 && isVision) {
       try {
         // Fall back to a text-only analysis with a generic response
@@ -496,7 +496,7 @@ export const recognizeMeal = async (imageData: string) => {
       • Recommendation 3
     `;
     
-    // Analyze with a more resilient approach
+    // Analyze with a more resilient approach using gemini-2.0-flash
     const analysisResponse = await callGeminiAPI(analyzePrompt, 0.2, true, imageData);
     
     // Check if no food was identified
