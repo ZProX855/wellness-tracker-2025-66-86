@@ -1,4 +1,4 @@
-
+<lov-code>
 // API service with Gemini 2.0 Flash integration
 
 // Use this API key for the Gemini AI model
@@ -393,7 +393,7 @@ export const calculateBMI = async (height: number, weight: number) => {
   }
 };
 
-// Meal recognition function with AI vision model
+// Improved meal recognition function with multiple verification steps
 export const recognizeMeal = async (imageData: string) => {
   try {
     // First, validate the image data
@@ -401,221 +401,24 @@ export const recognizeMeal = async (imageData: string) => {
       throw new Error("Invalid image data");
     }
     
-    // Try to analyze the image with Gemini Vision model
-    const prompt = `
-      You are a professional nutritionist analyzing a food image. Please provide the following information about the food in the image:
+    // First analysis - Detailed identification with explicit instructions
+    const identificationPrompt = `
+      You are a professional chef and nutritionist tasked with accurately identifying a food in an image.
       
-      1. IDENTIFICATION
-      What foods are in this meal? Be specific and detailed. If there are no food items visible, say "No food detected".
+      IMPORTANT: Look ONLY at what is in the image in front of you. Do NOT make assumptions.
       
-      2. NUTRITION INFORMATION (Provide specific numbers for each)
-      - Calories: [number]
-      - Protein: [number] g
-      - Carbs: [number] g
-      - Fats: [number] g
-      - Fiber: [number] g
+      Describe exactly what food is shown in this image in a clear, specific manner.
+      Focus ONLY on the food items visible, their preparation method, and main ingredients.
       
-      3. RECOMMENDATIONS
-      Provide 3-4 brief bullet points about:
-      - How this meal could be balanced/improved
-      - Benefits of the foods in the image
-      - Suggestions for complementary foods
+      If you see noodles, specify the type (spaghetti, ramen, etc.). 
+      If you see meat, specify the type (chicken, beef, etc.).
+      If you see vegetables, list the main visible ones.
       
-      Format your response clearly with emoji bullet points for the recommendations.
-      If you cannot identify any food in the image, respond with "No food detected in this image" and estimate zero for all nutritional values.
+      If you cannot confidently identify the food, say "Unidentified food item" and describe what you can see.
+      If there is no food in the image, say "No food detected in this image."
+      
+      Provide ONLY the food identification - no nutritional analysis yet.
+      Keep your response to 1-2 sentences maximum.
     `;
     
-    // Call the Gemini Vision API
-    const aiResponse = await callGeminiAPI(prompt, 0.7, true, imageData);
     
-    // Check if the API indicated no food was found
-    if (aiResponse.toLowerCase().includes("no food detected") || 
-        aiResponse.toLowerCase().includes("i cannot identify")) {
-      return {
-        foodIdentified: "Could not identify the meal",
-        nutritionInfo: {
-          calories: 0,
-          protein: 0,
-          carbs: 0,
-          fats: 0,
-          fiber: 0
-        },
-        recommendations: "We couldn't identify any food in this image. Please try again with a clearer image of food items.",
-        fullAnalysis: aiResponse
-      };
-    }
-    
-    // Parse the AI response to extract structured information
-    const sections = aiResponse.split('\n\n');
-
-    // Handle case where response is not properly formatted
-    if (sections.length < 2) {
-      throw new Error("Unexpected response format from AI");
-    }
-    
-    let foodIdentified = "Unknown meal";
-    let nutritionInfo = {
-      calories: 0,
-      protein: 0,
-      carbs: 0,
-      fats: 0,
-      fiber: 0
-    };
-    let recommendations = "No recommendations available";
-    
-    // Extract identified food from first section
-    for (const section of sections) {
-      if (!section.toLowerCase().includes("calor") && 
-          !section.toLowerCase().includes("protein") &&
-          !section.toLowerCase().includes("recommend")) {
-        foodIdentified = section.trim();
-        break;
-      }
-    }
-    
-    // Find the nutrition section
-    const nutritionSection = sections.find(section => 
-      section.toLowerCase().includes("calor") && 
-      section.toLowerCase().includes("protein")
-    );
-    
-    if (nutritionSection) {
-      const caloriesMatch = nutritionSection.match(/calories:?\s*(\d+)/i);
-      const proteinMatch = nutritionSection.match(/protein:?\s*(\d+)/i);
-      const carbsMatch = nutritionSection.match(/carbs:?\s*(\d+)/i);
-      const fatsMatch = nutritionSection.match(/fats:?\s*(\d+)/i);
-      const fiberMatch = nutritionSection.match(/fiber:?\s*(\d+)/i);
-      
-      nutritionInfo = {
-        calories: caloriesMatch ? parseInt(caloriesMatch[1]) : 0,
-        protein: proteinMatch ? parseInt(proteinMatch[1]) : 0,
-        carbs: carbsMatch ? parseInt(carbsMatch[1]) : 0,
-        fats: fatsMatch ? parseInt(fatsMatch[1]) : 0,
-        fiber: fiberMatch ? parseInt(fiberMatch[1]) : 0
-      };
-    }
-    
-    // Find the recommendations section
-    const recommendationsSection = sections.find(section => 
-      section.toLowerCase().includes("recommend") || 
-      section.includes("•") || 
-      section.includes("- ") ||
-      /[\u{1F300}-\u{1F6FF}]/u.test(section)
-    );
-    
-    if (recommendationsSection) {
-      recommendations = recommendationsSection.trim();
-    }
-    
-    // Make sure values are positive numbers
-    Object.keys(nutritionInfo).forEach(key => {
-      const value = nutritionInfo[key as keyof typeof nutritionInfo];
-      if (typeof value === 'number' && (isNaN(value) || value < 0)) {
-        nutritionInfo[key as keyof typeof nutritionInfo] = 0;
-      }
-    });
-    
-    return {
-      foodIdentified,
-      nutritionInfo,
-      recommendations,
-      fullAnalysis: aiResponse
-    };
-  } catch (error) {
-    console.error("Meal recognition API error:", error);
-    
-    // Return fallback data if the API call fails
-    return {
-      foodIdentified: "Could not identify the meal",
-      nutritionInfo: {
-        calories: 0,
-        protein: 0,
-        carbs: 0,
-        fats: 0,
-        fiber: 0
-      },
-      recommendations: "We couldn't analyze your meal. Please try again with a clearer image.",
-      fullAnalysis: null
-    };
-  }
-};
-
-// Wellness journey insights function
-export interface WellnessInsights {
-  recommendations: string[];
-  milestones: string[];
-}
-
-export const getWellnessInsights = async (goals: string[]): Promise<WellnessInsights> => {
-  try {
-    const prompt = `
-      The user has selected the following wellness goals:
-      ${goals.map(goal => `- ${goal}`).join('\n')}
-      
-      Based on these goals, provide:
-      1. 5 actionable recommendations to help them achieve these goals
-      2. 5 realistic milestones they can expect to see on their journey
-      
-      Format your response as a JSON object with two arrays:
-      {
-        "recommendations": ["🥗 Recommendation 1", "💪 Recommendation 2", ...],
-        "milestones": ["Week 1-2: 🌱 Milestone 1", "Month 1: 🏆 Milestone 2", ...]
-      }
-      
-      Make sure to include emojis at the beginning of each recommendation and milestone.
-      Each item should be very concise (15 words or less).
-      For milestones, include a timeframe (e.g., "Week 1-2:", "Month 3:")
-    `;
-    
-    const aiResponse = await callGeminiAPI(prompt);
-    
-    try {
-      // Try to parse the response as JSON
-      const parsedResponse = JSON.parse(aiResponse);
-      return {
-        recommendations: Array.isArray(parsedResponse.recommendations) ? parsedResponse.recommendations : [],
-        milestones: Array.isArray(parsedResponse.milestones) ? parsedResponse.milestones : []
-      };
-    } catch (parseError) {
-      console.error("Failed to parse AI response as JSON:", parseError);
-      
-      // Fallback: Try to extract recommendations and milestones from text
-      const recommendationsMatch = aiResponse.match(/recommendations:?\s*\n((?:- [^\n]+\n?)+)/i);
-      const milestonesMatch = aiResponse.match(/milestones:?\s*\n((?:- [^\n]+\n?)+)/i);
-      
-      const recommendations = recommendationsMatch ? 
-        recommendationsMatch[1].split('\n')
-          .filter(line => line.trim().startsWith('- '))
-          .map(line => line.trim().substring(2)) : 
-        [];
-      
-      const milestones = milestonesMatch ? 
-        milestonesMatch[1].split('\n')
-          .filter(line => line.trim().startsWith('- '))
-          .map(line => line.trim().substring(2)) : 
-        [];
-      
-      return { recommendations, milestones };
-    }
-  } catch (error) {
-    console.error("Wellness insights API error:", error);
-    
-    // Return fallback data if the API call fails
-    return {
-      recommendations: [
-        "🥗 Start with small, achievable daily habits",
-        "📊 Track your progress beyond just the scale",
-        "🍎 Focus on how foods make you feel",
-        "💪 Include strength training alongside cardio",
-        "😴 Prioritize sleep for recovery and reduced cravings"
-      ],
-      milestones: [
-        "Week 1-2: 🌱 Notice improved energy levels",
-        "Week 3-4: 💪 Feel stronger during workouts",
-        "Week 6-8: 👖 Clothes fit differently",
-        "Month 3: 🏆 Significant habit changes established",
-        "Month 6: 🌟 Major progress toward your goals"
-      ]
-    };
-  }
-};

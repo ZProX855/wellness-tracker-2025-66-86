@@ -1,6 +1,6 @@
 
 import React, { useState, useRef } from 'react';
-import { Upload, Camera, Image, X, CheckCircle, EggIcon, Loader } from 'lucide-react';
+import { Upload, Camera, Image, X, CheckCircle, EggIcon, Loader, AlertCircle, InfoIcon } from 'lucide-react';
 import { recognizeMeal } from '../services/api';
 import { toast } from 'sonner';
 
@@ -14,6 +14,7 @@ interface MealData {
     fiber: number;
   };
   recommendations: string;
+  fullAnalysis?: string;
 }
 
 const MealRecognition: React.FC = () => {
@@ -22,6 +23,7 @@ const MealRecognition: React.FC = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<MealData | null>(null);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -74,7 +76,7 @@ const MealRecognition: React.FC = () => {
     try {
       // Analyze with a timeout to handle long-running requests
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Analysis timeout')), 30000)
+        setTimeout(() => reject(new Error('Analysis timeout')), 45000)
       );
       
       const analysisPromise = recognizeMeal(imageData);
@@ -85,10 +87,21 @@ const MealRecognition: React.FC = () => {
         timeoutPromise
       ]) as MealData;
       
-      if (mealData.foodIdentified === "Could not identify the meal") {
-        setAnalyzeError("Could not identify the food in this image. Please try a clearer image of food.");
+      if (mealData.foodIdentified === "Could not identify the meal" || 
+          mealData.foodIdentified === "Error analyzing the meal") {
+        setAnalyzeError(mealData.recommendations || "Could not identify the food in this image. Please try a clearer image of food.");
+        setResult(null);
       } else {
         setResult(mealData);
+        
+        // Validate if nutrition values are suspiciously high
+        const { calories, protein, carbs, fats } = mealData.nutritionInfo;
+        
+        if (calories > 1500 || protein > 80 || carbs > 120 || fats > 70) {
+          toast.warning('The nutritional values may be higher than expected. Consider them as estimates.', {
+            duration: 6000,
+          });
+        }
       }
     } catch (error) {
       console.error("Meal recognition error:", error);
@@ -119,6 +132,7 @@ const MealRecognition: React.FC = () => {
     setSelectedImage(null);
     setResult(null);
     setAnalyzeError(null);
+    setShowDetails(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -142,6 +156,22 @@ const MealRecognition: React.FC = () => {
         return `${emoji} ${line}`;
       })
       .join('\n');
+  };
+
+  // Calculate macronutrient percentages for the pie chart-like display
+  const calculateMacroPercentages = () => {
+    if (!result) return { protein: 0, carbs: 0, fats: 0 };
+    
+    const { protein, carbs, fats } = result.nutritionInfo;
+    const total = protein + carbs + fats;
+    
+    if (total === 0) return { protein: 33, carbs: 33, fats: 34 }; // Equal if all are zero
+    
+    return {
+      protein: Math.round((protein / total) * 100),
+      carbs: Math.round((carbs / total) * 100),
+      fats: Math.round((fats / total) * 100)
+    };
   };
 
   return (
@@ -229,6 +259,7 @@ const MealRecognition: React.FC = () => {
                 <div className="flex flex-col items-center space-y-2">
                   <Loader className="h-10 w-10 text-wellness-darkGreen animate-spin" />
                   <p className="text-wellness-darkGreen">Analyzing your meal with Gemini Vision AI...</p>
+                  <p className="text-xs text-wellness-charcoal">This may take up to 30 seconds for accurate results</p>
                 </div>
               </div>
             )}
@@ -237,9 +268,7 @@ const MealRecognition: React.FC = () => {
               <div className="bg-red-50 p-4 rounded-lg border border-red-200 mb-4">
                 <div className="flex items-start">
                   <div className="flex-shrink-0">
-                    <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                    </svg>
+                    <AlertCircle className="h-5 w-5 text-red-400" />
                   </div>
                   <div className="ml-3">
                     <h3 className="text-sm font-medium text-red-800">Analysis Error</h3>
@@ -282,7 +311,18 @@ const MealRecognition: React.FC = () => {
                     <p className="text-wellness-darkGreen">{result.foodIdentified}</p>
                   </div>
                   
-                  <h4 className="font-medium text-wellness-darkGreen mb-2">Nutrition Information</h4>
+                  <h4 className="font-medium text-wellness-darkGreen mb-2 flex justify-between items-center">
+                    <span>Nutrition Information</span>
+                    <button 
+                      onClick={() => setShowDetails(!showDetails)}
+                      className="text-xs text-wellness-mediumGreen hover:text-wellness-darkGreen flex items-center gap-1"
+                    >
+                      <InfoIcon className="h-3 w-3" />
+                      {showDetails ? "Hide Details" : "Show Details"}
+                    </button>
+                  </h4>
+                  
+                  {/* Nutrition cards */}
                   <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-4">
                     <div className="bg-wellness-softGreen/40 p-2 rounded-lg text-center flex flex-col justify-center">
                       <div className="text-sm text-wellness-charcoal">Calories</div>
@@ -305,6 +345,45 @@ const MealRecognition: React.FC = () => {
                       <div className="font-medium text-wellness-darkGreen text-lg">{result.nutritionInfo.fiber}g</div>
                     </div>
                   </div>
+                  
+                  {/* Macronutrient distribution bar */}
+                  {!showDetails && (
+                    <div className="mb-4">
+                      <div className="text-xs text-wellness-charcoal mb-1 flex justify-between">
+                        <span>Macronutrient Distribution</span>
+                        <span>{calculateMacroPercentages().protein}% Protein | {calculateMacroPercentages().carbs}% Carbs | {calculateMacroPercentages().fats}% Fats</span>
+                      </div>
+                      <div className="w-full h-4 bg-gray-200 rounded-full overflow-hidden flex">
+                        <div 
+                          className="h-full bg-blue-400" 
+                          style={{width: `${calculateMacroPercentages().protein}%`}}
+                          title={`Protein: ${calculateMacroPercentages().protein}%`}
+                        ></div>
+                        <div 
+                          className="h-full bg-green-400" 
+                          style={{width: `${calculateMacroPercentages().carbs}%`}}
+                          title={`Carbs: ${calculateMacroPercentages().carbs}%`}
+                        ></div>
+                        <div 
+                          className="h-full bg-yellow-400" 
+                          style={{width: `${calculateMacroPercentages().fats}%`}}
+                          title={`Fats: ${calculateMacroPercentages().fats}%`}
+                        ></div>
+                      </div>
+                      <div className="flex text-xs mt-1 text-wellness-charcoal/70 justify-between">
+                        <div className="flex items-center"><div className="w-2 h-2 bg-blue-400 rounded-full mr-1"></div> Protein</div>
+                        <div className="flex items-center"><div className="w-2 h-2 bg-green-400 rounded-full mr-1"></div> Carbs</div>
+                        <div className="flex items-center"><div className="w-2 h-2 bg-yellow-400 rounded-full mr-1"></div> Fats</div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Technical details panel */}
+                  {showDetails && result.fullAnalysis && (
+                    <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200 text-xs font-mono overflow-auto max-h-40">
+                      <pre className="whitespace-pre-wrap">{result.fullAnalysis}</pre>
+                    </div>
+                  )}
                   
                   <div className="bg-wellness-softGreen/30 p-3 rounded-lg">
                     <h4 className="font-medium text-wellness-darkGreen mb-1">Recommendations</h4>
