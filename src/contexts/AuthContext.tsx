@@ -3,6 +3,7 @@ import React, { createContext, useState, useEffect, useContext } from 'react';
 import { AuthState, User, UserData } from '../types/auth';
 import { authService } from '../services/authService';
 import { toast } from 'sonner';
+import { supabase } from '../lib/supabase';
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
@@ -29,7 +30,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        const currentUser = authService.getCurrentUser();
+        const currentUser = await authService.getCurrentUser();
         setAuthState({
           user: currentUser,
           isLoading: false,
@@ -46,6 +47,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
     
     initializeAuth();
+    
+    // Set up auth state change listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        // Update our auth state with the new user
+        const mappedUser: User = {
+          id: session.user.id,
+          email: session.user.email || '',
+          name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
+          avatar: session.user.user_metadata?.avatar_url,
+          createdAt: session.user.created_at || new Date().toISOString(),
+        };
+        
+        setAuthState({
+          user: mappedUser,
+          isLoading: false,
+          error: null,
+        });
+        
+        // Cache the user in session storage
+        sessionStorage.setItem('currentUser', JSON.stringify(mappedUser));
+      } else if (event === 'SIGNED_OUT') {
+        setAuthState({
+          user: null,
+          isLoading: false,
+          error: null,
+        });
+        sessionStorage.removeItem('currentUser');
+      }
+    });
+    
+    // Cleanup subscription on unmount
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
   
   // Register
@@ -94,17 +130,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
   
-  // Login with Google (mock - used as fallback)
+  // Login with Google (using Supabase OAuth)
   const loginWithGoogle = async () => {
     try {
       setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
-      const user = await authService.loginWithGoogle();
-      setAuthState({
-        user,
-        isLoading: false,
-        error: null,
-      });
-      toast.success('Logged in with Google!');
+      await authService.loginWithGoogle();
+      // This will redirect to Google, so we don't update state here
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Google login failed';
       setAuthState(prev => ({
@@ -117,7 +148,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
   
-  // Login with Google token (real)
+  // Login with Google token
   const loginWithGoogleToken = async (credential: string) => {
     try {
       setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
