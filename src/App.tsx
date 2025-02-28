@@ -35,14 +35,14 @@ const App = () => (
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Index />} />
-              <Route path="/chat-assistant" element={<ChatAssistant />} />
-              <Route path="/food-compare" element={<FoodCompare />} />
-              <Route path="/bmi-calculator" element={<BMICalculator />} />
-              <Route path="/meal-recognition" element={<MealRecognition />} />
+              <Route path="/ai-assistant" element={<ChatAssistant />} />
+              <Route path="/nutrition/compare" element={<FoodCompare />} />
+              <Route path="/tools/bmi-calculator" element={<BMICalculator />} />
+              <Route path="/nutrition/meal-analyzer" element={<MealRecognition />} />
               <Route path="/wellness-journey" element={<WellnessJourney />} />
-              <Route path="/sleep-tracker" element={<SleepTracker />} />
+              <Route path="/tracker/sleep" element={<SleepTracker />} />
               <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
+              <Route path="/signup" element={<Register />} />
               <Route 
                 path="/dashboard" 
                 element={
@@ -52,7 +52,7 @@ const App = () => (
                 } 
               />
               <Route 
-                path="/dashboard/profile" 
+                path="/profile/settings" 
                 element={
                   <ProtectedRoute>
                     <ProfileSettings />
