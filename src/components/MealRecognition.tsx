@@ -24,9 +24,69 @@ const MealRecognition: React.FC = () => {
   const [result, setResult] = useState<MealData | null>(null);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Function to resize image if it's too large
+  const resizeImage = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      // First check if we need to resize
+      if (file.size <= 1024 * 1024) {
+        // Less than 1MB, just read as is
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+        return;
+      }
+      
+      // Create image for resizing
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        
+        // Determine new dimensions (max 1200px on longest side)
+        const MAX_SIZE = 1200;
+        if (width > height) {
+          if (width > MAX_SIZE) {
+            height = Math.round((height * MAX_SIZE) / width);
+            width = MAX_SIZE;
+          }
+        } else {
+          if (height > MAX_SIZE) {
+            width = Math.round((width * MAX_SIZE) / height);
+            height = MAX_SIZE;
+          }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        // Draw resized image to canvas
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Could not get canvas context'));
+          return;
+        }
+        
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Get data URL (JPEG at 85% quality)
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        resolve(dataUrl);
+      };
+      
+      img.onerror = () => {
+        reject(new Error('Failed to load image for resizing'));
+      };
+      
+      img.src = URL.createObjectURL(file);
+    });
+  };
+  
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     setIsUploading(true);
     setAnalyzeError(null);
     const file = e.target.files?.[0];
@@ -39,26 +99,27 @@ const MealRecognition: React.FC = () => {
         return;
       }
       
-      // Check file size (max 10MB to accommodate larger images)
+      // Check file size (max 10MB)
       if (file.size > 10 * 1024 * 1024) {
         toast.error('Image size should be less than 10MB');
         setIsUploading(false);
         return;
       }
       
-      const reader = new FileReader();
-      reader.onload = () => {
-        setSelectedImage(reader.result as string);
-        setIsUploading(false);
+      try {
+        // Resize image if needed
+        const resizedImage = await resizeImage(file);
+        setSelectedImage(resizedImage);
         setResult(null); // Clear previous results
-        // Auto-analyze the image after upload
-        analyzeImage(reader.result as string);
-      };
-      reader.onerror = () => {
-        toast.error('Error reading the image file');
         setIsUploading(false);
-      };
-      reader.readAsDataURL(file);
+        
+        // Auto-analyze the image after upload
+        analyzeImage(resizedImage);
+      } catch (error) {
+        console.error("Error processing image:", error);
+        toast.error('Error processing the image. Please try another image.');
+        setIsUploading(false);
+      }
     } else {
       setIsUploading(false);
     }
@@ -75,7 +136,7 @@ const MealRecognition: React.FC = () => {
     
     try {
       // Analyze with a timeout to handle long-running requests
-      const timeoutPromise = new Promise((_, reject) => 
+      const timeoutPromise = new Promise<MealData>((_, reject) => 
         setTimeout(() => reject(new Error('Analysis timeout')), 45000)
       );
       
@@ -112,6 +173,8 @@ const MealRecognition: React.FC = () => {
           errorMessage = "Analysis took too long. Please try a different image or try again later.";
         } else if (error.message.includes("API")) {
           errorMessage = "AI service temporarily unavailable. Please try again in a few moments.";
+        } else if (error.message.includes("safety")) {
+          errorMessage = "This image couldn't be analyzed due to content safety filters. Please try a different image.";
         }
       }
       
@@ -124,6 +187,7 @@ const MealRecognition: React.FC = () => {
   
   const handleAnalyze = () => {
     if (selectedImage) {
+      setRetryCount(prevCount => prevCount + 1);
       analyzeImage(selectedImage);
     }
   };
@@ -133,6 +197,7 @@ const MealRecognition: React.FC = () => {
     setResult(null);
     setAnalyzeError(null);
     setShowDetails(false);
+    setRetryCount(0);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -258,7 +323,7 @@ const MealRecognition: React.FC = () => {
               <div className="flex justify-center items-center py-8">
                 <div className="flex flex-col items-center space-y-2">
                   <Loader className="h-10 w-10 text-wellness-darkGreen animate-spin" />
-                  <p className="text-wellness-darkGreen">Analyzing your meal with Gemini Vision AI...</p>
+                  <p className="text-wellness-darkGreen">Analyzing your meal with Gemini AI...</p>
                   <p className="text-xs text-wellness-charcoal">This may take up to 30 seconds for accurate results</p>
                 </div>
               </div>
