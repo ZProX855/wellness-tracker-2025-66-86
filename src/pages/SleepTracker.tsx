@@ -5,6 +5,7 @@ import Header from '../components/Header';
 import { ArrowLeft, Moon, Clock, Calendar, BarChart2, BedDouble, Zap, Activity, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 // Types
 interface SleepSession {
@@ -22,6 +23,13 @@ interface SleepInsight {
   type: 'info' | 'warning' | 'success' | 'tip';
   message: string;
   icon: React.ReactNode;
+}
+
+interface SleepChartData {
+  date: string;
+  duration: number;
+  qualityScore: number;
+  sleepScore: number;
 }
 
 const SleepTracker = () => {
@@ -44,6 +52,7 @@ const SleepTracker = () => {
   const [activeTab, setActiveTab] = useState<'insights' | 'history' | 'trends'>('insights');
   const [insights, setInsights] = useState<SleepInsight[]>([]);
   const [loading, setLoading] = useState(false);
+  const [chartData, setChartData] = useState<SleepChartData[]>([]);
   
   // Save to localStorage when data changes
   useEffect(() => {
@@ -52,8 +61,39 @@ const SleepTracker = () => {
     // Generate insights whenever sleep data changes
     if (sleepData.length > 0) {
       generateSleepInsights();
+      prepareChartData();
     }
   }, [sleepData]);
+  
+  // Prepare chart data for visualization
+  const prepareChartData = () => {
+    // Convert quality string to numeric value for the chart
+    const qualityToScore = (quality: string): number => {
+      switch (quality) {
+        case 'Restful': return 100;
+        case 'Good': return 80;
+        case 'Average': return 60;
+        case 'Light': return 40;
+        case 'Disturbed': return 20;
+        case 'Poor': return 0;
+        default: return 50;
+      }
+    };
+
+    // Get last 14 days of sleep data (or all if less than 14)
+    const last14Days = [...sleepData]
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .slice(-14);
+    
+    const data = last14Days.map(session => ({
+      date: new Date(session.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      duration: Math.round(session.duration / 60 * 10) / 10, // Convert to hours with 1 decimal
+      qualityScore: qualityToScore(session.quality),
+      sleepScore: calculateSleepScore(session)
+    }));
+    
+    setChartData(data);
+  };
   
   // Generate insights based on sleep data
   const generateSleepInsights = () => {
@@ -311,6 +351,24 @@ const SleepTracker = () => {
   };
   
   const avgDuration = getAverageSleepDuration();
+
+  // Custom tooltip for the line chart
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-3 rounded shadow-md border border-wellness-softGreen/30 text-sm">
+          <p className="font-medium text-wellness-darkGreen">{label}</p>
+          {payload.map((entry: any, index: number) => (
+            <p key={index} style={{ color: entry.color }}>
+              {entry.name === 'qualityScore' ? 'Quality: ' : entry.name === 'sleepScore' ? 'Sleep Score: ' : 'Duration: '}
+              {entry.name === 'duration' ? `${entry.value}h` : `${entry.value}`}
+            </p>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-wellness-softBeige to-wellness-softGreen/30">
@@ -692,6 +750,104 @@ const SleepTracker = () => {
                   
                   {sleepData.length >= 3 ? (
                     <div>
+                      {/* Sleep Quality Trend Line Graph */}
+                      <div className="mb-6">
+                        <h4 className="text-sm font-medium text-wellness-charcoal mb-2">Sleep Quality Trends</h4>
+                        <div className="bg-white bg-opacity-70 rounded-lg p-4 border border-wellness-softGreen/30">
+                          <div className="h-64 w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <LineChart
+                                data={chartData}
+                                margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
+                              >
+                                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                                <XAxis 
+                                  dataKey="date"
+                                  tick={{ fontSize: 12 }}
+                                  stroke="#6b7280"
+                                />
+                                <YAxis 
+                                  yAxisId="left"
+                                  orientation="left" 
+                                  stroke="#6b7280"
+                                  tick={{ fontSize: 12 }}
+                                  domain={[0, 100]}
+                                  label={{ 
+                                    value: 'Score', 
+                                    angle: -90, 
+                                    position: 'insideLeft',
+                                    style: { fill: '#6b7280', fontSize: 12 } 
+                                  }}
+                                />
+                                <YAxis
+                                  yAxisId="right"
+                                  orientation="right"
+                                  stroke="#6b7280"
+                                  tick={{ fontSize: 12 }}
+                                  domain={[0, 'dataMax + 1']}
+                                  label={{ 
+                                    value: 'Hours', 
+                                    angle: 90, 
+                                    position: 'insideRight',
+                                    style: { fill: '#6b7280', fontSize: 12 } 
+                                  }}
+                                />
+                                <Tooltip content={<CustomTooltip />} />
+                                <Legend />
+                                <Line
+                                  yAxisId="left"
+                                  type="monotone"
+                                  dataKey="qualityScore"
+                                  name="Quality"
+                                  stroke="#8884d8"
+                                  strokeWidth={2}
+                                  dot={{ r: 4 }}
+                                  activeDot={{ r: 6 }}
+                                  animationDuration={1000}
+                                />
+                                <Line
+                                  yAxisId="left"
+                                  type="monotone"
+                                  dataKey="sleepScore"
+                                  name="Sleep Score"
+                                  stroke="#82ca9d"
+                                  strokeWidth={2}
+                                  dot={{ r: 4 }}
+                                  activeDot={{ r: 6 }}
+                                  animationDuration={1000}
+                                />
+                                <Line
+                                  yAxisId="right"
+                                  type="monotone"
+                                  dataKey="duration"
+                                  name="Duration"
+                                  stroke="#ffa726"
+                                  strokeWidth={2}
+                                  dot={{ r: 4 }}
+                                  activeDot={{ r: 6 }}
+                                  animationDuration={1000}
+                                />
+                              </LineChart>
+                            </ResponsiveContainer>
+                          </div>
+                          <div className="mt-2 flex flex-wrap justify-center gap-4 text-xs text-wellness-charcoal">
+                            <div className="flex items-center">
+                              <div className="w-3 h-3 rounded-full bg-[#8884d8] mr-1"></div>
+                              <span>Quality</span>
+                            </div>
+                            <div className="flex items-center">
+                              <div className="w-3 h-3 rounded-full bg-[#82ca9d] mr-1"></div>
+                              <span>Sleep Score</span>
+                            </div>
+                            <div className="flex items-center">
+                              <div className="w-3 h-3 rounded-full bg-[#ffa726] mr-1"></div>
+                              <span>Duration (hours)</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Bar chart for duration */}
                       <div className="mb-6">
                         <h4 className="text-sm font-medium text-wellness-charcoal mb-2">Sleep Duration (Last 7 Days)</h4>
                         <div className="h-40 bg-white bg-opacity-70 rounded-lg p-4 border border-wellness-softGreen/30">
