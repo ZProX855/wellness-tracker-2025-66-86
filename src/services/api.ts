@@ -1,4 +1,4 @@
-<lov-code>
+
 // API service with Gemini 2.0 Flash integration
 
 // Use this API key for the Gemini AI model
@@ -421,4 +421,229 @@ export const recognizeMeal = async (imageData: string) => {
       Keep your response to 1-2 sentences maximum.
     `;
     
+    const identificationResponse = await callGeminiAPI(identificationPrompt, 0.3, true, imageData);
     
+    // Check if no food was identified
+    if (identificationResponse.toLowerCase().includes("no food") || 
+        identificationResponse.toLowerCase().includes("unidentified food")) {
+      return {
+        foodIdentified: "Could not identify the meal",
+        nutritionInfo: {
+          calories: 0,
+          protein: 0,
+          carbs: 0,
+          fats: 0,
+          fiber: 0
+        },
+        recommendations: "We couldn't identify any food in this image. Please try again with a clearer image of food items.",
+        fullAnalysis: identificationResponse
+      };
+    }
+
+    // Second analysis - Get nutrition information with the identified food
+    const nutritionPrompt = `
+      You are a professional nutritionist analyzing this food image: ${identificationResponse}
+      
+      Based on what you can see in the image and the identification above, provide:
+      
+      1. NUTRITION INFORMATION (Give specific, realistic numbers that would be accurate for the identified food)
+      - Calories: [number]
+      - Protein: [number]g
+      - Carbs: [number]g
+      - Fats: [number]g
+      - Fiber: [number]g
+      
+      BE REALISTIC with nutrition values - reference standard USDA nutrition data.
+      DO NOT HALLUCINATE extreme values. For example:
+      - A plate of pasta with sauce typically has 300-600 calories, not 1200+
+      - Most meals have between 15-40g of protein, not 100+
+      - Most meals have 30-70g of carbs, not very low or very high amounts
+      - Most meals have 10-25g of fat, not 90+g
+      - Most meals have 2-8g of fiber, not 0g or excessive amounts
+      
+      IMPORTANT: Critically check your numbers for plausibility before providing them.
+      
+      Format your response as:
+      Calories: [number]
+      Protein: [number]g
+      Carbs: [number]g
+      Fats: [number]g
+      Fiber: [number]g
+    `;
+    
+    const nutritionResponse = await callGeminiAPI(nutritionPrompt, 0.3, true, imageData);
+    
+    // Third analysis - Get recommendations for the identified food
+    const recommendationsPrompt = `
+      Based on this identified food: ${identificationResponse}
+      
+      Provide 3-4 concise, practical recommendations about:
+      - Health benefits of this meal
+      - How to balance this meal with other foods
+      - Variations or additions that could improve nutrition
+      
+      Format your response as 3-4 bullet points, each starting with an emoji.
+      Keep each point to 1-2 sentences maximum.
+    `;
+    
+    const recommendationsResponse = await callGeminiAPI(recommendationsPrompt, 0.5, false);
+    
+    // Parse the nutrition response to extract values
+    const caloriesMatch = nutritionResponse.match(/calories:?\s*(\d+)/i);
+    const proteinMatch = nutritionResponse.match(/protein:?\s*(\d+)/i);
+    const carbsMatch = nutritionResponse.match(/carbs:?\s*(\d+)/i);
+    const fatsMatch = nutritionResponse.match(/fats:?\s*(\d+)/i);
+    const fiberMatch = nutritionResponse.match(/fiber:?\s*(\d+)/i);
+    
+    // Set default values in case parsing fails
+    let calories = 0;
+    let protein = 0;
+    let carbs = 0;
+    let fats = 0;
+    let fiber = 0;
+    
+    // Extract nutrition values with validity checks
+    if (caloriesMatch) {
+      const parsed = parseInt(caloriesMatch[1]);
+      calories = parsed > 0 && parsed < 2000 ? parsed : 350; // Reasonable default
+    }
+    
+    if (proteinMatch) {
+      const parsed = parseInt(proteinMatch[1]);
+      protein = parsed > 0 && parsed < 100 ? parsed : 15; // Reasonable default
+    }
+    
+    if (carbsMatch) {
+      const parsed = parseInt(carbsMatch[1]);
+      carbs = parsed > 0 && parsed < 150 ? parsed : 40; // Reasonable default
+    }
+    
+    if (fatsMatch) {
+      const parsed = parseInt(fatsMatch[1]);
+      fats = parsed > 0 && parsed < 100 ? parsed : 15; // Reasonable default
+    }
+    
+    if (fiberMatch) {
+      const parsed = parseInt(fiberMatch[1]);
+      fiber = parsed > 0 && parsed < 30 ? parsed : 4; // Reasonable default
+    }
+    
+    // Sanity check for nutrition values based on the identified food
+    const foodType = identificationResponse.toLowerCase();
+    
+    // Perform basic sanity checks and adjustments
+    if (foodType.includes("salad") && calories > 500) calories = Math.floor(calories * 0.6);
+    if (foodType.includes("pasta") && protein > 50) protein = Math.floor(protein * 0.5);
+    if (foodType.includes("fruit") && fats > 15) fats = Math.floor(fats * 0.3);
+    if (foodType.includes("steak") && carbs > 30) carbs = Math.floor(carbs * 0.3);
+    
+    return {
+      foodIdentified: identificationResponse,
+      nutritionInfo: {
+        calories,
+        protein,
+        carbs,
+        fats,
+        fiber
+      },
+      recommendations: recommendationsResponse,
+      fullAnalysis: `${identificationResponse}\n\n${nutritionResponse}\n\n${recommendationsResponse}`
+    };
+  } catch (error) {
+    console.error("Meal recognition API error:", error);
+    
+    // Return fallback data with a more specific error message
+    return {
+      foodIdentified: "Error analyzing the meal",
+      nutritionInfo: {
+        calories: 0,
+        protein: 0,
+        carbs: 0,
+        fats: 0,
+        fiber: 0
+      },
+      recommendations: "We encountered an error while analyzing this image. Please try again with a different image or try again later.",
+      fullAnalysis: error instanceof Error ? error.message : "Unknown error"
+    };
+  }
+};
+
+// Wellness journey insights function
+export interface WellnessInsights {
+  recommendations: string[];
+  milestones: string[];
+}
+
+export const getWellnessInsights = async (goals: string[]): Promise<WellnessInsights> => {
+  try {
+    const prompt = `
+      The user has selected the following wellness goals:
+      ${goals.map(goal => `- ${goal}`).join('\n')}
+      
+      Based on these goals, provide:
+      1. 5 actionable recommendations to help them achieve these goals
+      2. 5 realistic milestones they can expect to see on their journey
+      
+      Format your response as a JSON object with two arrays:
+      {
+        "recommendations": ["🥗 Recommendation 1", "💪 Recommendation 2", ...],
+        "milestones": ["Week 1-2: 🌱 Milestone 1", "Month 1: 🏆 Milestone 2", ...]
+      }
+      
+      Make sure to include emojis at the beginning of each recommendation and milestone.
+      Each item should be very concise (15 words or less).
+      For milestones, include a timeframe (e.g., "Week 1-2:", "Month 3:")
+    `;
+    
+    const aiResponse = await callGeminiAPI(prompt);
+    
+    try {
+      // Try to parse the response as JSON
+      const parsedResponse = JSON.parse(aiResponse);
+      return {
+        recommendations: Array.isArray(parsedResponse.recommendations) ? parsedResponse.recommendations : [],
+        milestones: Array.isArray(parsedResponse.milestones) ? parsedResponse.milestones : []
+      };
+    } catch (parseError) {
+      console.error("Failed to parse AI response as JSON:", parseError);
+      
+      // Fallback: Try to extract recommendations and milestones from text
+      const recommendationsMatch = aiResponse.match(/recommendations:?\s*\n((?:- [^\n]+\n?)+)/i);
+      const milestonesMatch = aiResponse.match(/milestones:?\s*\n((?:- [^\n]+\n?)+)/i);
+      
+      const recommendations = recommendationsMatch ? 
+        recommendationsMatch[1].split('\n')
+          .filter(line => line.trim().startsWith('- '))
+          .map(line => line.trim().substring(2)) : 
+        [];
+      
+      const milestones = milestonesMatch ? 
+        milestonesMatch[1].split('\n')
+          .filter(line => line.trim().startsWith('- '))
+          .map(line => line.trim().substring(2)) : 
+        [];
+      
+      return { recommendations, milestones };
+    }
+  } catch (error) {
+    console.error("Wellness insights API error:", error);
+    
+    // Return fallback data if the API call fails
+    return {
+      recommendations: [
+        "🥗 Start with small, achievable daily habits",
+        "📊 Track your progress beyond just the scale",
+        "🍎 Focus on how foods make you feel",
+        "💪 Include strength training alongside cardio",
+        "😴 Prioritize sleep for recovery and reduced cravings"
+      ],
+      milestones: [
+        "Week 1-2: 🌱 Notice improved energy levels",
+        "Week 3-4: 💪 Feel stronger during workouts",
+        "Week 6-8: 👖 Clothes fit differently",
+        "Month 3: 🏆 Significant habit changes established",
+        "Month 6: 🌟 Major progress toward your goals"
+      ]
+    };
+  }
+};
