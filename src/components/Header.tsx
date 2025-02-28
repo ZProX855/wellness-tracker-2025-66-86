@@ -18,19 +18,19 @@ const Header: React.FC = () => {
     }, 
     {
       name: 'AI Assistant',
-      path: '/ai-assistant'
+      path: '/chat-assistant'
     }, 
     {
       name: 'Food Compare',
-      path: '/nutrition/compare'
+      path: '/food-compare'
     }, 
     {
       name: 'BMI Calculator',
-      path: '/tools/bmi-calculator'
+      path: '/bmi-calculator'
     }, 
     {
-      name: 'Meal Analyzer',
-      path: '/nutrition/meal-analyzer'
+      name: 'Meal Recognition',
+      path: '/meal-recognition'
     }, 
     {
       name: 'Wellness Journey',
@@ -38,7 +38,7 @@ const Header: React.FC = () => {
     },
     {
       name: 'Sleep Tracker',
-      path: '/tracker/sleep'
+      path: '/sleep-tracker'
     }
   ];
   
@@ -102,7 +102,7 @@ const Header: React.FC = () => {
                     <Link to="/dashboard" className="block px-4 py-2 text-sm text-wellness-charcoal hover:bg-wellness-softGreen/20 hover:text-wellness-darkGreen">
                       Dashboard
                     </Link>
-                    <Link to="/profile/settings" className="block px-4 py-2 text-sm text-wellness-charcoal hover:bg-wellness-softGreen/20 hover:text-wellness-darkGreen">
+                    <Link to="/dashboard/profile" className="block px-4 py-2 text-sm text-wellness-charcoal hover:bg-wellness-softGreen/20 hover:text-wellness-darkGreen">
                       Profile Settings
                     </Link>
                     <button 
@@ -178,7 +178,7 @@ const Header: React.FC = () => {
                     Dashboard
                   </Link>
                   <Link 
-                    to="/profile/settings" 
+                    to="/dashboard/profile" 
                     className="px-4 py-3 text-xl transition-colors duration-300 rounded-lg text-wellness-charcoal hover:bg-wellness-softGreen/50"
                   >
                     Profile Settings
