@@ -116,7 +116,7 @@ const TimetableGenerator = () => {
         setIsConversationActive(false);
         setConversationComplete(true);
         
-        // Generate timetable from collected responses
+        // Generate timetable from collected responses immediately
         generateTimetable();
       }
     },
@@ -172,6 +172,12 @@ const TimetableGenerator = () => {
     try {
       await conversation.endSession();
       setIsConversationActive(false);
+      
+      // Manually trigger timetable generation after ending the conversation
+      if (responses.length > 0) {
+        setConversationComplete(true);
+        generateTimetable();
+      }
     } catch (error) {
       console.error("Error ending conversation:", error);
     }
@@ -179,6 +185,15 @@ const TimetableGenerator = () => {
 
   // Generate timetable using Gemini API
   const generateTimetable = async () => {
+    if (responses.length === 0) {
+      toast({
+        title: "No Conversation Data",
+        description: "Please have a conversation with the AI assistant first.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setLoadingTimetable(true);
     
     try {
