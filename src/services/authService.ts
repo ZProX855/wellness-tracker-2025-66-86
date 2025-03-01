@@ -2,7 +2,6 @@ import { User, UserData, BMIRecord, FoodComparison, MealRecord, SleepRecord } fr
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../lib/supabase';
 
-// Function to convert Supabase user to our app User type
 const mapSupabaseUser = (supabaseUser: any): User | null => {
   if (!supabaseUser) return null;
   
@@ -16,14 +15,11 @@ const mapSupabaseUser = (supabaseUser: any): User | null => {
   };
 };
 
-// This key is used to cache the current user in sessionStorage
 const CURRENT_USER_KEY = 'currentUser';
 
 export const authService = {
-  // Register a new user
   async register(username: string, password: string): Promise<User> {
     try {
-      // Generate a fake email since Supabase requires one
       const email = `${username.toLowerCase()}@wellness.local`;
       
       const { data, error } = await supabase.auth.signUp({
@@ -50,14 +46,12 @@ export const authService = {
         throw new Error('Failed to create user');
       }
       
-      // Initialize user profile
       await supabase.from('user_profiles').insert({
         user_id: user.id,
         name: username,
         created_at: new Date().toISOString(),
       });
       
-      // Save current user to session storage
       sessionStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
       
       return user;
@@ -67,10 +61,8 @@ export const authService = {
     }
   },
   
-  // Login user
   async login(username: string, password: string): Promise<User> {
     try {
-      // Generate the email from username
       const email = `${username.toLowerCase()}@wellness.local`;
       
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -92,7 +84,6 @@ export const authService = {
         throw new Error('Failed to get user data');
       }
       
-      // Save to session storage
       sessionStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
       
       return user;
@@ -102,15 +93,8 @@ export const authService = {
     }
   },
   
-  // Login with Google token
   async loginWithGoogleToken(credential: string): Promise<User> {
     try {
-      // Supabase's signInWithIdToken requires a provider and a token
-      // For Google OAuth with JavaScript client, we need to use the ID token
-      // However, Supabase doesn't directly support this flow with the credential from Google's JavaScript client
-      // As a workaround, we'll use signInWithOAuth to redirect to Google
-      
-      // For our mock implementation, we'll parse the credential and create a user
       const payload = this.decodeJwt(credential);
       
       if (!payload) {
@@ -123,40 +107,6 @@ export const authService = {
         throw new Error('Email not provided in Google token');
       }
       
-      // Try to sign in with Google OAuth using Supabase
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: window.location.origin,
-        }
-      });
-      
-      // Since this will redirect, we wouldn't normally reach this point
-      // But in case we do (or for testing), we'll create a mock user
-      
-      const googleUser: User = {
-        id: sub || uuidv4(),
-        username: name || email.split('@')[0],
-        name: name || email.split('@')[0],
-        avatar: picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(name || email)}&background=random`,
-        createdAt: new Date().toISOString(),
-        googleId: sub,
-      };
-      
-      // Save to session storage
-      sessionStorage.setItem(CURRENT_USER_KEY, JSON.stringify(googleUser));
-      
-      return googleUser;
-    } catch (error) {
-      console.error('Google token login error:', error);
-      throw error;
-    }
-  },
-  
-  // Login with Google (mock)
-  async loginWithGoogle(): Promise<User> {
-    try {
-      // Redirect to Google sign in
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -168,8 +118,36 @@ export const authService = {
         throw new Error(error.message);
       }
       
-      // Since this redirects, we'll never reach this point normally
-      // But we'll include this mock for testing or in case the redirect doesn't happen
+      const googleUser: User = {
+        id: sub || uuidv4(),
+        username: name || email.split('@')[0],
+        name: name || email.split('@')[0],
+        avatar: picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(name || email)}&background=random`,
+        createdAt: new Date().toISOString(),
+        googleId: sub,
+      };
+      
+      sessionStorage.setItem(CURRENT_USER_KEY, JSON.stringify(googleUser));
+      
+      return googleUser;
+    } catch (error) {
+      console.error('Google token login error:', error);
+      throw error;
+    }
+  },
+  
+  async loginWithGoogle(): Promise<User> {
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin,
+        }
+      });
+      
+      if (error) {
+        throw new Error(error.message);
+      }
       
       const googleUser: User = {
         id: uuidv4(),
@@ -179,7 +157,6 @@ export const authService = {
         createdAt: new Date().toISOString(),
       };
       
-      // Save to session storage
       sessionStorage.setItem(CURRENT_USER_KEY, JSON.stringify(googleUser));
       
       return googleUser;
@@ -189,7 +166,6 @@ export const authService = {
     }
   },
   
-  // Logout current user
   async logout(): Promise<void> {
     try {
       const { error } = await supabase.auth.signOut();
@@ -205,16 +181,13 @@ export const authService = {
     }
   },
   
-  // Get current user
   async getCurrentUser(): Promise<User | null> {
     try {
-      // First check session storage for cached user
       const cachedUser = sessionStorage.getItem(CURRENT_USER_KEY);
       if (cachedUser) {
         return JSON.parse(cachedUser);
       }
       
-      // If no cached user, check with Supabase
       const { data, error } = await supabase.auth.getUser();
       
       if (error || !data.user) {
@@ -224,7 +197,6 @@ export const authService = {
       const user = mapSupabaseUser(data.user);
       
       if (user) {
-        // Cache the user in session storage
         sessionStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
       }
       
@@ -235,10 +207,8 @@ export const authService = {
     }
   },
   
-  // Update user profile
   async updateProfile(userId: string, updates: Partial<User>): Promise<User> {
     try {
-      // Only update allowed fields
       const { name, avatar } = updates;
       
       const { data, error } = await supabase.auth.updateUser({
@@ -256,7 +226,6 @@ export const authService = {
         throw new Error('Failed to update profile');
       }
       
-      // Also update user_profiles table
       if (name) {
         await supabase.from('user_profiles').update({
           name,
@@ -270,7 +239,6 @@ export const authService = {
         throw new Error('Failed to get updated user data');
       }
       
-      // Update cached user
       sessionStorage.setItem(CURRENT_USER_KEY, JSON.stringify(updatedUser));
       
       return updatedUser;
@@ -280,17 +248,13 @@ export const authService = {
     }
   },
   
-  // Update user data
   async updateUserData(userId: string, newData: Partial<UserData>): Promise<UserData> {
     try {
-      // Handle BMI history updates
       if (newData.bmiHistory) {
         for (const record of newData.bmiHistory) {
           if (!record.id) {
-            // Add new record
             await this.addBMIRecord(userId, record);
           } else {
-            // Update existing record
             await supabase
               .from('bmi_history')
               .update({
@@ -306,14 +270,11 @@ export const authService = {
         }
       }
       
-      // Handle food comparisons updates
       if (newData.foodComparisons) {
         for (const comparison of newData.foodComparisons) {
           if (!comparison.id) {
-            // Add new comparison
             await this.addFoodComparison(userId, comparison);
           } else {
-            // Update existing comparison
             await supabase
               .from('food_comparisons')
               .update({
@@ -327,14 +288,11 @@ export const authService = {
         }
       }
       
-      // Handle meal recognitions updates
       if (newData.mealRecognitions) {
         for (const meal of newData.mealRecognitions) {
           if (!meal.id) {
-            // Add new meal
             await this.addMealRecognition(userId, meal);
           } else {
-            // Update existing meal
             await supabase
               .from('meal_recognitions')
               .update({
@@ -352,14 +310,11 @@ export const authService = {
         }
       }
       
-      // Handle sleep data updates
       if (newData.sleepData) {
         for (const sleep of newData.sleepData) {
           if (!sleep.id) {
-            // Add new sleep record
             await this.addSleepRecord(userId, sleep);
           } else {
-            // Convert quality string to number
             const qualityNumber = 
               sleep.quality === 'Restful' ? 5 : 
               sleep.quality === 'Good' ? 4 : 
@@ -367,7 +322,6 @@ export const authService = {
               sleep.quality === 'Light' ? 2 : 
               sleep.quality === 'Disturbed' ? 1 : 0;
             
-            // Update existing sleep record
             await supabase
               .from('sleep_data')
               .update({
@@ -385,7 +339,6 @@ export const authService = {
         }
       }
       
-      // Return updated user data
       return await this.getUserData(userId);
     } catch (error) {
       console.error('Error updating user data:', error);
@@ -393,10 +346,8 @@ export const authService = {
     }
   },
   
-  // Get user data from Supabase
   async getUserData(userId: string): Promise<UserData> {
     try {
-      // Initialize empty user data
       const userData: UserData = {
         bmiHistory: [],
         foodComparisons: [],
@@ -404,7 +355,6 @@ export const authService = {
         sleepData: [],
       };
       
-      // Fetch BMI history
       const { data: bmiData, error: bmiError } = await supabase
         .from('bmi_history')
         .select('*')
@@ -424,7 +374,6 @@ export const authService = {
         }));
       }
       
-      // Fetch food comparisons
       const { data: foodData, error: foodError } = await supabase
         .from('food_comparisons')
         .select('*')
@@ -435,7 +384,6 @@ export const authService = {
         console.error('Error fetching food comparison data:', foodError);
       } else if (foodData) {
         userData.foodComparisons = foodData.map(item => {
-          // Parse the JSON strings into objects
           const food1 = typeof item.food1 === 'string' ? JSON.parse(item.food1) : item.food1;
           const food2 = typeof item.food2 === 'string' ? JSON.parse(item.food2) : item.food2;
           
@@ -448,7 +396,6 @@ export const authService = {
         });
       }
       
-      // Fetch meal recognitions
       const { data: mealData, error: mealError } = await supabase
         .from('meal_recognitions')
         .select('*')
@@ -467,13 +414,12 @@ export const authService = {
             protein: item.proteins,
             carbs: item.carbs,
             fats: item.fats,
-            fiber: 0 // Default value since it's not in the database schema
+            fiber: 0
           },
           imageUrl: item.image_url
         }));
       }
       
-      // Fetch sleep data
       const { data: sleepData, error: sleepError } = await supabase
         .from('sleep_data')
         .select('*')
@@ -506,7 +452,6 @@ export const authService = {
     }
   },
   
-  // Add BMI record
   async addBMIRecord(userId: string, data: Omit<BMIRecord, 'id'>): Promise<BMIRecord> {
     try {
       const { data: insertData, error } = await supabase
@@ -540,7 +485,6 @@ export const authService = {
     }
   },
   
-  // Add food comparison
   async addFoodComparison(userId: string, data: Omit<FoodComparison, 'id'>): Promise<FoodComparison> {
     try {
       const { data: insertData, error } = await supabase
@@ -570,7 +514,6 @@ export const authService = {
     }
   },
   
-  // Add meal recognition
   async addMealRecognition(userId: string, data: Omit<MealRecord, 'id'>): Promise<MealRecord> {
     try {
       const { data: insertData, error } = await supabase
@@ -601,7 +544,7 @@ export const authService = {
           protein: insertData.proteins,
           carbs: insertData.carbs,
           fats: insertData.fats,
-          fiber: 0 // Default value
+          fiber: 0
         },
         imageUrl: insertData.image_url
       };
@@ -611,10 +554,8 @@ export const authService = {
     }
   },
   
-  // Add sleep record
   async addSleepRecord(userId: string, data: Omit<SleepRecord, 'id'>): Promise<SleepRecord> {
     try {
-      // Convert quality string to number
       const qualityNumber = 
         data.quality === 'Restful' ? 5 : 
         data.quality === 'Good' ? 4 : 
@@ -661,10 +602,8 @@ export const authService = {
     }
   },
   
-  // Reset user progress
   async resetUserProgress(userId: string): Promise<void> {
     try {
-      // Delete all user data from each table
       const promises = [
         supabase.from('bmi_history').delete().eq('user_id', userId),
         supabase.from('food_comparisons').delete().eq('user_id', userId),
@@ -681,7 +620,6 @@ export const authService = {
     }
   },
   
-  // Helper function to decode JWT token
   decodeJwt(token: string) {
     try {
       const base64Url = token.split('.')[1];

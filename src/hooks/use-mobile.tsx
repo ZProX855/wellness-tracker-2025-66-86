@@ -41,3 +41,6 @@ export function useMediaQuery(query: string): boolean {
 
   return matches;
 }
+
+// Alias for compatibility with components using useIsMobile
+export const useIsMobile = useMobile;

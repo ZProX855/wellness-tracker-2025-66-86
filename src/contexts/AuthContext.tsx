@@ -3,7 +3,16 @@ import React, { createContext, useState, useEffect, useContext, useRef } from 'r
 import { AuthState, User, UserData, BMIRecord } from '../types/auth';
 import { authService } from '../services/authService';
 import { toast } from 'sonner';
-import { supabase, UserDataTables } from '../lib/supabase';
+import { supabase, Database } from '../lib/supabase';
+
+// Define UserDataTables type here since it's used but not exported from supabase.ts
+type UserDataTables = {
+  bmi_history: Database['public']['Tables']['bmi_history']['Row'];
+  food_comparisons: Database['public']['Tables']['food_comparisons']['Row'];
+  meal_recognitions: Database['public']['Tables']['meal_recognitions']['Row'];
+  sleep_data: Database['public']['Tables']['sleep_data']['Row'];
+  user_profiles: Database['public']['Tables']['user_profiles']['Row'];
+};
 
 interface AuthContextType extends AuthState {
   login: (username: string, password: string, rememberMe?: boolean) => Promise<void>;
@@ -131,7 +140,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (!userDataRef.current) return;
           
           if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-            const newItem = payload.new as UserDataTables['bmi_history'];
+            const newItem = payload.new as Database['public']['Tables']['bmi_history']['Row'];
             
             const formattedItem: BMIRecord = {
               id: newItem.id,
@@ -158,7 +167,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               bmiHistory: updatedHistory,
             };
           } else if (payload.eventType === 'DELETE') {
-            const deletedItem = payload.old as UserDataTables['bmi_history'];
+            const deletedItem = payload.old as Database['public']['Tables']['bmi_history']['Row'];
             userDataRef.current = {
               ...userDataRef.current,
               bmiHistory: userDataRef.current.bmiHistory.filter(
@@ -318,14 +327,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
   
-  // Add the missing updateUserData implementation
   const updateUserData = async (newData: Partial<UserData>): Promise<UserData> => {
     try {
       if (!authState.user) {
         throw new Error('No authenticated user');
       }
       
-      // Call the authService method (will add this in authService.ts)
+      // Call the authService method
       const updatedData = await authService.updateUserData(authState.user.id, newData);
       userDataRef.current = updatedData;
       return updatedData;
