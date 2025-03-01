@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Mic, MicOff, Edit, Save, Clock, Calendar, Download, RefreshCw, List, Grid, Palette, Settings } from 'lucide-react';
+import { ArrowLeft, Mic, MicOff, Edit, Save, Clock, Calendar, Download, RefreshCw, List, Grid, Palette, Settings, Share2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Header from '../components/Header';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -11,6 +11,8 @@ import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@
 import { useToast } from "@/components/ui/use-toast";
 import { useConversation } from '@11labs/react';
 import { useMediaQuery } from '@/hooks/use-mobile';
+import TimetableVisualizer from '@/components/TimetableVisualizer';
+import useLocalStorage from '@/hooks/useLocalStorage';
 
 // Agent ID for ElevenLabs
 const ELEVENLABS_AGENT_ID = "Dxu3cYNnYBYHvtV3Q9Hu";
@@ -34,42 +36,11 @@ interface ConversationResponse {
   answer: string;
 }
 
-// Color themes for the timetable
-const colorThemes = {
-  soft: {
-    routine: 'bg-slate-100 text-slate-800',
-    work: 'bg-blue-100 text-blue-800',
-    meal: 'bg-amber-100 text-amber-800',
-    exercise: 'bg-green-100 text-green-800',
-    leisure: 'bg-purple-100 text-purple-800',
-    learning: 'bg-indigo-100 text-indigo-800',
-    rest: 'bg-rose-100 text-rose-800',
-  },
-  vibrant: {
-    routine: 'bg-slate-200 text-slate-900',
-    work: 'bg-blue-200 text-blue-900',
-    meal: 'bg-amber-200 text-amber-900',
-    exercise: 'bg-green-200 text-green-900',
-    leisure: 'bg-purple-200 text-purple-900',
-    learning: 'bg-indigo-200 text-indigo-900',
-    rest: 'bg-rose-200 text-rose-900',
-  },
-  pastel: {
-    routine: 'bg-slate-50 text-slate-700',
-    work: 'bg-blue-50 text-blue-700',
-    meal: 'bg-amber-50 text-amber-700',
-    exercise: 'bg-green-50 text-green-700',
-    leisure: 'bg-purple-50 text-purple-700',
-    learning: 'bg-indigo-50 text-indigo-700',
-    rest: 'bg-rose-50 text-rose-700',
-  }
-};
-
 const TimetableGenerator = () => {
   const [isConversationActive, setIsConversationActive] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [responses, setResponses] = useState<ConversationResponse[]>([]);
-  const [timetable, setTimetable] = useState<TimetableEntry[]>([]);
+  const [timetable, setTimetable] = useLocalStorage<TimetableEntry[]>('wellness-timetable', []);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editEntry, setEditEntry] = useState<TimetableEntry | null>(null);
   const [editIndex, setEditIndex] = useState<number | null>(null);
@@ -86,6 +57,7 @@ const TimetableGenerator = () => {
     category: 'routine',
     description: ''
   });
+  const [showTimetable, setShowTimetable] = useState(false);
   
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const { toast } = useToast();
@@ -115,6 +87,7 @@ const TimetableGenerator = () => {
         // Conversation has ended
         setIsConversationActive(false);
         setConversationComplete(true);
+        setShowTimetable(true);
         
         // Generate timetable from collected responses immediately
         generateTimetable();
@@ -135,6 +108,11 @@ const TimetableGenerator = () => {
   useEffect(() => {
     // Set the API key in the browser for the ElevenLabs library
     window.localStorage.setItem('xi-api-key', DEFAULT_ELEVENLABS_API_KEY);
+    
+    // If we have a stored timetable, show it
+    if (timetable && timetable.length > 0) {
+      setShowTimetable(true);
+    }
   }, []);
 
   // Start conversation
@@ -176,6 +154,7 @@ const TimetableGenerator = () => {
       // Manually trigger timetable generation after ending the conversation
       if (responses.length > 0) {
         setConversationComplete(true);
+        setShowTimetable(true);
         generateTimetable();
       }
     } catch (error) {
@@ -230,10 +209,20 @@ const TimetableGenerator = () => {
       }
       
       const data = await response.json();
+      
+      if (!data || !data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts || !data.candidates[0].content.parts[0]) {
+        throw new Error("Invalid response format from Gemini API");
+      }
+      
       const timetableText = data.candidates[0].content.parts[0].text;
       
       // Parse the timetable text into structured data
       const parsedTimetable = parseTimetableText(timetableText);
+      
+      if (parsedTimetable.length === 0) {
+        throw new Error("Could not parse any timetable entries from the response");
+      }
+      
       setTimetable(parsedTimetable);
       
       toast({
@@ -242,14 +231,45 @@ const TimetableGenerator = () => {
       });
     } catch (error) {
       console.error("Error generating timetable:", error);
-      toast({
-        title: "Generation Failed",
-        description: "There was a problem generating your timetable. Please try again.",
-        variant: "destructive"
-      });
+      
+      // Create a fallback timetable if generation fails
+      if (timetable.length === 0) {
+        const fallbackTimetable = createFallbackTimetable();
+        setTimetable(fallbackTimetable);
+        
+        toast({
+          title: "Timetable Created",
+          description: "We've created a sample timetable for you. You can customize it to your needs.",
+        });
+      } else {
+        toast({
+          title: "Generation Failed",
+          description: "There was a problem generating your timetable. Using your previous timetable.",
+          variant: "destructive"
+        });
+      }
     } finally {
       setLoadingTimetable(false);
     }
+  };
+
+  // Create a fallback timetable if generation fails
+  const createFallbackTimetable = (): TimetableEntry[] => {
+    return [
+      { time: '7:00 AM', activity: 'Wake up and morning routine', category: 'routine', completed: false, important: true },
+      { time: '7:30 AM', activity: 'Breakfast', category: 'meal', completed: false, important: false },
+      { time: '8:30 AM', activity: 'Work/Study session 1', category: 'work', completed: false, important: true },
+      { time: '10:30 AM', activity: 'Short break', category: 'rest', completed: false, important: false },
+      { time: '10:45 AM', activity: 'Work/Study session 2', category: 'work', completed: false, important: true },
+      { time: '12:30 PM', activity: 'Lunch', category: 'meal', completed: false, important: false },
+      { time: '1:30 PM', activity: 'Exercise', category: 'exercise', completed: false, important: false },
+      { time: '2:30 PM', activity: 'Work/Study session 3', category: 'work', completed: false, important: true },
+      { time: '4:30 PM', activity: 'Learning something new', category: 'learning', completed: false, important: false },
+      { time: '5:30 PM', activity: 'Free time/Hobbies', category: 'leisure', completed: false, important: false },
+      { time: '7:00 PM', activity: 'Dinner', category: 'meal', completed: false, important: false },
+      { time: '8:00 PM', activity: 'Relaxation time', category: 'leisure', completed: false, important: false },
+      { time: '10:00 PM', activity: 'Bedtime routine', category: 'routine', completed: false, important: true }
+    ];
   };
 
   // Parse the timetable text into structured data
@@ -258,6 +278,7 @@ const TimetableGenerator = () => {
     const entries: TimetableEntry[] = [];
     
     const timeRegex = /(\d{1,2}:\d{2}\s*(?:AM|PM))/i;
+    const categoryRegex = /(routine|work|meal|exercise|leisure|learning|rest)/i;
     
     for (const line of lines) {
       // Skip headers or non-timetable lines
@@ -269,32 +290,45 @@ const TimetableGenerator = () => {
       const time = timeMatch[1];
       let activityText = line.substring(line.indexOf('-') + 1).trim();
       
-      // Try to determine the category from the activity description
+      // Try to extract category from the line if it's explicitly mentioned
       let category: TimetableEntry['category'] = 'routine';
+      const categoryMatch = line.match(categoryRegex);
       
-      const lowerActivity = activityText.toLowerCase();
-      if (lowerActivity.includes('wake') || lowerActivity.includes('sleep') || lowerActivity.includes('routine') || lowerActivity.includes('preparation')) {
-        category = 'routine';
-      } else if (lowerActivity.includes('work') || lowerActivity.includes('study') || lowerActivity.includes('meeting')) {
-        category = 'work';
-      } else if (lowerActivity.includes('breakfast') || lowerActivity.includes('lunch') || lowerActivity.includes('dinner') || lowerActivity.includes('meal')) {
-        category = 'meal';
-      } else if (lowerActivity.includes('exercise') || lowerActivity.includes('gym') || lowerActivity.includes('workout') || lowerActivity.includes('walk')) {
-        category = 'exercise';
-      } else if (lowerActivity.includes('relax') || lowerActivity.includes('entertainment') || lowerActivity.includes('hobby')) {
-        category = 'leisure';
-      } else if (lowerActivity.includes('learn') || lowerActivity.includes('read') || lowerActivity.includes('class') || lowerActivity.includes('course')) {
-        category = 'learning';
-      } else if (lowerActivity.includes('rest') || lowerActivity.includes('break')) {
-        category = 'rest';
+      if (categoryMatch) {
+        category = categoryMatch[1].toLowerCase() as TimetableEntry['category'];
+        // Remove the category from the activity text if it was in brackets or parentheses
+        activityText = activityText.replace(/\[(routine|work|meal|exercise|leisure|learning|rest)\]/i, '').trim();
+        activityText = activityText.replace(/\((routine|work|meal|exercise|leisure|learning|rest)\)/i, '').trim();
+        activityText = activityText.replace(/- (routine|work|meal|exercise|leisure|learning|rest)$/i, '').trim();
+      } else {
+        // Try to infer the category from keywords
+        const lowerActivity = activityText.toLowerCase();
+        if (lowerActivity.includes('wake') || lowerActivity.includes('sleep') || lowerActivity.includes('routine') || lowerActivity.includes('preparation')) {
+          category = 'routine';
+        } else if (lowerActivity.includes('work') || lowerActivity.includes('study') || lowerActivity.includes('meeting')) {
+          category = 'work';
+        } else if (lowerActivity.includes('breakfast') || lowerActivity.includes('lunch') || lowerActivity.includes('dinner') || lowerActivity.includes('meal')) {
+          category = 'meal';
+        } else if (lowerActivity.includes('exercise') || lowerActivity.includes('gym') || lowerActivity.includes('workout') || lowerActivity.includes('walk')) {
+          category = 'exercise';
+        } else if (lowerActivity.includes('relax') || lowerActivity.includes('entertainment') || lowerActivity.includes('hobby')) {
+          category = 'leisure';
+        } else if (lowerActivity.includes('learn') || lowerActivity.includes('read') || lowerActivity.includes('class') || lowerActivity.includes('course')) {
+          category = 'learning';
+        } else if (lowerActivity.includes('rest') || lowerActivity.includes('break')) {
+          category = 'rest';
+        }
       }
+      
+      // Clean up the activity text
+      activityText = activityText.replace(/^\s*-\s*/, ''); // Remove leading dash if present
       
       entries.push({
         time,
         activity: activityText,
         category,
         completed: false,
-        important: false
+        important: category === 'work' || category === 'routine'  // Mark work and routine as important by default
       });
     }
     
@@ -374,9 +408,43 @@ const TimetableGenerator = () => {
     setTimetable(updatedTimetable);
   };
 
-  // Toggle edit mode
-  const toggleEditMode = () => {
-    setIsEditMode(!isEditMode);
+  // Share timetable
+  const shareTimetable = async () => {
+    try {
+      // Format timetable as text
+      const timetableText = timetable.map(entry => 
+        `${entry.time} - ${entry.activity}${entry.description ? ` (${entry.description})` : ''}`
+      ).join('\n');
+      
+      // Try to use the Web Share API if available
+      if (navigator.share) {
+        await navigator.share({
+          title: 'My Daily Timetable',
+          text: timetableText,
+        });
+        
+        toast({
+          title: "Timetable Shared",
+          description: "Your timetable has been shared successfully.",
+        });
+      } else {
+        // Fallback: copy to clipboard
+        await navigator.clipboard.writeText(timetableText);
+        
+        toast({
+          title: "Copied to Clipboard",
+          description: "Your timetable has been copied to the clipboard.",
+        });
+      }
+    } catch (error) {
+      console.error("Error sharing timetable:", error);
+      
+      toast({
+        title: "Sharing Failed",
+        description: "There was a problem sharing your timetable.",
+        variant: "destructive"
+      });
+    }
   };
 
   // Download timetable as text file
@@ -399,11 +467,6 @@ const TimetableGenerator = () => {
       title: "Timetable Downloaded",
       description: "Your timetable has been downloaded as a text file.",
     });
-  };
-
-  // Get color based on activity category
-  const getCategoryColor = (category: TimetableEntry['category']) => {
-    return colorThemes[colorTheme][category];
   };
 
   return (
@@ -499,230 +562,61 @@ const TimetableGenerator = () => {
           </div>
           
           {/* Timetable Section */}
-          {timetable.length > 0 && (
-            <div className="bg-white bg-opacity-70 backdrop-blur-sm rounded-xl p-6 border border-wellness-softGreen/30 shadow-sm">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-medium text-wellness-darkGreen flex items-center">
-                  <Calendar className="h-5 w-5 mr-2" />
-                  Your Personalized Timetable
-                </h2>
-                <div className="flex space-x-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => setViewMode(viewMode === 'table' ? 'grid' : 'table')}
-                    className="text-wellness-darkGreen border-wellness-darkGreen/30"
-                  >
-                    {viewMode === 'table' ? <Grid className="h-4 w-4 mr-1" /> : <List className="h-4 w-4 mr-1" />}
-                    {viewMode === 'table' ? 'Grid View' : 'Table View'}
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => setIsColorThemeDialogOpen(true)}
-                    className="text-wellness-darkGreen border-wellness-darkGreen/30"
-                  >
-                    <Palette className="h-4 w-4 mr-1" />
-                    Theme
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={toggleEditMode}
-                    className="text-wellness-darkGreen border-wellness-darkGreen/30"
-                  >
-                    <Edit className="h-4 w-4 mr-1" />
-                    {isEditMode ? 'View Mode' : 'Edit Mode'}
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={downloadTimetable}
-                    className="text-wellness-darkGreen border-wellness-darkGreen/30"
-                  >
-                    <Download className="h-4 w-4 mr-1" />
-                    Save
-                  </Button>
-                </div>
-              </div>
-              
-              {isEditMode && (
-                <div className="mb-4">
-                  <Button 
-                    variant="default" 
-                    size="sm" 
-                    onClick={() => setIsAddEntryDrawerOpen(true)}
-                    className="bg-wellness-darkGreen hover:bg-wellness-mediumGreen text-white"
-                  >
-                    + Add New Activity
-                  </Button>
-                </div>
-              )}
-
-              {/* Table View */}
-              {viewMode === 'table' && (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-1/6">Time</TableHead>
-                        <TableHead className="w-2/6">Activity</TableHead>
-                        <TableHead className="w-1/6">Category</TableHead>
-                        {isEditMode && (
-                          <>
-                            <TableHead className="w-1/6">Status</TableHead>
-                            <TableHead className="w-1/6">Actions</TableHead>
-                          </>
-                        )}
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {timetable.map((entry, index) => (
-                        <TableRow key={index} className={entry.completed ? 'opacity-60' : ''}>
-                          <TableCell className="font-medium">
-                            {entry.important && <span className="text-red-500 mr-1">★</span>}
-                            {entry.time}
-                          </TableCell>
-                          <TableCell className={entry.completed ? 'line-through' : ''}>
-                            {entry.activity}
-                            {entry.description && (
-                              <p className="text-xs text-gray-500 mt-1">{entry.description}</p>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getCategoryColor(entry.category)}`}>
-                              {entry.category.charAt(0).toUpperCase() + entry.category.slice(1)}
-                            </span>
-                          </TableCell>
-                          {isEditMode && (
-                            <>
-                              <TableCell>
-                                <div className="flex space-x-2">
-                                  <button 
-                                    onClick={() => toggleCompleted(index)}
-                                    className={`h-6 w-6 rounded-md flex items-center justify-center ${entry.completed ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}
-                                    title={entry.completed ? 'Mark as not completed' : 'Mark as completed'}
-                                  >
-                                    {entry.completed ? '✓' : '○'}
-                                  </button>
-                                  <button 
-                                    onClick={() => toggleImportant(index)}
-                                    className={`h-6 w-6 rounded-md flex items-center justify-center ${entry.important ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-800'}`}
-                                    title={entry.important ? 'Remove importance' : 'Mark as important'}
-                                  >
-                                    {entry.important ? '★' : '☆'}
-                                  </button>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex space-x-2">
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    onClick={() => handleEditEntry(entry, index)}
-                                    className="h-8 w-8 p-0"
-                                    title="Edit activity"
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    onClick={() => deleteEntry(index)}
-                                    className="h-8 w-8 p-0 text-red-500"
-                                    title="Delete activity"
-                                  >
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </>
-                          )}
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-
-              {/* Grid View */}
-              {viewMode === 'grid' && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-                  {timetable.map((entry, index) => (
-                    <div 
-                      key={index} 
-                      className={`p-4 rounded-lg border ${getCategoryColor(entry.category)} ${entry.completed ? 'opacity-70' : ''} ${entry.important ? 'ring-2 ring-amber-400' : ''}`}
-                    >
-                      <div className="flex justify-between items-start mb-2">
-                        <h3 className="font-medium text-lg">{entry.time}</h3>
-                        {isEditMode && (
-                          <div className="flex space-x-1">
-                            <button 
-                              onClick={() => toggleCompleted(index)}
-                              className={`h-6 w-6 rounded-full flex items-center justify-center ${entry.completed ? 'bg-green-200 text-green-800' : 'bg-white/50 text-gray-700'}`}
-                            >
-                              {entry.completed ? '✓' : '○'}
-                            </button>
-                            <button 
-                              onClick={() => toggleImportant(index)}
-                              className={`h-6 w-6 rounded-full flex items-center justify-center ${entry.important ? 'bg-amber-200 text-amber-800' : 'bg-white/50 text-gray-700'}`}
-                            >
-                              {entry.important ? '★' : '☆'}
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                      <p className={`text-lg mb-2 ${entry.completed ? 'line-through' : ''}`}>{entry.activity}</p>
-                      {entry.description && (
-                        <p className="text-sm opacity-80 mt-1">{entry.description}</p>
-                      )}
-                      {isEditMode && (
-                        <div className="mt-4 flex justify-end space-x-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEditEntry(entry, index)}
-                            className="h-8 p-2 bg-white/50 hover:bg-white/70"
-                          >
-                            <Edit className="h-3 w-3 mr-1" /> Edit
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => deleteEntry(index)}
-                            className="h-8 p-2 text-red-500 bg-white/50 hover:bg-white/70"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-                            <span className="ml-1">Remove</span>
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-              
-              {/* Category Legend */}
-              <div className="mt-6 flex flex-wrap gap-2">
-                <span className="text-xs font-medium mr-2">Categories:</span>
-                {(['routine', 'work', 'meal', 'exercise', 'leisure', 'learning', 'rest'] as const).map(category => (
-                  <span 
-                    key={category} 
-                    className={`px-2 py-1 rounded-full text-xs font-medium ${getCategoryColor(category)}`}
-                  >
-                    {category.charAt(0).toUpperCase() + category.slice(1)}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-          
-          {/* Loading Indicator for Timetable Generation */}
           {loadingTimetable && (
             <div className="flex flex-col items-center justify-center py-12 animate-pulse">
               <div className="rounded-full h-16 w-16 border-b-2 border-t-2 border-wellness-darkGreen animate-spin mb-4"></div>
               <p className="text-wellness-darkGreen font-medium text-lg">Generating your personalized timetable...</p>
               <p className="text-wellness-charcoal text-sm mt-2">Analyzing your preferences and creating the perfect schedule for you</p>
+            </div>
+          )}
+          
+          {(showTimetable && !loadingTimetable && timetable.length > 0) && (
+            <TimetableVisualizer 
+              timetable={timetable}
+              onEditEntry={handleEditEntry}
+              onDeleteEntry={deleteEntry}
+              onToggleCompleted={toggleCompleted}
+              onToggleImportant={toggleImportant}
+              onDownload={downloadTimetable}
+              onShare={shareTimetable}
+              onRegenerate={generateTimetable}
+              colorTheme={colorTheme}
+            />
+          )}
+          
+          {!showTimetable && !loadingTimetable && conversationComplete && (
+            <div className="flex flex-col items-center justify-center py-8">
+              <Button 
+                variant="default" 
+                onClick={() => {
+                  setShowTimetable(true);
+                  generateTimetable();
+                }}
+                className="bg-wellness-darkGreen hover:bg-wellness-mediumGreen text-white"
+              >
+                <Calendar className="h-4 w-4 mr-2" />
+                Generate Timetable
+              </Button>
+            </div>
+          )}
+          
+          {/* Add timetable button if there is no timetable yet */}
+          {!showTimetable && !loadingTimetable && !conversationComplete && timetable.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-8 bg-white bg-opacity-70 backdrop-blur-sm rounded-xl p-6 border border-wellness-softGreen/30 shadow-sm">
+              <p className="text-wellness-darkGreen font-medium mb-4 text-center">
+                Start a conversation with the AI assistant to create your personalized timetable, or create one manually
+              </p>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowTimetable(true);
+                  setTimetable(createFallbackTimetable());
+                }}
+                className="border-wellness-darkGreen text-wellness-darkGreen"
+              >
+                <Calendar className="h-4 w-4 mr-2" />
+                Create Empty Timetable
+              </Button>
             </div>
           )}
         </div>
@@ -938,7 +832,7 @@ const TimetableGenerator = () => {
                 {(['routine', 'work', 'meal', 'exercise', 'leisure'] as const).map(category => (
                   <div 
                     key={category} 
-                    className={`h-4 w-4 rounded-full ${colorThemes.soft[category]}`}
+                    className={`h-4 w-4 rounded-full ${'bg-slate-100 text-slate-800'.split(' ')[0]}`}
                   ></div>
                 ))}
               </div>
@@ -952,7 +846,7 @@ const TimetableGenerator = () => {
                 {(['routine', 'work', 'meal', 'exercise', 'leisure'] as const).map(category => (
                   <div 
                     key={category} 
-                    className={`h-4 w-4 rounded-full ${colorThemes.vibrant[category]}`}
+                    className={`h-4 w-4 rounded-full ${'bg-slate-200 text-slate-900'.split(' ')[0]}`}
                   ></div>
                 ))}
               </div>
@@ -966,7 +860,7 @@ const TimetableGenerator = () => {
                 {(['routine', 'work', 'meal', 'exercise', 'leisure'] as const).map(category => (
                   <div 
                     key={category} 
-                    className={`h-4 w-4 rounded-full ${colorThemes.pastel[category]}`}
+                    className={`h-4 w-4 rounded-full ${'bg-slate-50 text-slate-700'.split(' ')[0]}`}
                   ></div>
                 ))}
               </div>
