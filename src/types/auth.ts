@@ -4,7 +4,7 @@ export interface User {
   id: string;
   username: string;
   name: string;
-  email: string;
+  email: string | null; // Make email optional
   avatar?: string;
   createdAt: string;
 }

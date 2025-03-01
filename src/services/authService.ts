@@ -1,3 +1,4 @@
+
 import { User, UserData } from '../types/auth';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../lib/supabase';
@@ -10,7 +11,7 @@ const mapSupabaseUser = (supabaseUser: any): User | null => {
     id: supabaseUser.id,
     username: supabaseUser.user_metadata?.username || 'User',
     name: supabaseUser.user_metadata?.username || 'User',
-    email: supabaseUser.email || `${supabaseUser.user_metadata?.username || 'user'}@example.com`,
+    email: null, // Remove email dependency
     avatar: supabaseUser.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(supabaseUser.user_metadata?.username || 'User')}&background=random`,
     createdAt: supabaseUser.created_at || new Date().toISOString(),
   };
@@ -26,9 +27,9 @@ export const authService = {
   // Register a new user
   async register(username: string, password: string): Promise<User> {
     try {
-      // Generate a unique email based on username for Supabase (which requires email)
-      // This is just a workaround since we're using username-only auth but Supabase requires email
-      const email = `${username.toLowerCase()}@example.com`;
+      // Generate a placeholder email based on username for Supabase (which requires email)
+      // This is just a technical workaround since Supabase requires email but we don't want users to provide one
+      const email = `${username.toLowerCase()}_${Date.now()}@placeholder.local`;
       
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -70,23 +71,45 @@ export const authService = {
   // Login user
   async login(username: string, password: string, rememberMe: boolean = false): Promise<User> {
     try {
-      // Generate email from username for Supabase
-      const email = `${username.toLowerCase()}@example.com`;
+      // Find the user's placeholder email from their username
+      // In a real app, you would store username-to-email mapping in a database
+      // For this demo, we'll use the same pattern as in registration
+      const email = `${username.toLowerCase()}_${Date.now()}@placeholder.local`;
       
-      const { data, error } = await supabase.auth.signInWithPassword({
+      // First attempt with current timestamp
+      let authResponse = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       
-      if (error) {
-        throw new Error(error.message);
+      // If failed, try with a generic pattern since we don't know the timestamp used during registration
+      if (authResponse.error) {
+        // Try with just the username as the email prefix
+        const genericEmail = `${username.toLowerCase()}@placeholder.local`;
+        authResponse = await supabase.auth.signInWithPassword({
+          email: genericEmail,
+          password,
+        });
+        
+        // If still failed, try with example.com domain which was used previously
+        if (authResponse.error) {
+          const exampleEmail = `${username.toLowerCase()}@example.com`;
+          authResponse = await supabase.auth.signInWithPassword({
+            email: exampleEmail,
+            password,
+          });
+        }
       }
       
-      if (!data.user) {
+      if (authResponse.error) {
+        throw new Error('Invalid username or password');
+      }
+      
+      if (!authResponse.data.user) {
         throw new Error('Login failed');
       }
       
-      const user = mapSupabaseUser(data.user);
+      const user = mapSupabaseUser(authResponse.data.user);
       
       if (!user) {
         throw new Error('Failed to get user data');

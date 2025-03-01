@@ -46,7 +46,7 @@ const Login: React.FC = () => {
           <div className="bg-white bg-opacity-70 backdrop-blur-sm rounded-2xl p-8 border border-wellness-softGreen/30 shadow-sm">
             <div className="text-center mb-8">
               <h1 className="text-2xl font-medium text-wellness-darkGreen mb-2">Welcome Back</h1>
-              <p className="text-wellness-charcoal">Sign in to your account</p>
+              <p className="text-wellness-charcoal">Sign in with your username</p>
             </div>
             
             {error && (
