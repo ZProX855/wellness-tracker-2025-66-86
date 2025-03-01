@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Mic, MicOff, Edit, Save, Clock, Calendar, Download, RefreshCw, List, Grid, Palette, Settings, Share2 } from 'lucide-react';
@@ -14,10 +13,10 @@ import { useMediaQuery } from '@/hooks/use-mobile';
 import TimetableVisualizer from '@/components/TimetableVisualizer';
 import useLocalStorage from '@/hooks/useLocalStorage';
 
-// Agent ID for ElevenLabs
-const ELEVENLABS_AGENT_ID = "Dxu3cYNnYBYHvtV3Q9Hu";
-// Default API key for ElevenLabs (will be used for all users)
-const DEFAULT_ELEVENLABS_API_KEY = "sk_d72d2c11122b606fcf965650aa4bdb6fe8015a1856bfb40b";
+// Updated Agent ID for ElevenLabs
+const ELEVENLABS_AGENT_ID = "LF5rdFTcFtmNyiCIzjc5";
+// Updated API key for ElevenLabs
+const DEFAULT_ELEVENLABS_API_KEY = "sk_36070a7f0b1022f8908a1794fce6a0ce19f6668f365740d0";
 // Gemini API key and endpoint
 const GEMINI_API_KEY = "AIzaSyC3Er0jxIvcQCjPzGpp9xYH-Lc-8TuqqJc";
 const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
@@ -61,6 +60,8 @@ const TimetableGenerator = () => {
   const [conversationData, setConversationData] = useState<any>(null);
   // Store the conversation ID separately
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+  // Add state for generating after conversation
+  const [isGeneratingAfterConversation, setIsGeneratingAfterConversation] = useState(false);
   
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const { toast } = useToast();
@@ -90,11 +91,9 @@ const TimetableGenerator = () => {
         // Conversation has ended
         setIsConversationActive(false);
         setConversationComplete(true);
-        // Note: We no longer automatically generate the timetable here
-        // Instead, we'll let the user explicitly click the Generate button
         
-        // Fetch conversation data
-        fetchConversationData();
+        // Fetch conversation data and automatically generate timetable
+        fetchConversationDataAndGenerateTimetable();
       }
     },
     onError: (error) => {
@@ -108,14 +107,21 @@ const TimetableGenerator = () => {
     }
   });
 
-  // Fetch conversation data from ElevenLabs API
-  const fetchConversationData = async () => {
+  // New combined function to fetch conversation data and generate timetable
+  const fetchConversationDataAndGenerateTimetable = async () => {
     if (!currentConversationId) {
       console.error("No conversation ID available");
       return;
     }
     
+    setIsGeneratingAfterConversation(true);
+    toast({
+      title: "Processing",
+      description: "Please wait while we generate your timetable...",
+    });
+    
     try {
+      // Fetch conversation history from ElevenLabs
       const response = await fetch(`https://api.elevenlabs.io/v1/convai/conversation/${currentConversationId}/history`, {
         method: 'GET',
         headers: {
@@ -130,8 +136,122 @@ const TimetableGenerator = () => {
       const data = await response.json();
       console.log("Conversation data from ElevenLabs:", data);
       setConversationData(data);
+      
+      // Automatically generate timetable with the fetched data
+      await generateTimetableFromElevenLabsData(data);
+      
     } catch (error) {
       console.error("Error fetching conversation data:", error);
+      toast({
+        title: "Data Retrieval Failed",
+        description: "Could not retrieve conversation data. Using local data instead.",
+        variant: "destructive"
+      });
+      
+      // Try to generate with local data as fallback
+      generateTimetable();
+    } finally {
+      setIsGeneratingAfterConversation(false);
+    }
+  };
+
+  // New function to generate timetable specifically from ElevenLabs data
+  const generateTimetableFromElevenLabsData = async (data: any) => {
+    if (!data || !data.history || data.history.length === 0) {
+      console.error("No valid ElevenLabs conversation data available");
+      // Fallback to regular generation
+      return generateTimetable();
+    }
+    
+    setLoadingTimetable(true);
+    setShowTimetable(true);
+    
+    try {
+      // Format the conversation history from ElevenLabs
+      const conversationHistory = data.history.map((item: any) => {
+        if (item.role === 'assistant') {
+          return `Question: ${item.text}`;
+        } else if (item.role === 'user') {
+          return `Answer: ${item.text}`;
+        }
+        return "";
+      }).filter(Boolean).join('\n\n');
+      
+      const prompt = `Based on the following user responses, generate a structured and balanced daily timetable for the user. Format it with time slots and activities, ensuring it's well-balanced with work, meals, exercise, leisure, and rest.
+      
+      User Responses:
+      ${conversationHistory}
+      
+      Important: Return ONLY a nicely formatted timetable as plain text with the format "hh:mm AM/PM - Activity" on each line, and categorize each activity as one of these: routine, work, meal, exercise, leisure, learning, rest.`;
+      
+      console.log("Sending request to Gemini API with prompt from ElevenLabs data:", prompt);
+      
+      // Call Gemini API
+      const response = await fetch(GEMINI_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: prompt }]
+            }
+          ]
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Gemini API error: ${response.statusText}`);
+      }
+      
+      const responseData = await response.json();
+      console.log("Gemini API response:", responseData);
+      
+      if (!responseData || !responseData.candidates || !responseData.candidates[0] || 
+          !responseData.candidates[0].content || !responseData.candidates[0].content.parts || 
+          !responseData.candidates[0].content.parts[0]) {
+        throw new Error("Invalid response format from Gemini API");
+      }
+      
+      const timetableText = responseData.candidates[0].content.parts[0].text;
+      console.log("Timetable text from Gemini:", timetableText);
+      
+      // Parse the timetable text into structured data
+      const parsedTimetable = parseTimetableText(timetableText);
+      
+      if (parsedTimetable.length === 0) {
+        throw new Error("Could not parse any timetable entries from the response");
+      }
+      
+      setTimetable(parsedTimetable);
+      
+      toast({
+        title: "Timetable Generated",
+        description: "Your personalized timetable has been created based on your conversation!",
+      });
+    } catch (error) {
+      console.error("Error generating timetable from ElevenLabs data:", error);
+      
+      // Create a fallback timetable if generation fails
+      if (timetable.length === 0) {
+        const fallbackTimetable = createFallbackTimetable();
+        setTimetable(fallbackTimetable);
+        
+        toast({
+          title: "Timetable Created",
+          description: "We've created a sample timetable for you. You can customize it to your needs.",
+        });
+      } else {
+        toast({
+          title: "Generation Failed",
+          description: "There was a problem generating your timetable. Using your previous timetable.",
+          variant: "destructive"
+        });
+      }
+    } finally {
+      setLoadingTimetable(false);
     }
   };
 
@@ -150,6 +270,9 @@ const TimetableGenerator = () => {
   const startConversation = async () => {
     try {
       setIsConnecting(true);
+      
+      // Reset timetable visibility when starting a new conversation
+      setShowTimetable(false);
       
       // Start the conversation session with the ElevenLabs agent
       const conversationId = await conversation.startSession({
@@ -188,14 +311,24 @@ const TimetableGenerator = () => {
       setIsConversationActive(false);
       setConversationComplete(true);
       
-      // Fetch conversation data when conversation ends
-      fetchConversationData();
+      // Show toast to indicate timetable generation is in progress
+      toast({
+        title: "Conversation Ended",
+        description: "Please wait while we generate your timetable...",
+      });
+      
+      // Fetch conversation data and generate timetable will be triggered by the onMessage handler
     } catch (error) {
       console.error("Error ending conversation:", error);
+      toast({
+        title: "Error",
+        description: "There was a problem ending the conversation. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
-  // Generate timetable using Gemini API
+  // Keep the existing generateTimetable function as fallback
   const generateTimetable = async () => {
     if (responses.length === 0) {
       toast({
@@ -590,7 +723,7 @@ const TimetableGenerator = () => {
                   </div>
                   <Button 
                     onClick={startConversation} 
-                    disabled={isConnecting}
+                    disabled={isConnecting || isGeneratingAfterConversation}
                     className="bg-wellness-darkGreen hover:bg-wellness-mediumGreen text-white"
                   >
                     {isConnecting ? 'Connecting...' : (conversationComplete ? 'Start New Conversation' : 'Start Conversation')}
@@ -617,27 +750,12 @@ const TimetableGenerator = () => {
                     </div>
                   ))}
                 </div>
-                
-                {/* Generate Timetable Button */}
-                {conversationComplete && !isConversationActive && (
-                  <div className="mt-6 flex justify-center">
-                    <Button 
-                      variant="default" 
-                      onClick={generateTimetable}
-                      disabled={loadingTimetable || responses.length === 0}
-                      className="bg-wellness-darkGreen hover:bg-wellness-mediumGreen text-white"
-                    >
-                      <Calendar className="h-4 w-4 mr-2" />
-                      Generate Timetable
-                    </Button>
-                  </div>
-                )}
               </div>
             )}
           </div>
           
-          {/* Timetable Section */}
-          {loadingTimetable && (
+          {/* Timetable Generation In Progress */}
+          {(isGeneratingAfterConversation || loadingTimetable) && (
             <div className="flex flex-col items-center justify-center py-12 animate-pulse">
               <div className="rounded-full h-16 w-16 border-b-2 border-t-2 border-wellness-darkGreen animate-spin mb-4"></div>
               <p className="text-wellness-darkGreen font-medium text-lg">Generating your personalized timetable...</p>
@@ -645,7 +763,8 @@ const TimetableGenerator = () => {
             </div>
           )}
           
-          {(showTimetable && !loadingTimetable && timetable.length > 0) && (
+          {/* Timetable Section - Only show if showTimetable is true and not currently loading */}
+          {(showTimetable && !loadingTimetable && !isGeneratingAfterConversation && timetable.length > 0) && (
             <TimetableVisualizer 
               timetable={timetable}
               onEditEntry={handleEditEntry}
@@ -659,11 +778,11 @@ const TimetableGenerator = () => {
             />
           )}
           
-          {/* Add timetable button if there is no timetable yet */}
-          {!showTimetable && !loadingTimetable && !conversationComplete && timetable.length === 0 && (
+          {/* Initial timetable creation prompt - only show if no conversation in progress, no timetable being generated, and no timetable is shown */}
+          {!showTimetable && !isConversationActive && !loadingTimetable && !isGeneratingAfterConversation && timetable.length === 0 && !conversationComplete && (
             <div className="flex flex-col items-center justify-center py-8 bg-white bg-opacity-70 backdrop-blur-sm rounded-xl p-6 border border-wellness-softGreen/30 shadow-sm">
               <p className="text-wellness-darkGreen font-medium mb-4 text-center">
-                Start a conversation with the AI assistant to create your personalized timetable, or create one manually
+                Start a conversation with the AI assistant to create your personalized timetable
               </p>
               <Button 
                 variant="outline" 
@@ -674,7 +793,7 @@ const TimetableGenerator = () => {
                 className="border-wellness-darkGreen text-wellness-darkGreen"
               >
                 <Calendar className="h-4 w-4 mr-2" />
-                Create Empty Timetable
+                Create Sample Timetable
               </Button>
             </div>
           )}
