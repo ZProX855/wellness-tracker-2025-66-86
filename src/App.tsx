@@ -16,6 +16,7 @@ import BMICalculator from "./pages/BMICalculator";
 import MealRecognition from "./pages/MealRecognition";
 import WellnessJourney from "./pages/WellnessJourney";
 import SleepTracker from "./pages/SleepTracker";
+import TimetableGenerator from "./pages/TimetableGenerator";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
@@ -79,6 +80,7 @@ function App() {
                 <Route path="/meal-recognition" element={<MealRecognition />} />
                 <Route path="/wellness-journey" element={<WellnessJourney />} />
                 <Route path="/sleep-tracker" element={<SleepTracker />} />
+                <Route path="/timetable-generator" element={<TimetableGenerator />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route 

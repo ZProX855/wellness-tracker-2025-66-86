@@ -1,11 +1,12 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
-import { MessageSquare, Apple, ActivitySquare, Camera, Target, HeartPulse, Moon } from 'lucide-react';
+import { MessageSquare, Apple, ActivitySquare, Camera, Target, HeartPulse, Moon, Clock } from 'lucide-react';
+
 const Index = () => {
   const navigate = useNavigate();
   const [isVisible, setIsVisible] = useState(false);
+  
   useEffect(() => {
     // Add a small delay for a smoother entrance animation
     const timer = setTimeout(() => {
@@ -13,6 +14,7 @@ const Index = () => {
     }, 100);
     return () => clearTimeout(timer);
   }, []);
+  
   const features = [{
     title: 'AI Nutrition Assistant',
     description: 'Chat with our AI for personalized nutrition advice',
@@ -55,7 +57,15 @@ const Index = () => {
     color: 'from-indigo-100 to-indigo-200',
     path: '/sleep-tracker',
     delay: 600
+  }, {
+    title: 'Timetable Generator',
+    description: 'Create a daily timetable with AI voice assistant',
+    icon: Clock,
+    color: 'from-teal-100 to-teal-200',
+    path: '/timetable-generator',
+    delay: 700
   }];
+  
   return <div className="min-h-screen bg-gradient-to-b from-wellness-softBeige to-wellness-softGreen/30">
       <Header />
       
@@ -150,4 +160,5 @@ const Index = () => {
       </footer>
     </div>;
 };
+
 export default Index;
