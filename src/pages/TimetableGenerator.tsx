@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Mic, MicOff, Edit, Save, Clock, Calendar, Download, RefreshCw, List, Grid, Palette, Settings, Share2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -62,6 +63,12 @@ const TimetableGenerator = () => {
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   // Add state for generating after conversation
   const [isGeneratingAfterConversation, setIsGeneratingAfterConversation] = useState(false);
+
+  // Add new state for Web Speech API
+  const [isLocalSpeechRecognitionActive, setIsLocalSpeechRecognitionActive] = useState(false);
+  const [transcript, setTranscript] = useState<string[]>([]);
+  const [localConversation, setLocalConversation] = useState<{question: string, answer: string}[]>([]);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
   
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const { toast } = useToast();
@@ -78,9 +85,24 @@ const TimetableGenerator = () => {
           question: message.content, 
           answer: '' 
         }]);
+        
+        // Also add to local conversation for speech recognition backup
+        setLocalConversation(prev => [...prev, {
+          question: message.content,
+          answer: ''
+        }]);
       } else if (message.type === 'user_message' && message.content) {
         // Update the last response with the user's answer
         setResponses(prev => {
+          const updated = [...prev];
+          if (updated.length > 0) {
+            updated[updated.length - 1].answer = message.content;
+          }
+          return updated;
+        });
+        
+        // Also update local conversation
+        setLocalConversation(prev => {
           const updated = [...prev];
           if (updated.length > 0) {
             updated[updated.length - 1].answer = message.content;
@@ -92,8 +114,13 @@ const TimetableGenerator = () => {
         setIsConversationActive(false);
         setConversationComplete(true);
         
-        // Fetch conversation data and automatically generate timetable
-        fetchConversationDataAndGenerateTimetable();
+        // Stop local speech recognition if it's active
+        if (isLocalSpeechRecognitionActive) {
+          stopLocalSpeechRecognition();
+        }
+        
+        // Generate timetable from local conversation
+        generateTimetableFromLocalConversation();
       }
     },
     onError: (error) => {
@@ -104,8 +131,194 @@ const TimetableGenerator = () => {
         variant: "destructive"
       });
       setIsConversationActive(false);
+      
+      // Stop local speech recognition if it's active
+      if (isLocalSpeechRecognitionActive) {
+        stopLocalSpeechRecognition();
+      }
     }
   });
+
+  // Initialize the Web Speech API
+  useEffect(() => {
+    // Check if SpeechRecognition is available
+    if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = true;
+      recognitionRef.current.interimResults = true;
+      
+      recognitionRef.current.onresult = (event) => {
+        const latestTranscript = Array.from(event.results)
+          .map(result => result[0].transcript)
+          .join(' ');
+        
+        setTranscript(prev => [...prev, latestTranscript]);
+        console.log("Local speech recognition transcript:", latestTranscript);
+      };
+      
+      recognitionRef.current.onerror = (event) => {
+        console.error("Speech recognition error:", event.error);
+      };
+    } else {
+      console.warn("Speech Recognition API is not supported in this browser");
+    }
+    
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+    };
+  }, []);
+
+  // Start local speech recognition
+  const startLocalSpeechRecognition = () => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.start();
+        setIsLocalSpeechRecognitionActive(true);
+        console.log("Local speech recognition started");
+      } catch (error) {
+        console.error("Error starting speech recognition:", error);
+      }
+    }
+  };
+
+  // Stop local speech recognition
+  const stopLocalSpeechRecognition = () => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+        setIsLocalSpeechRecognitionActive(false);
+        console.log("Local speech recognition stopped");
+      } catch (error) {
+        console.error("Error stopping speech recognition:", error);
+      }
+    }
+  };
+
+  // Generate timetable from local conversation
+  const generateTimetableFromLocalConversation = async () => {
+    setIsGeneratingAfterConversation(true);
+    setShowTimetable(false);
+    
+    toast({
+      title: "Processing",
+      description: "Please wait while we generate your timetable...",
+    });
+    
+    // Use the local transcript to generate a timetable
+    let conversationText;
+    
+    if (localConversation.length > 0) {
+      // Use the structured conversation if available
+      conversationText = localConversation.map(r => 
+        `Question: ${r.question}\nAnswer: ${r.answer}`
+      ).join('\n\n');
+    } else if (transcript.length > 0) {
+      // Use raw transcript as fallback
+      conversationText = transcript.join('\n');
+    } else if (responses.length > 0) {
+      // Use ElevenLabs responses as a last resort
+      conversationText = responses.map(r => 
+        `Question: ${r.question}\nAnswer: ${r.answer}`
+      ).join('\n\n');
+    } else {
+      // No conversation data available
+      toast({
+        title: "No Conversation Data",
+        description: "Could not generate a timetable because no conversation data was available.",
+        variant: "destructive"
+      });
+      setIsGeneratingAfterConversation(false);
+      return;
+    }
+    
+    console.log("Generating timetable from local conversation:", conversationText);
+    
+    try {
+      const prompt = `Based on the following conversation, generate a structured and balanced daily timetable. Format it with time slots and activities, ensuring it's well-balanced with work, meals, exercise, leisure, and rest.
+      
+      Conversation:
+      ${conversationText}
+      
+      Important: Return ONLY a nicely formatted timetable as plain text with the format "hh:mm AM/PM - Activity" on each line, and categorize each activity as one of these: routine, work, meal, exercise, leisure, learning, rest.`;
+      
+      console.log("Sending request to Gemini API with prompt:", prompt);
+      
+      // Call Gemini API
+      const response = await fetch(GEMINI_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: prompt }]
+            }
+          ]
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Gemini API error: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      console.log("Gemini API response:", data);
+      
+      if (!data || !data.candidates || !data.candidates[0] || 
+          !data.candidates[0].content || !data.candidates[0].content.parts || 
+          !data.candidates[0].content.parts[0]) {
+        throw new Error("Invalid response format from Gemini API");
+      }
+      
+      const timetableText = data.candidates[0].content.parts[0].text;
+      console.log("Timetable text from Gemini:", timetableText);
+      
+      // Parse the timetable text into structured data
+      const parsedTimetable = parseTimetableText(timetableText);
+      
+      if (parsedTimetable.length === 0) {
+        throw new Error("Could not parse any timetable entries from the response");
+      }
+      
+      setTimetable(parsedTimetable);
+      setShowTimetable(true);
+      
+      toast({
+        title: "Timetable Generated",
+        description: "Your personalized timetable has been created based on your conversation!",
+      });
+    } catch (error) {
+      console.error("Error generating timetable from local conversation:", error);
+      
+      // Create a fallback timetable if generation fails
+      if (timetable.length === 0) {
+        const fallbackTimetable = createFallbackTimetable();
+        setTimetable(fallbackTimetable);
+        setShowTimetable(true);
+        
+        toast({
+          title: "Timetable Created",
+          description: "We've created a sample timetable for you. You can customize it to your needs.",
+        });
+      } else {
+        toast({
+          title: "Generation Failed",
+          description: "There was a problem generating your timetable. Using your previous timetable.",
+          variant: "destructive"
+        });
+        setShowTimetable(true);
+      }
+    } finally {
+      setIsGeneratingAfterConversation(false);
+      // Clear the transcript after generation
+      setTranscript([]);
+    }
+  };
 
   // New combined function to fetch conversation data and generate timetable
   const fetchConversationDataAndGenerateTimetable = async () => {
@@ -287,6 +500,10 @@ const TimetableGenerator = () => {
       setResponses([]);
       setConversationComplete(false);
       setConversationData(null);
+      setLocalConversation([]);
+      
+      // Start local speech recognition for backup
+      startLocalSpeechRecognition();
       
       toast({
         title: "Conversation Started",
@@ -311,13 +528,19 @@ const TimetableGenerator = () => {
       setIsConversationActive(false);
       setConversationComplete(true);
       
+      // Stop local speech recognition
+      if (isLocalSpeechRecognitionActive) {
+        stopLocalSpeechRecognition();
+      }
+      
       // Show toast to indicate timetable generation is in progress
       toast({
         title: "Conversation Ended",
         description: "Please wait while we generate your timetable...",
       });
       
-      // Fetch conversation data and generate timetable will be triggered by the onMessage handler
+      // Generate timetable directly from local conversation
+      generateTimetableFromLocalConversation();
     } catch (error) {
       console.error("Error ending conversation:", error);
       toast({
@@ -756,7 +979,7 @@ const TimetableGenerator = () => {
           
           {/* Timetable Generation In Progress */}
           {(isGeneratingAfterConversation || loadingTimetable) && (
-            <div className="flex flex-col items-center justify-center py-12 animate-pulse">
+            <div className="flex flex-col items-center justify-center py-12">
               <div className="rounded-full h-16 w-16 border-b-2 border-t-2 border-wellness-darkGreen animate-spin mb-4"></div>
               <p className="text-wellness-darkGreen font-medium text-lg">Generating your personalized timetable...</p>
               <p className="text-wellness-charcoal text-sm mt-2">Analyzing your preferences and creating the perfect schedule for you</p>
