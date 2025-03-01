@@ -87,10 +87,8 @@ const TimetableGenerator = () => {
         // Conversation has ended
         setIsConversationActive(false);
         setConversationComplete(true);
-        setShowTimetable(true);
-        
-        // Generate timetable from collected responses immediately
-        generateTimetable();
+        // Note: We no longer automatically generate the timetable here
+        // Instead, we'll let the user explicitly click the Generate button
       }
     },
     onError: (error) => {
@@ -174,6 +172,7 @@ const TimetableGenerator = () => {
     }
     
     setLoadingTimetable(true);
+    setShowTimetable(true);
     
     try {
       // Format the conversation data for Gemini
@@ -187,6 +186,8 @@ const TimetableGenerator = () => {
       ${conversationText}
       
       Important: Return ONLY a nicely formatted timetable as plain text with the format "hh:mm AM/PM - Activity" on each line, and categorize each activity as one of these: routine, work, meal, exercise, leisure, learning, rest.`;
+      
+      console.log("Sending request to Gemini API with prompt:", prompt);
       
       // Call Gemini API
       const response = await fetch(GEMINI_ENDPOINT, {
@@ -209,12 +210,14 @@ const TimetableGenerator = () => {
       }
       
       const data = await response.json();
+      console.log("Gemini API response:", data);
       
       if (!data || !data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts || !data.candidates[0].content.parts[0]) {
         throw new Error("Invalid response format from Gemini API");
       }
       
       const timetableText = data.candidates[0].content.parts[0].text;
+      console.log("Timetable text from Gemini:", timetableText);
       
       // Parse the timetable text into structured data
       const parsedTimetable = parseTimetableText(timetableText);
@@ -557,6 +560,21 @@ const TimetableGenerator = () => {
                     </div>
                   ))}
                 </div>
+                
+                {/* Generate Timetable Button */}
+                {conversationComplete && !isConversationActive && (
+                  <div className="mt-6 flex justify-center">
+                    <Button 
+                      variant="default" 
+                      onClick={generateTimetable}
+                      disabled={loadingTimetable || responses.length === 0}
+                      className="bg-wellness-darkGreen hover:bg-wellness-mediumGreen text-white"
+                    >
+                      <Calendar className="h-4 w-4 mr-2" />
+                      Generate Timetable
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -584,21 +602,7 @@ const TimetableGenerator = () => {
             />
           )}
           
-          {!showTimetable && !loadingTimetable && conversationComplete && (
-            <div className="flex flex-col items-center justify-center py-8">
-              <Button 
-                variant="default" 
-                onClick={() => {
-                  setShowTimetable(true);
-                  generateTimetable();
-                }}
-                className="bg-wellness-darkGreen hover:bg-wellness-mediumGreen text-white"
-              >
-                <Calendar className="h-4 w-4 mr-2" />
-                Generate Timetable
-              </Button>
-            </div>
-          )}
+          {/* We removed the automatic generation button here */}
           
           {/* Add timetable button if there is no timetable yet */}
           {!showTimetable && !loadingTimetable && !conversationComplete && timetable.length === 0 && (
