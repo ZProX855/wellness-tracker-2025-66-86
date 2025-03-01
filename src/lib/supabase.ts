@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = 'https://ofkxkidehimzoblxmvkj.supabase.co';
@@ -48,7 +47,7 @@ export type UserDataTables = {
   user_profiles: {
     id: string;
     user_id: string;
-    username: string;
+    name: string;
     avatar_url?: string;
     created_at: string;
     goals?: string[];

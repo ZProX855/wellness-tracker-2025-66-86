@@ -1,12 +1,14 @@
 import React, { createContext, useState, useEffect, useContext, useRef } from 'react';
-import { AuthState, User, UserData, BMIRecord } from '../types/auth';
+import { AuthState, User, UserData } from '../types/auth';
 import { authService } from '../services/authService';
 import { toast } from 'sonner';
 import { supabase, UserDataTables } from '../lib/supabase';
 
 interface AuthContextType extends AuthState {
-  login: (username: string, password: string, rememberMe?: boolean) => Promise<void>;
-  register: (username: string, password: string) => Promise<void>;
+  login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
+  loginWithGoogleToken: (credential: string) => Promise<void>;
+  register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (updates: Partial<User>) => Promise<void>;
   getUserData: () => Promise<UserData>;
@@ -57,9 +59,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (event === 'SIGNED_IN' && session?.user) {
         const mappedUser: User = {
           id: session.user.id,
-          username: session.user.user_metadata?.username || 'User',
-          name: session.user.user_metadata?.username || 'User',
-          email: session.user.email || `${session.user.user_metadata?.username || 'user'}@example.com`,
+          email: session.user.email || '',
+          name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
           avatar: session.user.user_metadata?.avatar_url,
           createdAt: session.user.created_at || new Date().toISOString(),
         };
@@ -136,8 +137,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               date: newItem.date,
               bmi: newItem.bmi,
               category: newItem.category,
-              height: newItem.height || 0,
-              weight: newItem.weight || 0
+              height: 0, // Default value since this data is missing from Supabase
+              weight: 0  // Default value since this data is missing from Supabase
             };
             
             const updatedHistory = [...userDataRef.current.bmiHistory];
@@ -171,10 +172,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     subscriptionsRef.current.push(() => bmiSubscription.unsubscribe());
   };
   
-  const register = async (username: string, password: string) => {
+  const register = async (email: string, password: string, name: string) => {
     try {
       setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
-      const user = await authService.register(username, password);
+      const user = await authService.register(email, password, name);
       setAuthState({
         user,
         isLoading: false,
@@ -193,10 +194,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
   
-  const login = async (username: string, password: string, rememberMe = false) => {
+  const login = async (email: string, password: string, rememberMe = false) => {
     try {
       setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
-      const user = await authService.login(username, password, rememberMe);
+      const user = await authService.login(email, password, rememberMe);
       setAuthState({
         user,
         isLoading: false,
@@ -205,6 +206,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast.success('Logged in successfully!');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Login failed';
+      setAuthState(prev => ({
+        ...prev,
+        isLoading: false,
+        error: errorMessage,
+      }));
+      toast.error(errorMessage);
+      throw error;
+    }
+  };
+  
+  const loginWithGoogle = async () => {
+    try {
+      setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
+      await authService.loginWithGoogle();
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Google login failed';
+      setAuthState(prev => ({
+        ...prev,
+        isLoading: false,
+        error: errorMessage,
+      }));
+      toast.error(errorMessage);
+      throw error;
+    }
+  };
+  
+  const loginWithGoogleToken = async (credential: string) => {
+    try {
+      setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
+      const user = await authService.loginWithGoogleToken(credential);
+      setAuthState({
+        user,
+        isLoading: false,
+        error: null,
+      });
+      toast.success('Logged in with Google!');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Google login failed';
       setAuthState(prev => ({
         ...prev,
         isLoading: false,
@@ -320,6 +359,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const contextValue: AuthContextType = {
     ...authState,
     login,
+    loginWithGoogle,
+    loginWithGoogleToken,
     register,
     logout,
     updateProfile,

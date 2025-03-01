@@ -1,25 +1,42 @@
 
-// User type
 export interface User {
   id: string;
-  username: string;
+  email: string;
   name: string;
-  email: string | null; // Make email optional
   avatar?: string;
   createdAt: string;
+  preferences?: UserPreferences;
+  googleId?: string;
 }
 
-// BMI record type
+export interface UserPreferences {
+  theme?: 'light' | 'dark';
+  notifications?: boolean;
+  rememberMe?: boolean;
+}
+
+export interface AuthState {
+  user: User | null;
+  isLoading: boolean;
+  error: string | null;
+}
+
+export interface UserData {
+  bmiHistory: BMIRecord[];
+  foodComparisons: FoodComparison[];
+  mealRecognitions: MealRecord[];
+  sleepData: SleepRecord[];
+}
+
 export interface BMIRecord {
   id: string;
   date: string;
-  bmi: number;
-  category: string;
   height: number;
   weight: number;
+  bmi: number;
+  category: string;
 }
 
-// Food comparison type
 export interface FoodComparison {
   id: string;
   date: string;
@@ -27,27 +44,24 @@ export interface FoodComparison {
     name: string;
     calories: number;
     protein: number;
-    carbs: number;
     fats: number;
+    carbs: number;
     fiber: number;
   };
   food2: {
     name: string;
     calories: number;
     protein: number;
-    carbs: number;
     fats: number;
+    carbs: number;
     fiber: number;
   };
-  notes?: string;
 }
 
-// Meal recognition type
-export interface MealRecognition {
+export interface MealRecord {
   id: string;
   date: string;
   foodIdentified: string;
-  imageUrl?: string;
   nutritionInfo: {
     calories: number;
     protein: number;
@@ -55,35 +69,16 @@ export interface MealRecognition {
     fats: number;
     fiber: number;
   };
+  imageUrl?: string;
 }
 
-// Sleep data type
-export interface SleepData {
+export interface SleepRecord {
   id: string;
   date: string;
-  duration: number;
-  quality: string;
   bedTime: string;
   wakeTime: string;
+  duration: number;
+  quality: 'Restful' | 'Good' | 'Average' | 'Light' | 'Disturbed' | 'Poor';
   factors: string[];
   notes?: string;
-}
-
-// Adding missing types referenced in Dashboard.tsx
-export type MealRecord = MealRecognition;
-export type SleepRecord = SleepData;
-
-// User data type
-export interface UserData {
-  bmiHistory: BMIRecord[];
-  foodComparisons: FoodComparison[];
-  mealRecognitions: MealRecognition[];
-  sleepData: SleepData[];
-}
-
-// Auth state type
-export interface AuthState {
-  user: User | null;
-  isLoading: boolean;
-  error: string | null;
 }
