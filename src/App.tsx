@@ -22,7 +22,14 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import { useEffect } from "react";
 import { supabase } from "./lib/supabase";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      staleTime: 60000, // 1 minute
+    },
+  },
+});
 
 // Google Client ID from the provided credentials
 const GOOGLE_CLIENT_ID = "200715478376-gkm3iv6safptugc1enc7nlk184b5dafm.apps.googleusercontent.com";
@@ -32,11 +39,13 @@ const App = () => {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
-        // Update localStorage/sessionStorage if needed
-        console.log('User signed in:', session.user);
+        // Update query client to invalidate any user-related queries
+        queryClient.invalidateQueries();
+        console.log('User signed in (App.tsx):', session.user.id);
       } else if (event === 'SIGNED_OUT') {
-        // Clear localStorage/sessionStorage if needed
-        console.log('User signed out');
+        // Clear query cache to remove any user-specific data
+        queryClient.clear();
+        console.log('User signed out (App.tsx)');
       }
     });
 

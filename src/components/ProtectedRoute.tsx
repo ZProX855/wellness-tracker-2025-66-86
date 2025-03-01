@@ -18,7 +18,14 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     const checkSession = async () => {
       try {
         const { data, error } = await supabase.auth.getSession();
-        setHasSession(!!data.session && !error);
+        const hasValidSession = !!data.session && !error;
+        setHasSession(hasValidSession);
+        
+        if (hasValidSession) {
+          console.log('Valid session detected in ProtectedRoute');
+        } else {
+          console.log('No valid session detected in ProtectedRoute');
+        }
       } catch (error) {
         console.error('Error checking session:', error);
         setHasSession(false);
@@ -39,6 +46,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   }
   
   if (!user && !hasSession) {
+    console.log('No user or session, redirecting to login');
     // Redirect to login page but save the location they were trying to access
     return <Navigate to="/login" state={{ from: location }} replace />;
   }

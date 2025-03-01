@@ -1,9 +1,8 @@
-
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useState, useEffect, useContext, useRef } from 'react';
 import { AuthState, User, UserData } from '../types/auth';
 import { authService } from '../services/authService';
 import { toast } from 'sonner';
-import { supabase } from '../lib/supabase';
+import { supabase, UserDataTables } from '../lib/supabase';
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
@@ -26,7 +25,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     error: null,
   });
   
-  // Check for existing user session on load
+  const userDataRef = useRef<UserData | null>(null);
+  const subscriptionsRef = useRef<(() => void)[]>([]);
+  
   useEffect(() => {
     const initializeAuth = async () => {
       try {
@@ -36,6 +37,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           isLoading: false,
           error: null,
         });
+        
+        if (currentUser) {
+          await initializeUserData(currentUser.id);
+        }
       } catch (error) {
         console.error('Error initializing auth:', error);
         setAuthState({
@@ -48,10 +53,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     initializeAuth();
     
-    // Set up auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event, session?.user?.id);
+      
       if (event === 'SIGNED_IN' && session?.user) {
-        // Update our auth state with the new user
         const mappedUser: User = {
           id: session.user.id,
           email: session.user.email || '',
@@ -66,9 +71,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           error: null,
         });
         
-        // Cache the user in session storage
         sessionStorage.setItem('currentUser', JSON.stringify(mappedUser));
+        
+        await initializeUserData(mappedUser.id);
       } else if (event === 'SIGNED_OUT') {
+        clearSubscriptions();
+        userDataRef.current = null;
         setAuthState({
           user: null,
           isLoading: false,
@@ -78,13 +86,89 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     });
     
-    // Cleanup subscription on unmount
     return () => {
       subscription.unsubscribe();
+      clearSubscriptions();
     };
   }, []);
   
-  // Register
+  const clearSubscriptions = () => {
+    subscriptionsRef.current.forEach(unsubscribe => unsubscribe());
+    subscriptionsRef.current = [];
+  };
+  
+  const initializeUserData = async (userId: string) => {
+    try {
+      const initialData = await authService.getUserData(userId);
+      userDataRef.current = initialData;
+      
+      setupUserDataSubscriptions(userId);
+      
+      return initialData;
+    } catch (error) {
+      console.error('Error initializing user data:', error);
+      return null;
+    }
+  };
+  
+  const setupUserDataSubscriptions = (userId: string) => {
+    clearSubscriptions();
+    
+    const bmiSubscription = supabase
+      .channel('bmi_history_changes')
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'bmi_history',
+          filter: `user_id=eq.${userId}`
+        },
+        (payload) => {
+          console.log('BMI history changed:', payload);
+          
+          if (!userDataRef.current) return;
+          
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            const newItem = payload.new as UserDataTables['bmi_history'];
+            
+            const formattedItem = {
+              bmi: newItem.bmi.toString(),
+              category: newItem.category,
+              date: newItem.date,
+            };
+            
+            const updatedHistory = [...userDataRef.current.bmiHistory];
+            const existingIndex = updatedHistory.findIndex(
+              item => item.date === newItem.date
+            );
+            
+            if (existingIndex >= 0) {
+              updatedHistory[existingIndex] = formattedItem;
+            } else {
+              updatedHistory.push(formattedItem);
+            }
+            
+            userDataRef.current = {
+              ...userDataRef.current,
+              bmiHistory: updatedHistory,
+            };
+          } else if (payload.eventType === 'DELETE') {
+            const deletedItem = payload.old as UserDataTables['bmi_history'];
+            userDataRef.current = {
+              ...userDataRef.current,
+              bmiHistory: userDataRef.current.bmiHistory.filter(
+                item => item.date !== deletedItem.date
+              ),
+            };
+          }
+        }
+      )
+      .subscribe();
+    
+    subscriptionsRef.current.push(() => bmiSubscription.unsubscribe());
+  };
+  
   const register = async (email: string, password: string, name: string) => {
     try {
       setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
@@ -107,7 +191,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
   
-  // Login
   const login = async (email: string, password: string, rememberMe = false) => {
     try {
       setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
@@ -130,12 +213,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
   
-  // Login with Google (using Supabase OAuth)
   const loginWithGoogle = async () => {
     try {
       setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
       await authService.loginWithGoogle();
-      // This will redirect to Google, so we don't update state here
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Google login failed';
       setAuthState(prev => ({
@@ -148,7 +229,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
   
-  // Login with Google token
   const loginWithGoogleToken = async (credential: string) => {
     try {
       setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
@@ -171,9 +251,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
   
-  // Logout
   const logout = async () => {
     try {
+      clearSubscriptions();
+      userDataRef.current = null;
       await authService.logout();
       setAuthState({
         user: null,
@@ -187,7 +268,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
   
-  // Update profile
   const updateProfile = async (updates: Partial<User>) => {
     try {
       if (!authState.user) {
@@ -214,14 +294,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
   
-  // Get user data
   const getUserData = async (): Promise<UserData> => {
     try {
       if (!authState.user) {
         throw new Error('No authenticated user');
       }
       
-      return await authService.getUserData(authState.user.id);
+      if (userDataRef.current) {
+        return userDataRef.current;
+      }
+      
+      const data = await authService.getUserData(authState.user.id);
+      userDataRef.current = data;
+      return data;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to get user data';
       toast.error(errorMessage);
@@ -229,7 +314,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
   
-  // Update user data
   const updateUserData = async (newData: Partial<UserData>): Promise<UserData> => {
     try {
       if (!authState.user) {
@@ -237,6 +321,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       const updatedData = await authService.updateUserData(authState.user.id, newData);
+      userDataRef.current = updatedData;
       return updatedData;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to update user data';
@@ -245,7 +330,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
   
-  // Reset user progress
   const resetUserProgress = async (): Promise<void> => {
     try {
       if (!authState.user) {
@@ -253,6 +337,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       await authService.resetUserProgress(authState.user.id);
+      
+      userDataRef.current = {
+        bmiHistory: [],
+        foodComparisons: [],
+        mealRecognitions: [],
+        sleepData: [],
+      };
+      
       toast.success('Progress reset successfully!');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to reset progress';
@@ -281,7 +373,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 };
 
-// Custom hook to use the auth context
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
