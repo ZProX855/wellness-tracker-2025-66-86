@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Mic, MicOff, Edit, Save, Clock, Calendar } from 'lucide-react';
@@ -112,7 +111,6 @@ const TimetableGenerator = () => {
       localStorage.setItem('elevenlabs_api_key', apiKey);
       
       // Set the API key in the browser for the ElevenLabs library
-      // Note: This is typically done with environment variables in production
       window.localStorage.setItem('xi-api-key', apiKey);
       
       // Start the conversation session with the ElevenLabs agent

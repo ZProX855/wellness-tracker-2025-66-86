@@ -1,11 +1,9 @@
-
 import React, { createContext, useState, useEffect, useContext, useRef } from 'react';
 import { AuthState, User, UserData, BMIRecord } from '../types/auth';
 import { authService } from '../services/authService';
 import { toast } from 'sonner';
 import { supabase, Database } from '../lib/supabase';
 
-// Define UserDataTables type here since it's used but not exported from supabase.ts
 type UserDataTables = {
   bmi_history: Database['public']['Tables']['bmi_history']['Row'];
   food_comparisons: Database['public']['Tables']['food_comparisons']['Row'];
@@ -333,7 +331,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('No authenticated user');
       }
       
-      // Call the authService method
       const updatedData = await authService.updateUserData(authState.user.id, newData);
       userDataRef.current = updatedData;
       return updatedData;
