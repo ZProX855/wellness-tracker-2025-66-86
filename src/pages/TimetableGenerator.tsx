@@ -1,4 +1,4 @@
-
+<lov-code>
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Mic, MicOff, Edit, Save, Clock, Calendar, Download, RefreshCw, List, Grid, Palette, Settings, Share2 } from 'lucide-react';
@@ -17,7 +17,7 @@ import useLocalStorage from '@/hooks/useLocalStorage';
 // Agent ID for ElevenLabs
 const ELEVENLABS_AGENT_ID = "Dxu3cYNnYBYHvtV3Q9Hu";
 // Default API key for ElevenLabs (will be used for all users)
-const DEFAULT_ELEVENLABS_API_KEY = "d7ee089e6025770746b2fd8a9e9c98f5";
+const DEFAULT_ELEVENLABS_API_KEY = "sk_d72d2c11122b606fcf965650aa4bdb6fe8015a1856bfb40b";
 // Gemini API key and endpoint
 const GEMINI_API_KEY = "AIzaSyC3Er0jxIvcQCjPzGpp9xYH-Lc-8TuqqJc";
 const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
@@ -58,6 +58,7 @@ const TimetableGenerator = () => {
     description: ''
   });
   const [showTimetable, setShowTimetable] = useState(false);
+  const [conversationData, setConversationData] = useState<any>(null);
   
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const { toast } = useToast();
@@ -89,6 +90,9 @@ const TimetableGenerator = () => {
         setConversationComplete(true);
         // Note: We no longer automatically generate the timetable here
         // Instead, we'll let the user explicitly click the Generate button
+        
+        // Fetch conversation data
+        fetchConversationData();
       }
     },
     onError: (error) => {
@@ -101,6 +105,33 @@ const TimetableGenerator = () => {
       setIsConversationActive(false);
     }
   });
+
+  // Fetch conversation data from ElevenLabs API
+  const fetchConversationData = async () => {
+    if (!conversation.conversationId) {
+      console.error("No conversation ID available");
+      return;
+    }
+    
+    try {
+      const response = await fetch(`https://api.elevenlabs.io/v1/convai/conversation/${conversation.conversationId}/history`, {
+        method: 'GET',
+        headers: {
+          'xi-api-key': DEFAULT_ELEVENLABS_API_KEY
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch conversation data: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      console.log("Conversation data from ElevenLabs:", data);
+      setConversationData(data);
+    } catch (error) {
+      console.error("Error fetching conversation data:", error);
+    }
+  };
 
   // Use default API key
   useEffect(() => {
@@ -126,6 +157,7 @@ const TimetableGenerator = () => {
       setIsConversationActive(true);
       setResponses([]);
       setConversationComplete(false);
+      setConversationData(null);
       
       toast({
         title: "Conversation Started",
@@ -148,13 +180,10 @@ const TimetableGenerator = () => {
     try {
       await conversation.endSession();
       setIsConversationActive(false);
+      setConversationComplete(true);
       
-      // Manually trigger timetable generation after ending the conversation
-      if (responses.length > 0) {
-        setConversationComplete(true);
-        setShowTimetable(true);
-        generateTimetable();
-      }
+      // Fetch conversation data when conversation ends
+      fetchConversationData();
     } catch (error) {
       console.error("Error ending conversation:", error);
     }
@@ -175,17 +204,39 @@ const TimetableGenerator = () => {
     setShowTimetable(true);
     
     try {
-      // Format the conversation data for Gemini
-      const conversationText = responses.map(r => 
-        `Question: ${r.question}\nAnswer: ${r.answer}`
-      ).join('\n\n');
+      // If we have data from ElevenLabs API, use that for a better timetable
+      let prompt = "";
       
-      const prompt = `Based on the following user responses, generate a structured and balanced daily timetable for the user. Format it with time slots and activities, ensuring it's well-balanced with work, meals, exercise, leisure, and rest.
-      
-      User Responses:
-      ${conversationText}
-      
-      Important: Return ONLY a nicely formatted timetable as plain text with the format "hh:mm AM/PM - Activity" on each line, and categorize each activity as one of these: routine, work, meal, exercise, leisure, learning, rest.`;
+      if (conversationData && conversationData.history && conversationData.history.length > 0) {
+        // Format the conversation history from ElevenLabs
+        const conversationHistory = conversationData.history.map((item: any) => {
+          if (item.role === 'assistant') {
+            return `Question: ${item.text}`;
+          } else if (item.role === 'user') {
+            return `Answer: ${item.text}`;
+          }
+          return "";
+        }).filter(Boolean).join('\n\n');
+        
+        prompt = `Based on the following user responses, generate a structured and balanced daily timetable for the user. Format it with time slots and activities, ensuring it's well-balanced with work, meals, exercise, leisure, and rest.
+        
+        User Responses:
+        ${conversationHistory}
+        
+        Important: Return ONLY a nicely formatted timetable as plain text with the format "hh:mm AM/PM - Activity" on each line, and categorize each activity as one of these: routine, work, meal, exercise, leisure, learning, rest.`;
+      } else {
+        // Format the conversation data from our state
+        const conversationText = responses.map(r => 
+          `Question: ${r.question}\nAnswer: ${r.answer}`
+        ).join('\n\n');
+        
+        prompt = `Based on the following user responses, generate a structured and balanced daily timetable for the user. Format it with time slots and activities, ensuring it's well-balanced with work, meals, exercise, leisure, and rest.
+        
+        User Responses:
+        ${conversationText}
+        
+        Important: Return ONLY a nicely formatted timetable as plain text with the format "hh:mm AM/PM - Activity" on each line, and categorize each activity as one of these: routine, work, meal, exercise, leisure, learning, rest.`;
+      }
       
       console.log("Sending request to Gemini API with prompt:", prompt);
       
@@ -745,140 +796,4 @@ const TimetableGenerator = () => {
           <div className="px-4 py-2">
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="new-time" className="text-right col-span-1">
-                  Time
-                </label>
-                <input 
-                  id="new-time" 
-                  type="text" 
-                  value={newEntry.time} 
-                  onChange={(e) => setNewEntry({...newEntry, time: e.target.value})}
-                  className="col-span-3 p-2 border rounded w-full"
-                  placeholder="e.g., 9:00 AM"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="new-activity" className="text-right col-span-1">
-                  Activity
-                </label>
-                <input 
-                  id="new-activity" 
-                  type="text" 
-                  value={newEntry.activity} 
-                  onChange={(e) => setNewEntry({...newEntry, activity: e.target.value})}
-                  className="col-span-3 p-2 border rounded w-full"
-                  placeholder="e.g., Morning Exercise"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="new-category" className="text-right col-span-1">
-                  Category
-                </label>
-                <select 
-                  id="new-category" 
-                  value={newEntry.category} 
-                  onChange={(e) => setNewEntry({
-                    ...newEntry, 
-                    category: e.target.value as TimetableEntry['category']
-                  })}
-                  className="col-span-3 p-2 border rounded w-full"
-                >
-                  <option value="routine">Routine</option>
-                  <option value="work">Work</option>
-                  <option value="meal">Meal</option>
-                  <option value="exercise">Exercise</option>
-                  <option value="leisure">Leisure</option>
-                  <option value="learning">Learning</option>
-                  <option value="rest">Rest</option>
-                </select>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="new-description" className="text-right col-span-1">
-                  Description
-                </label>
-                <textarea 
-                  id="new-description" 
-                  value={newEntry.description || ''} 
-                  onChange={(e) => setNewEntry({...newEntry, description: e.target.value})}
-                  className="col-span-3 p-2 border rounded w-full h-20"
-                  placeholder="Add optional description"
-                />
-              </div>
-            </div>
-          </div>
-          <DrawerFooter>
-            <Button onClick={addNewEntry} className="bg-wellness-darkGreen hover:bg-wellness-mediumGreen text-white">
-              Add Activity
-            </Button>
-            <Button variant="outline" onClick={() => setIsAddEntryDrawerOpen(false)}>
-              Cancel
-            </Button>
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
-
-      {/* Color Theme Dialog */}
-      <Dialog open={isColorThemeDialogOpen} onOpenChange={setIsColorThemeDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Choose Timetable Theme</DialogTitle>
-            <DialogDescription>
-              Select a color theme for your timetable.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid grid-cols-3 gap-4 py-4">
-            <div 
-              className={`p-4 rounded-lg border cursor-pointer hover:shadow-md transition-shadow ${colorTheme === 'soft' ? 'ring-2 ring-wellness-darkGreen' : ''}`}
-              onClick={() => setColorTheme('soft')}
-            >
-              <h3 className="font-medium text-center mb-2">Soft</h3>
-              <div className="flex flex-wrap gap-1">
-                {(['routine', 'work', 'meal', 'exercise', 'leisure'] as const).map(category => (
-                  <div 
-                    key={category} 
-                    className={`h-4 w-4 rounded-full ${'bg-slate-100 text-slate-800'.split(' ')[0]}`}
-                  ></div>
-                ))}
-              </div>
-            </div>
-            <div 
-              className={`p-4 rounded-lg border cursor-pointer hover:shadow-md transition-shadow ${colorTheme === 'vibrant' ? 'ring-2 ring-wellness-darkGreen' : ''}`}
-              onClick={() => setColorTheme('vibrant')}
-            >
-              <h3 className="font-medium text-center mb-2">Vibrant</h3>
-              <div className="flex flex-wrap gap-1">
-                {(['routine', 'work', 'meal', 'exercise', 'leisure'] as const).map(category => (
-                  <div 
-                    key={category} 
-                    className={`h-4 w-4 rounded-full ${'bg-slate-200 text-slate-900'.split(' ')[0]}`}
-                  ></div>
-                ))}
-              </div>
-            </div>
-            <div 
-              className={`p-4 rounded-lg border cursor-pointer hover:shadow-md transition-shadow ${colorTheme === 'pastel' ? 'ring-2 ring-wellness-darkGreen' : ''}`}
-              onClick={() => setColorTheme('pastel')}
-            >
-              <h3 className="font-medium text-center mb-2">Pastel</h3>
-              <div className="flex flex-wrap gap-1">
-                {(['routine', 'work', 'meal', 'exercise', 'leisure'] as const).map(category => (
-                  <div 
-                    key={category} 
-                    className={`h-4 w-4 rounded-full ${'bg-slate-50 text-slate-700'.split(' ')[0]}`}
-                  ></div>
-                ))}
-              </div>
-            </div>
-          </div>
-          <div className="flex justify-end">
-            <Button onClick={() => setIsColorThemeDialogOpen(false)} className="bg-wellness-darkGreen hover:bg-wellness-mediumGreen text-white">
-              Apply Theme
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-};
-
-export default TimetableGenerator;
+                <label htmlFor="new-time" className="text-right
