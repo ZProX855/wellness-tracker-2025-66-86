@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = 'https://ofkxkidehimzoblxmvkj.supabase.co';
@@ -15,6 +14,8 @@ export type UserDataTables = {
     bmi: number;
     category: string;
     date: string;
+    height?: number;
+    weight?: number;
   };
   food_comparisons: {
     id: string;

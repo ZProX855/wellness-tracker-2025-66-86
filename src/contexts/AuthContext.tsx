@@ -132,10 +132,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
             const newItem = payload.new as UserDataTables['bmi_history'];
             
-            const formattedItem = {
-              bmi: newItem.bmi.toString(),
-              category: newItem.category,
+            const formattedItem: BMIRecord = {
+              id: newItem.id,
               date: newItem.date,
+              bmi: newItem.bmi,
+              category: newItem.category,
+              height: 0, // Default value since this data is missing from Supabase
+              weight: 0  // Default value since this data is missing from Supabase
             };
             
             const updatedHistory = [...userDataRef.current.bmiHistory];
