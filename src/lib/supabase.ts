@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = 'https://ofkxkidehimzoblxmvkj.supabase.co';
@@ -7,49 +8,175 @@ export const supabase = createClient(supabaseUrl, supabaseKey);
 
 export type SupabaseUser = Awaited<ReturnType<typeof supabase.auth.getUser>>['data']['user'];
 
-export type UserDataTables = {
-  bmi_history: {
-    id: string;
-    user_id: string;
-    bmi: number;
-    category: string;
-    date: string;
-    height?: number;
-    weight?: number;
-  };
-  food_comparisons: {
-    id: string;
-    user_id: string;
-    food1: string;
-    food2: string;
-    date: string;
-    notes?: string;
-  };
-  meal_recognitions: {
-    id: string;
-    user_id: string;
-    meal_name: string;
-    calories: number;
-    proteins: number;
-    carbs: number;
-    fats: number;
-    date: string;
-    image_url?: string;
-  };
-  sleep_data: {
-    id: string;
-    user_id: string;
-    duration: number;
-    quality: number;
-    date: string;
-    notes?: string;
-  };
-  user_profiles: {
-    id: string;
-    user_id: string;
-    name: string;
-    avatar_url?: string;
-    created_at: string;
-    goals?: string[];
+// Define the database schema types for typesafe queries
+export type Database = {
+  public: {
+    Tables: {
+      bmi_history: {
+        Row: {
+          id: string;
+          user_id: string;
+          bmi: number;
+          category: string;
+          date: string;
+          height: number;
+          weight: number;
+          created_at?: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          bmi: number;
+          category: string;
+          date: string;
+          height: number;
+          weight: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          bmi?: number;
+          category?: string;
+          date?: string;
+          height?: number;
+          weight?: number;
+          created_at?: string;
+        };
+      };
+      food_comparisons: {
+        Row: {
+          id: string;
+          user_id: string;
+          food1: string;
+          food2: string;
+          date: string;
+          notes?: string;
+          created_at?: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          food1: string;
+          food2: string;
+          date: string;
+          notes?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          food1?: string;
+          food2?: string;
+          date?: string;
+          notes?: string;
+          created_at?: string;
+        };
+      };
+      meal_recognitions: {
+        Row: {
+          id: string;
+          user_id: string;
+          meal_name: string;
+          calories: number;
+          proteins: number;
+          carbs: number;
+          fats: number;
+          date: string;
+          image_url?: string;
+          created_at?: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          meal_name: string;
+          calories: number;
+          proteins: number;
+          carbs: number;
+          fats: number;
+          date: string;
+          image_url?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          meal_name?: string;
+          calories?: number;
+          proteins?: number;
+          carbs?: number;
+          fats?: number;
+          date?: string;
+          image_url?: string;
+          created_at?: string;
+        };
+      };
+      sleep_data: {
+        Row: {
+          id: string;
+          user_id: string;
+          duration: number;
+          quality: number;
+          date: string;
+          notes?: string;
+          bed_time: string;
+          wake_time: string;
+          factors?: string[];
+          created_at?: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          duration: number;
+          quality: number;
+          date: string;
+          notes?: string;
+          bed_time: string;
+          wake_time: string;
+          factors?: string[];
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          duration?: number;
+          quality?: number;
+          date?: string;
+          notes?: string;
+          bed_time?: string;
+          wake_time?: string;
+          factors?: string[];
+          created_at?: string;
+        };
+      };
+      user_profiles: {
+        Row: {
+          id: string;
+          user_id: string;
+          name: string;
+          avatar_url?: string;
+          created_at?: string;
+          goals?: string[];
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          name: string;
+          avatar_url?: string;
+          created_at?: string;
+          goals?: string[];
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          name?: string;
+          avatar_url?: string;
+          created_at?: string;
+          goals?: string[];
+        };
+      };
+    };
   };
 };
+
+export type DbTables = Database['public']['Tables'];

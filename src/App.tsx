@@ -6,6 +6,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider } from "./contexts/AuthContext";
+import { useEffect } from "react";
+import { supabase } from "./lib/supabase";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import ChatAssistant from "./pages/ChatAssistant";
@@ -19,8 +21,6 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import ProfileSettings from "./pages/ProfileSettings";
 import ProtectedRoute from "./components/ProtectedRoute";
-import { useEffect } from "react";
-import { supabase } from "./lib/supabase";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -34,9 +34,10 @@ const queryClient = new QueryClient({
 // Google Client ID from the provided credentials
 const GOOGLE_CLIENT_ID = "200715478376-gkm3iv6safptugc1enc7nlk184b5dafm.apps.googleusercontent.com";
 
-const App = () => {
+function App() {
   // Set up Supabase auth to sync across browser tabs/windows
   useEffect(() => {
+    // Handle auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
         // Update query client to invalidate any user-related queries
@@ -48,6 +49,14 @@ const App = () => {
         console.log('User signed out (App.tsx)');
       }
     });
+
+    // Log initial authentication state
+    const checkInitialSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('Auth state changed: INITIAL_SESSION', session);
+    };
+    
+    checkInitialSession();
 
     return () => {
       subscription.unsubscribe();
@@ -96,6 +105,6 @@ const App = () => {
       </GoogleOAuthProvider>
     </QueryClientProvider>
   );
-};
+}
 
 export default App;
