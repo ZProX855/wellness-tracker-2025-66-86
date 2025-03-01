@@ -1,4 +1,4 @@
-<lov-code>
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Mic, MicOff, Edit, Save, Clock, Calendar, Download, RefreshCw, List, Grid, Palette, Settings, Share2 } from 'lucide-react';
@@ -653,8 +653,6 @@ const TimetableGenerator = () => {
             />
           )}
           
-          {/* We removed the automatic generation button here */}
-          
           {/* Add timetable button if there is no timetable yet */}
           {!showTimetable && !loadingTimetable && !conversationComplete && timetable.length === 0 && (
             <div className="flex flex-col items-center justify-center py-8 bg-white bg-opacity-70 backdrop-blur-sm rounded-xl p-6 border border-wellness-softGreen/30 shadow-sm">
@@ -796,4 +794,79 @@ const TimetableGenerator = () => {
           <div className="px-4 py-2">
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="new-time" className="text-right
+                <label htmlFor="new-time" className="text-right col-span-1">
+                  Time
+                </label>
+                <input 
+                  id="new-time" 
+                  type="text" 
+                  value={newEntry.time} 
+                  onChange={(e) => setNewEntry({...newEntry, time: e.target.value})}
+                  className="col-span-3 p-2 border rounded w-full"
+                  placeholder="e.g., 8:00 AM"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <label htmlFor="new-activity" className="text-right col-span-1">
+                  Activity
+                </label>
+                <input 
+                  id="new-activity" 
+                  type="text" 
+                  value={newEntry.activity} 
+                  onChange={(e) => setNewEntry({...newEntry, activity: e.target.value})}
+                  className="col-span-3 p-2 border rounded w-full"
+                  placeholder="e.g., Morning Exercise"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <label htmlFor="new-category" className="text-right col-span-1">
+                  Category
+                </label>
+                <select 
+                  id="new-category" 
+                  value={newEntry.category} 
+                  onChange={(e) => setNewEntry({
+                    ...newEntry, 
+                    category: e.target.value as TimetableEntry['category']
+                  })}
+                  className="col-span-3 p-2 border rounded w-full"
+                >
+                  <option value="routine">Routine</option>
+                  <option value="work">Work</option>
+                  <option value="meal">Meal</option>
+                  <option value="exercise">Exercise</option>
+                  <option value="leisure">Leisure</option>
+                  <option value="learning">Learning</option>
+                  <option value="rest">Rest</option>
+                </select>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <label htmlFor="new-description" className="text-right col-span-1">
+                  Description
+                </label>
+                <textarea 
+                  id="new-description" 
+                  value={newEntry.description || ''} 
+                  onChange={(e) => setNewEntry({...newEntry, description: e.target.value})}
+                  className="col-span-3 p-2 border rounded w-full h-20"
+                  placeholder="Add optional description"
+                />
+              </div>
+            </div>
+          </div>
+          <DrawerFooter>
+            <Button onClick={addNewEntry} className="bg-wellness-darkGreen hover:bg-wellness-mediumGreen text-white">
+              Add Activity
+            </Button>
+            <Button variant="outline" onClick={() => setIsAddEntryDrawerOpen(false)}>
+              Cancel
+            </Button>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
+    </div>
+  );
+};
+
+export default TimetableGenerator;
