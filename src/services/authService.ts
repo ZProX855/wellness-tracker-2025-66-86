@@ -8,11 +8,9 @@ const mapSupabaseUser = (supabaseUser: any): User | null => {
   
   return {
     id: supabaseUser.id,
-    email: supabaseUser.email || '',
-    name: supabaseUser.user_metadata?.name || supabaseUser.email?.split('@')[0] || 'User',
-    avatar: supabaseUser.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(supabaseUser.user_metadata?.name || supabaseUser.email || 'User')}&background=random`,
+    username: supabaseUser.user_metadata?.username || 'User',
+    avatar: supabaseUser.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(supabaseUser.user_metadata?.username || 'User')}&background=random`,
     createdAt: supabaseUser.created_at || new Date().toISOString(),
-    googleId: supabaseUser.app_metadata?.provider === 'google' ? supabaseUser.id : undefined,
   };
 };
 
@@ -24,14 +22,18 @@ const CURRENT_USER_KEY = 'currentUser';
 
 export const authService = {
   // Register a new user
-  async register(email: string, password: string, name: string): Promise<User> {
+  async register(username: string, password: string): Promise<User> {
     try {
+      // Generate a unique email based on username for Supabase (which requires email)
+      // This is just a workaround since we're using username-only auth but Supabase requires email
+      const email = `${username.toLowerCase()}@example.com`;
+      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
-            name,
+            username,
           },
         },
       });
@@ -64,8 +66,11 @@ export const authService = {
   },
   
   // Login user
-  async login(email: string, password: string, rememberMe: boolean = false): Promise<User> {
+  async login(username: string, password: string, rememberMe: boolean = false): Promise<User> {
     try {
+      // Generate email from username for Supabase
+      const email = `${username.toLowerCase()}@example.com`;
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -91,93 +96,6 @@ export const authService = {
       return user;
     } catch (error) {
       console.error('Login error:', error);
-      throw error;
-    }
-  },
-  
-  // Login with Google token
-  async loginWithGoogleToken(credential: string): Promise<User> {
-    try {
-      // Supabase's signInWithIdToken requires a provider and a token
-      // For Google OAuth with JavaScript client, we need to use the ID token
-      // However, Supabase doesn't directly support this flow with the credential from Google's JavaScript client
-      // As a workaround, we'll use signInWithOAuth to redirect to Google
-      
-      // For our mock implementation, we'll parse the credential and create a user
-      const payload = this.decodeJwt(credential);
-      
-      if (!payload) {
-        throw new Error('Invalid Google token');
-      }
-      
-      const { email, name, picture, sub } = payload;
-      
-      if (!email) {
-        throw new Error('Email not provided in Google token');
-      }
-      
-      // Try to sign in with Google OAuth using Supabase
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: window.location.origin,
-        }
-      });
-      
-      // Since this will redirect, we wouldn't normally reach this point
-      // But in case we do (or for testing), we'll create a mock user
-      
-      const googleUser: User = {
-        id: sub || uuidv4(),
-        email,
-        name: name || email.split('@')[0],
-        avatar: picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(name || email)}&background=random`,
-        createdAt: new Date().toISOString(),
-        googleId: sub,
-      };
-      
-      // Save to session storage
-      sessionStorage.setItem(CURRENT_USER_KEY, JSON.stringify(googleUser));
-      
-      return googleUser;
-    } catch (error) {
-      console.error('Google token login error:', error);
-      throw error;
-    }
-  },
-  
-  // Login with Google (mock)
-  async loginWithGoogle(): Promise<User> {
-    try {
-      // Redirect to Google sign in
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: window.location.origin,
-        }
-      });
-      
-      if (error) {
-        throw new Error(error.message);
-      }
-      
-      // Since this redirects, we'll never reach this point normally
-      // But we'll include this mock for testing or in case the redirect doesn't happen
-      
-      const googleUser: User = {
-        id: uuidv4(),
-        email: `user${Math.floor(Math.random() * 10000)}@gmail.com`,
-        name: 'Google User',
-        avatar: 'https://ui-avatars.com/api/?name=Google+User&background=random',
-        createdAt: new Date().toISOString(),
-      };
-      
-      // Save to session storage
-      sessionStorage.setItem(CURRENT_USER_KEY, JSON.stringify(googleUser));
-      
-      return googleUser;
-    } catch (error) {
-      console.error('Google login error:', error);
       throw error;
     }
   },
@@ -251,11 +169,11 @@ export const authService = {
   async updateProfile(userId: string, updates: Partial<User>): Promise<User> {
     try {
       // Only update allowed fields
-      const { name, avatar } = updates;
+      const { username, avatar } = updates;
       
       const { data, error } = await supabase.auth.updateUser({
         data: {
-          name,
+          username,
           avatar_url: avatar,
         }
       });
@@ -349,19 +267,4 @@ export const authService = {
       throw error;
     }
   },
-  
-  // Helper function to decode JWT token
-  decodeJwt(token: string) {
-    try {
-      const base64Url = token.split('.')[1];
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-      }).join(''));
-      return JSON.parse(jsonPayload);
-    } catch (e) {
-      console.error('Failed to decode JWT token:', e);
-      return null;
-    }
-  }
 };
