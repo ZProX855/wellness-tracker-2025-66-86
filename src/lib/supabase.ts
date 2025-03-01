@@ -180,3 +180,12 @@ export type Database = {
 };
 
 export type DbTables = Database['public']['Tables'];
+
+// Export a type for each table's row type for easy access
+export type UserDataTables = {
+  bmi_history: DbTables['bmi_history']['Row'];
+  food_comparisons: DbTables['food_comparisons']['Row'];
+  meal_recognitions: DbTables['meal_recognitions']['Row'];
+  sleep_data: DbTables['sleep_data']['Row'];
+  user_profiles: DbTables['user_profiles']['Row'];
+};

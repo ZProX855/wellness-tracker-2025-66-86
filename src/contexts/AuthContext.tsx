@@ -1,11 +1,12 @@
+
 import React, { createContext, useState, useEffect, useContext, useRef } from 'react';
-import { AuthState, User, UserData } from '../types/auth';
+import { AuthState, User, UserData, BMIRecord } from '../types/auth';
 import { authService } from '../services/authService';
 import { toast } from 'sonner';
 import { supabase, UserDataTables } from '../lib/supabase';
 
 interface AuthContextType extends AuthState {
-  login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
+  login: (username: string, password: string, rememberMe?: boolean) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   loginWithGoogleToken: (credential: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
@@ -59,7 +60,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (event === 'SIGNED_IN' && session?.user) {
         const mappedUser: User = {
           id: session.user.id,
-          email: session.user.email || '',
+          username: session.user.email?.split('@')[0] || 'User',
           name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
           avatar: session.user.user_metadata?.avatar_url,
           createdAt: session.user.created_at || new Date().toISOString(),
@@ -137,8 +138,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               date: newItem.date,
               bmi: newItem.bmi,
               category: newItem.category,
-              height: 0, // Default value since this data is missing from Supabase
-              weight: 0  // Default value since this data is missing from Supabase
+              height: newItem.height || 0,
+              weight: newItem.weight || 0
             };
             
             const updatedHistory = [...userDataRef.current.bmiHistory];
@@ -194,10 +195,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
   
-  const login = async (email: string, password: string, rememberMe = false) => {
+  const login = async (username: string, password: string, rememberMe = false) => {
     try {
       setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
-      const user = await authService.login(email, password, rememberMe);
+      const user = await authService.login(username, password);
       setAuthState({
         user,
         isLoading: false,
@@ -317,12 +318,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
   
+  // Add the missing updateUserData implementation
   const updateUserData = async (newData: Partial<UserData>): Promise<UserData> => {
     try {
       if (!authState.user) {
         throw new Error('No authenticated user');
       }
       
+      // Call the authService method (will add this in authService.ts)
       const updatedData = await authService.updateUserData(authState.user.id, newData);
       userDataRef.current = updatedData;
       return updatedData;

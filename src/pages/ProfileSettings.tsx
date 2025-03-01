@@ -11,7 +11,6 @@ const ProfileSettings: React.FC = () => {
   const navigate = useNavigate();
   
   const [name, setName] = useState(user?.name || '');
-  const [email, setEmail] = useState(user?.email || '');
   const [avatar, setAvatar] = useState<string | undefined>(user?.avatar);
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -21,7 +20,6 @@ const ProfileSettings: React.FC = () => {
   useEffect(() => {
     if (user) {
       setName(user.name);
-      setEmail(user.email);
       setAvatar(user.avatar);
     }
   }, [user]);
@@ -186,18 +184,18 @@ const ProfileSettings: React.FC = () => {
               </div>
               
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-wellness-charcoal mb-1">
-                  Email Address
+                <label htmlFor="username" className="block text-sm font-medium text-wellness-charcoal mb-1">
+                  Username
                 </label>
                 <input
-                  id="email"
-                  type="email"
-                  value={email}
+                  id="username"
+                  type="text"
+                  value={user?.username || ''}
                   disabled
                   className="block w-full px-4 py-2 border border-wellness-softGreen/40 rounded-lg bg-gray-100 text-wellness-charcoal cursor-not-allowed"
                 />
                 <p className="mt-1 text-xs text-wellness-charcoal">
-                  Email cannot be changed
+                  Username cannot be changed
                 </p>
               </div>
               

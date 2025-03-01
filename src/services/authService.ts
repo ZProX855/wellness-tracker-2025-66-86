@@ -1,4 +1,3 @@
-
 import { User, UserData, BMIRecord, FoodComparison, MealRecord, SleepRecord } from '../types/auth';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../lib/supabase';
@@ -277,6 +276,119 @@ export const authService = {
       return updatedUser;
     } catch (error) {
       console.error('Error updating profile:', error);
+      throw error;
+    }
+  },
+  
+  // Update user data
+  async updateUserData(userId: string, newData: Partial<UserData>): Promise<UserData> {
+    try {
+      // Handle BMI history updates
+      if (newData.bmiHistory) {
+        for (const record of newData.bmiHistory) {
+          if (!record.id) {
+            // Add new record
+            await this.addBMIRecord(userId, record);
+          } else {
+            // Update existing record
+            await supabase
+              .from('bmi_history')
+              .update({
+                height: record.height,
+                weight: record.weight,
+                bmi: record.bmi,
+                category: record.category,
+                date: record.date
+              })
+              .eq('id', record.id)
+              .eq('user_id', userId);
+          }
+        }
+      }
+      
+      // Handle food comparisons updates
+      if (newData.foodComparisons) {
+        for (const comparison of newData.foodComparisons) {
+          if (!comparison.id) {
+            // Add new comparison
+            await this.addFoodComparison(userId, comparison);
+          } else {
+            // Update existing comparison
+            await supabase
+              .from('food_comparisons')
+              .update({
+                food1: JSON.stringify(comparison.food1),
+                food2: JSON.stringify(comparison.food2),
+                date: comparison.date
+              })
+              .eq('id', comparison.id)
+              .eq('user_id', userId);
+          }
+        }
+      }
+      
+      // Handle meal recognitions updates
+      if (newData.mealRecognitions) {
+        for (const meal of newData.mealRecognitions) {
+          if (!meal.id) {
+            // Add new meal
+            await this.addMealRecognition(userId, meal);
+          } else {
+            // Update existing meal
+            await supabase
+              .from('meal_recognitions')
+              .update({
+                meal_name: meal.foodIdentified,
+                calories: meal.nutritionInfo.calories,
+                proteins: meal.nutritionInfo.protein,
+                carbs: meal.nutritionInfo.carbs,
+                fats: meal.nutritionInfo.fats,
+                date: meal.date,
+                image_url: meal.imageUrl
+              })
+              .eq('id', meal.id)
+              .eq('user_id', userId);
+          }
+        }
+      }
+      
+      // Handle sleep data updates
+      if (newData.sleepData) {
+        for (const sleep of newData.sleepData) {
+          if (!sleep.id) {
+            // Add new sleep record
+            await this.addSleepRecord(userId, sleep);
+          } else {
+            // Convert quality string to number
+            const qualityNumber = 
+              sleep.quality === 'Restful' ? 5 : 
+              sleep.quality === 'Good' ? 4 : 
+              sleep.quality === 'Average' ? 3 : 
+              sleep.quality === 'Light' ? 2 : 
+              sleep.quality === 'Disturbed' ? 1 : 0;
+            
+            // Update existing sleep record
+            await supabase
+              .from('sleep_data')
+              .update({
+                duration: sleep.duration,
+                quality: qualityNumber,
+                date: sleep.date,
+                bed_time: sleep.bedTime,
+                wake_time: sleep.wakeTime,
+                factors: sleep.factors,
+                notes: sleep.notes
+              })
+              .eq('id', sleep.id)
+              .eq('user_id', userId);
+          }
+        }
+      }
+      
+      // Return updated user data
+      return await this.getUserData(userId);
+    } catch (error) {
+      console.error('Error updating user data:', error);
       throw error;
     }
   },
