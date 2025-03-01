@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useEffect, useContext, useRef } from 'react';
 import { AuthState, User, UserData, BMIRecord } from '../types/auth';
 import { authService } from '../services/authService';
@@ -59,6 +58,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const mappedUser: User = {
           id: session.user.id,
           username: session.user.user_metadata?.username || 'User',
+          name: session.user.user_metadata?.username || 'User',
+          email: session.user.email || `${session.user.user_metadata?.username || 'user'}@example.com`,
           avatar: session.user.user_metadata?.avatar_url,
           createdAt: session.user.created_at || new Date().toISOString(),
         };
@@ -135,8 +136,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               date: newItem.date,
               bmi: newItem.bmi,
               category: newItem.category,
-              height: newItem.height || 0, // Default value if missing
-              weight: newItem.weight || 0  // Default value if missing
+              height: newItem.height || 0,
+              weight: newItem.weight || 0
             };
             
             const updatedHistory = [...userDataRef.current.bmiHistory];
@@ -316,7 +317,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
   
-  // Remove unused methods
   const contextValue: AuthContextType = {
     ...authState,
     login,
