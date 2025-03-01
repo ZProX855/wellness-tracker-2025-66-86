@@ -9,6 +9,8 @@ const mapSupabaseUser = (supabaseUser: any): User | null => {
   return {
     id: supabaseUser.id,
     username: supabaseUser.user_metadata?.username || 'User',
+    name: supabaseUser.user_metadata?.username || 'User',
+    email: supabaseUser.email || `${supabaseUser.user_metadata?.username || 'user'}@example.com`,
     avatar: supabaseUser.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(supabaseUser.user_metadata?.username || 'User')}&background=random`,
     createdAt: supabaseUser.created_at || new Date().toISOString(),
   };

@@ -3,6 +3,8 @@
 export interface User {
   id: string;
   username: string;
+  name: string;
+  email: string;
   avatar?: string;
   createdAt: string;
 }
@@ -21,8 +23,22 @@ export interface BMIRecord {
 export interface FoodComparison {
   id: string;
   date: string;
-  food1: string;
-  food2: string;
+  food1: {
+    name: string;
+    calories: number;
+    protein: number;
+    carbs: number;
+    fats: number;
+    fiber: number;
+  };
+  food2: {
+    name: string;
+    calories: number;
+    protein: number;
+    carbs: number;
+    fats: number;
+    fiber: number;
+  };
   notes?: string;
 }
 
@@ -30,12 +46,15 @@ export interface FoodComparison {
 export interface MealRecognition {
   id: string;
   date: string;
-  mealName: string;
-  calories: number;
-  proteins: number;
-  carbs: number;
-  fats: number;
+  foodIdentified: string;
   imageUrl?: string;
+  nutritionInfo: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fats: number;
+    fiber: number;
+  };
 }
 
 // Sleep data type
@@ -43,9 +62,16 @@ export interface SleepData {
   id: string;
   date: string;
   duration: number;
-  quality: number;
+  quality: string;
+  bedTime: string;
+  wakeTime: string;
+  factors: string[];
   notes?: string;
 }
+
+// Adding missing types referenced in Dashboard.tsx
+export type MealRecord = MealRecognition;
+export type SleepRecord = SleepData;
 
 // User data type
 export interface UserData {

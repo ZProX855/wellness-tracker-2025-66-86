@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -87,7 +86,7 @@ const Dashboard: React.FC = () => {
       // Add user name and date
       pdf.setFontSize(12);
       pdf.setTextColor(80, 80, 80); // wellness-charcoal
-      pdf.text(`Generated for: ${user?.name}`, 105, 25, { align: 'center' });
+      pdf.text(`Generated for: ${user?.username}`, 105, 25, { align: 'center' });
       pdf.text(`Date: ${new Date().toLocaleDateString()}`, 105, 30, { align: 'center' });
       
       // Add dashboard image

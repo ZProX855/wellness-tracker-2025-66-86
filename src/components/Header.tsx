@@ -86,15 +86,15 @@ const Header: React.FC = () => {
                   {user.avatar ? (
                     <img 
                       src={user.avatar} 
-                      alt={user.name} 
+                      alt={user.username} 
                       className="w-8 h-8 rounded-full border-2 border-wellness-softGreen"
                     />
                   ) : (
                     <div className="w-8 h-8 rounded-full bg-wellness-softGreen flex items-center justify-center text-wellness-darkGreen">
-                      {user.name.charAt(0)}
+                      {user.username.charAt(0)}
                     </div>
                   )}
-                  <span>{user.name}</span>
+                  <span>{user.username}</span>
                 </button>
                 
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg overflow-hidden z-20 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300">
@@ -132,12 +132,12 @@ const Header: React.FC = () => {
                 {user.avatar ? (
                   <img 
                     src={user.avatar} 
-                    alt={user.name} 
+                    alt={user.username} 
                     className="w-8 h-8 rounded-full border-2 border-wellness-softGreen"
                   />
                 ) : (
                   <div className="w-8 h-8 rounded-full bg-wellness-softGreen flex items-center justify-center text-wellness-darkGreen">
-                    {user.name.charAt(0)}
+                    {user.username.charAt(0)}
                   </div>
                 )}
               </Link>

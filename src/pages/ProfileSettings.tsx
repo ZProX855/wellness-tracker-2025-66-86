@@ -10,7 +10,7 @@ const ProfileSettings: React.FC = () => {
   const { user, updateProfile, logout } = useAuth();
   const navigate = useNavigate();
   
-  const [name, setName] = useState(user?.name || '');
+  const [username, setUsername] = useState(user?.username || '');
   const [email, setEmail] = useState(user?.email || '');
   const [avatar, setAvatar] = useState<string | undefined>(user?.avatar);
   const [isUploading, setIsUploading] = useState(false);
@@ -20,7 +20,7 @@ const ProfileSettings: React.FC = () => {
   
   useEffect(() => {
     if (user) {
-      setName(user.name);
+      setUsername(user.username);
       setEmail(user.email);
       setAvatar(user.avatar);
     }
@@ -71,15 +71,15 @@ const ProfileSettings: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!name.trim()) {
-      toast.error('Name is required');
+    if (!username.trim()) {
+      toast.error('Username is required');
       return;
     }
     
     try {
       setIsSubmitting(true);
       await updateProfile({
-        name,
+        username,
         avatar,
       });
       
@@ -128,7 +128,7 @@ const ProfileSettings: React.FC = () => {
                     <div className="relative group">
                       <img
                         src={avatar}
-                        alt={name}
+                        alt={username}
                         className="w-32 h-32 rounded-full object-cover border-4 border-wellness-softGreen cursor-pointer"
                         onClick={handleAvatarClick}
                       />
@@ -172,14 +172,14 @@ const ProfileSettings: React.FC = () => {
               </div>
               
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-wellness-charcoal mb-1">
-                  Full Name
+                <label htmlFor="username" className="block text-sm font-medium text-wellness-charcoal mb-1">
+                  Username
                 </label>
                 <input
-                  id="name"
+                  id="username"
                   type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                   className="block w-full px-4 py-2 border border-wellness-softGreen/40 rounded-lg bg-white/50 focus:outline-none focus:ring-2 focus:ring-wellness-mediumGreen text-wellness-darkGreen"
                   required
                 />
