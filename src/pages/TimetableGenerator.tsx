@@ -13,6 +13,8 @@ import { useMediaQuery } from '@/hooks/use-mobile';
 
 // Agent ID for ElevenLabs
 const ELEVENLABS_AGENT_ID = "Dxu3cYNnYBYHvtV3Q9Hu";
+// Default API key for ElevenLabs (will be used for all users)
+const DEFAULT_ELEVENLABS_API_KEY = "d7ee089e6025770746b2fd8a9e9c98f5";
 // Gemini API key and endpoint
 const GEMINI_API_KEY = "AIzaSyC3Er0jxIvcQCjPzGpp9xYH-Lc-8TuqqJc";
 const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
@@ -30,10 +32,8 @@ interface ConversationResponse {
 }
 
 const TimetableGenerator = () => {
-  const [isApiKeyDialogOpen, setIsApiKeyDialogOpen] = useState(false);
-  const [apiKey, setApiKey] = useState<string>('');
-  const [isConnecting, setIsConnecting] = useState(false);
   const [isConversationActive, setIsConversationActive] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
   const [responses, setResponses] = useState<ConversationResponse[]>([]);
   const [timetable, setTimetable] = useState<TimetableEntry[]>([]);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -87,31 +87,16 @@ const TimetableGenerator = () => {
     }
   });
 
-  // Check if API key is already saved in localStorage
+  // Use default API key
   useEffect(() => {
-    const savedApiKey = localStorage.getItem('elevenlabs_api_key');
-    if (savedApiKey) {
-      setApiKey(savedApiKey);
-    } else {
-      setIsApiKeyDialogOpen(true);
-    }
+    // Set the API key in the browser for the ElevenLabs library
+    window.localStorage.setItem('xi-api-key', DEFAULT_ELEVENLABS_API_KEY);
   }, []);
 
   // Start conversation
   const startConversation = async () => {
-    if (!apiKey) {
-      setIsApiKeyDialogOpen(true);
-      return;
-    }
-    
     try {
       setIsConnecting(true);
-      
-      // Store API key for future use
-      localStorage.setItem('elevenlabs_api_key', apiKey);
-      
-      // Set the API key in the browser for the ElevenLabs library
-      window.localStorage.setItem('xi-api-key', apiKey);
       
       // Start the conversation session with the ElevenLabs agent
       await conversation.startSession({
@@ -130,7 +115,7 @@ const TimetableGenerator = () => {
       console.error("Failed to start conversation:", error);
       toast({
         title: "Connection Failed",
-        description: "Could not connect to the ElevenLabs service. Please check your API key and try again.",
+        description: "Could not connect to the ElevenLabs service. Please try again later.",
         variant: "destructive"
       });
     } finally {
@@ -502,53 +487,6 @@ const TimetableGenerator = () => {
           )}
         </div>
       </main>
-      
-      {/* API Key Dialog */}
-      <Dialog open={isApiKeyDialogOpen} onOpenChange={setIsApiKeyDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>ElevenLabs API Key Required</DialogTitle>
-            <DialogDescription>
-              This feature requires an ElevenLabs API key for voice conversation. 
-              Please enter your API key below. You can get a free API key at 
-              <a href="https://elevenlabs.io" target="_blank" rel="noopener noreferrer" className="text-blue-600 ml-1">elevenlabs.io</a>.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label htmlFor="api-key" className="text-right col-span-1">
-                API Key
-              </label>
-              <input 
-                id="api-key" 
-                type="text" 
-                value={apiKey} 
-                onChange={(e) => setApiKey(e.target.value)}
-                className="col-span-3 p-2 border rounded w-full"
-                placeholder="Enter your ElevenLabs API key"
-              />
-            </div>
-          </div>
-          <div className="flex justify-end">
-            <Button 
-              onClick={() => {
-                if (apiKey.trim()) {
-                  localStorage.setItem('elevenlabs_api_key', apiKey);
-                  setIsApiKeyDialogOpen(false);
-                } else {
-                  toast({
-                    title: "API Key Required",
-                    description: "Please enter a valid API key.",
-                    variant: "destructive"
-                  });
-                }
-              }}
-            >
-              Save API Key
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
       
       {/* Edit Entry Drawer */}
       <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
