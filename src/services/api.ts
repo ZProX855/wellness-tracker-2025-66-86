@@ -1,4 +1,4 @@
-<lov-code>
+
 // API service with Gemini 2.0 Flash integration
 
 // Use this API key for the Gemini AI model
@@ -432,4 +432,140 @@ export const calculateBMI = async (height: number, weight: number) => {
     let fallbackAdvice = '';
     
     if (bmi < 18.5) {
-      fallbackAdvice = "🥗 Focus on nutrient-dense foods to help you gain weight in a healthy way. Include healthy fats like avocados, nuts, and olive oil. Strength training can help build muscle mass. Consider smaller, more frequent
+      fallbackAdvice = "🥗 Focus on nutrient-dense foods to help you gain weight in a healthy way. Include healthy fats like avocados, nuts, and olive oil. Strength training can help build muscle mass. Consider smaller, more frequent meals throughout the day.";
+    } else if (bmi >= 18.5 && bmi < 25) {
+      fallbackAdvice = "✅ Your BMI is in a healthy range! Continue to maintain a balanced diet with plenty of fruits, vegetables, lean proteins, and whole grains. Regular physical activity is important for maintaining your weight and overall health.";
+    } else if (bmi >= 25 && bmi < 30) {
+      fallbackAdvice = "🏃‍♂️ Consider incorporating more physical activity into your routine, aiming for at least 150 minutes of moderate exercise per week. Focus on portion control and increasing your intake of fiber-rich foods, which help you feel fuller longer.";
+    } else {
+      fallbackAdvice = "❗ Consider consulting with a healthcare provider to develop a personalized plan. Focus on making small, sustainable changes to your diet and activity levels rather than drastic changes. Increase water intake and reduce processed foods.";
+    }
+    
+    return {
+      bmi: bmiValue, 
+      category,
+      advice: fallbackAdvice
+    };
+  }
+};
+
+// Add meal recognition functionality
+export const recognizeMeal = async (imageData: string) => {
+  try {
+    const prompt = `
+      Analyze this food image and provide:
+      1. What foods you can identify in the image
+      2. Approximate calorie content of the meal
+      3. Protein, carbs, and fat breakdown
+      4. How balanced this meal is nutritionally
+      5. Any suggestions to improve the nutritional value
+      
+      Format your response with clear sections and bullet points. If you cannot clearly identify the food, make your best educated guess but mention that it's an approximation.
+    `;
+    
+    const analysis = await callGeminiAPI(prompt, 0.7, true, imageData);
+    
+    return {
+      success: true,
+      analysis,
+      error: null
+    };
+  } catch (error) {
+    console.error("Meal recognition API error:", error);
+    return {
+      success: false,
+      analysis: null,
+      error: "Failed to analyze the meal image. Please try again with a clearer image."
+    };
+  }
+};
+
+// Wellness insights function
+export const getWellnessInsights = async (goals: string[]) => {
+  try {
+    const goalsString = goals.join(", ");
+    
+    const prompt = `
+      A user has set the following wellness goals: ${goalsString}
+      
+      Based on these goals, provide:
+      1. 4-5 specific, actionable recommendations for achieving these goals
+      2. 3-4 milestones the user can expect to reach if they follow these recommendations
+      
+      Format your response in two separate lists:
+      - "RECOMMENDATIONS": (list of recommendations)
+      - "MILESTONES": (list of milestones)
+      
+      Make each point concise, motivational, and based on scientific evidence.
+    `;
+    
+    const response = await callGeminiAPI(prompt);
+    
+    // Parse the response to extract recommendations and milestones
+    let recommendations: string[] = [];
+    let milestones: string[] = [];
+    
+    // Simple parsing logic - we expect the AI to format its response with clear sections
+    const recSection = response.indexOf("RECOMMENDATIONS:");
+    const mileSection = response.indexOf("MILESTONES:");
+    
+    if (recSection !== -1 && mileSection !== -1) {
+      const recText = response.substring(recSection + 16, mileSection).trim();
+      const mileText = response.substring(mileSection + 11).trim();
+      
+      // Extract bullet points - this is simplified and might need improvement
+      recommendations = recText.split(/\n-|\n•/).filter(item => item.trim().length > 0).map(item => item.trim());
+      milestones = mileText.split(/\n-|\n•/).filter(item => item.trim().length > 0).map(item => item.trim());
+    } else {
+      // Fallback if the AI didn't format as expected
+      const lines = response.split('\n').filter(line => line.trim().length > 0);
+      
+      // Assume first half are recommendations, second half are milestones
+      const midpoint = Math.floor(lines.length / 2);
+      recommendations = lines.slice(0, midpoint).map(line => line.replace(/^[•-]\s*/, '').trim());
+      milestones = lines.slice(midpoint).map(line => line.replace(/^[•-]\s*/, '').trim());
+    }
+    
+    // Ensure we have at least some content
+    if (recommendations.length === 0) {
+      recommendations = [
+        "Focus on one small change at a time for sustainable progress",
+        "Stay hydrated throughout the day",
+        "Get 7-8 hours of quality sleep each night",
+        "Practice mindfulness for 5-10 minutes daily"
+      ];
+    }
+    
+    if (milestones.length === 0) {
+      milestones = [
+        "Increased energy levels within 1-2 weeks",
+        "Improved mood and reduced stress after 3-4 weeks",
+        "Better sleep quality within a month",
+        "Noticeable progress toward your goals within 6-8 weeks"
+      ];
+    }
+    
+    return {
+      recommendations,
+      milestones
+    };
+  } catch (error) {
+    console.error("Wellness insights API error:", error);
+    
+    // Fallback insights if API fails
+    return {
+      recommendations: [
+        "Start with small, achievable changes to build momentum",
+        "Stay consistent with your habits, even on difficult days",
+        "Track your progress to stay motivated",
+        "Get adequate sleep to support your wellness goals"
+      ],
+      milestones: [
+        "Noticeable improvement in energy levels within 2 weeks",
+        "Established new healthy habits after 4 weeks",
+        "Significant progress toward goals at 2 months",
+        "Sustainable lifestyle changes at 3 months"
+      ]
+    };
+  }
+};
