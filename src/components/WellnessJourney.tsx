@@ -1,7 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { getWellnessInsights } from '../services/api';
-import { Target, Activity, Leaf, ChevronRight, ChevronDown, CheckCircle2 } from 'lucide-react';
+import { Target, Activity, Leaf, ChevronRight, ChevronDown, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Checkbox } from './ui/checkbox';
+import { toast } from 'sonner';
 
 interface WellnessState {
   goals: { id: number; text: string; selected: boolean }[];
@@ -50,6 +53,7 @@ const WellnessJourney: React.FC = () => {
     const selectedGoals = getSelectedGoals();
     
     if (selectedGoals.length === 0) {
+      toast.error("Please select at least one goal");
       return;
     }
     
@@ -65,9 +69,11 @@ const WellnessJourney: React.FC = () => {
         loading: false
       });
       setActiveSection('plan');
+      toast.success("Your wellness plan is ready!");
     } catch (error) {
       console.error('Error generating wellness plan:', error);
       setState({ ...state, loading: false });
+      toast.error("Failed to generate wellness plan. Please try again.");
     }
   };
   
@@ -75,29 +81,35 @@ const WellnessJourney: React.FC = () => {
     return (
       <div className={`transition-opacity duration-500 ${activeSection === 'goals' ? 'opacity-100' : 'opacity-0 hidden'}`}>
         <div className="mb-8 text-center">
-          <h3 className="text-2xl text-wellness-darkGreen font-medium mb-3">Set Your Wellness Goals</h3>
+          <h2 className="text-2xl text-wellness-darkGreen font-medium mb-3">Set Your Wellness Goals</h2>
           <p className="text-wellness-charcoal">Select all the goals that apply to you to create your personalized wellness journey.</p>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
           {state.goals.map((goal, index) => (
             <div 
               key={goal.id}
-              className={`p-4 rounded-xl border transition-all duration-300 cursor-pointer opacity-0 animate-fade-in ${ 
+              className={`p-4 rounded-xl border transition-all duration-300 cursor-pointer opacity-0 animate-fade-in flex items-center ${ 
                 goal.selected 
-                  ? 'bg-wellness-darkGreen border-wellness-darkGreen text-white' 
+                  ? 'bg-white border-wellness-darkGreen shadow-sm' 
                   : 'bg-white bg-opacity-60 border-wellness-softGreen hover:border-wellness-mediumGreen'
               }`}
               style={{ animationDelay: `${index * 100}ms` }}
               onClick={() => toggleGoal(goal.id)}
             >
-              <div className="flex items-center">
-                {goal.selected ? (
-                  <CheckCircle2 className="h-5 w-5 mr-2" />
-                ) : (
-                  <div className="h-5 w-5 border border-wellness-mediumGreen rounded-full mr-2"></div>
-                )}
-                <span className={goal.selected ? 'font-medium' : ''}>{goal.text}</span>
+              <div className="flex items-center gap-2 w-full">
+                <Checkbox
+                  id={`goal-${goal.id}`}
+                  checked={goal.selected}
+                  onCheckedChange={() => toggleGoal(goal.id)}
+                  className="data-[state=checked]:bg-wellness-darkGreen data-[state=checked]:text-white border-wellness-darkGreen"
+                />
+                <label
+                  htmlFor={`goal-${goal.id}`}
+                  className="text-wellness-charcoal font-medium cursor-pointer flex-1"
+                >
+                  {goal.text}
+                </label>
               </div>
             </div>
           ))}
@@ -107,7 +119,7 @@ const WellnessJourney: React.FC = () => {
           <button
             onClick={generatePlan}
             disabled={getSelectedGoals().length === 0 || state.loading}
-            className={`btn-primary rounded-lg flex items-center gap-2 ${
+            className={`px-6 py-3 rounded-lg bg-wellness-mediumGreen text-white font-medium flex items-center gap-2 transition-all hover:bg-wellness-darkGreen ${
               getSelectedGoals().length === 0 ? 'opacity-50 cursor-not-allowed' : ''
             }`}
           >
@@ -189,7 +201,7 @@ const WellnessJourney: React.FC = () => {
         <div className="flex justify-center">
           <button
             onClick={() => setActiveSection('goals')}
-            className="btn-secondary rounded-lg flex items-center gap-2"
+            className="px-6 py-3 rounded-lg bg-white text-wellness-darkGreen font-medium border border-wellness-mediumGreen flex items-center gap-2 transition-all hover:bg-wellness-softGreen/30"
           >
             <ChevronDown className="h-5 w-5" />
             Adjust My Goals
@@ -201,6 +213,18 @@ const WellnessJourney: React.FC = () => {
 
   return (
     <div className="w-full max-w-3xl mx-auto glass-panel p-6">
+      <div className="mb-8">
+        <Link to="/" className="inline-flex items-center text-wellness-darkGreen hover:text-wellness-mediumGreen transition-colors">
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Home
+        </Link>
+        
+        <div className="mt-4">
+          <h1 className="text-3xl font-medium text-wellness-darkGreen">Your Wellness Journey</h1>
+          <p className="text-wellness-charcoal mt-2">Set your health goals and get a personalized wellness plan with AI-powered insights.</p>
+        </div>
+      </div>
+      
       {renderGoalsSection()}
       {renderPlanSection()}
     </div>
