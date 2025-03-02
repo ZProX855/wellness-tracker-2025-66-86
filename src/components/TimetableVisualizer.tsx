@@ -1,4 +1,4 @@
-<lov-code>
+
 import React, { useState, useRef } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { Card } from '@/components/ui/card';
@@ -523,7 +523,7 @@ const TimetableVisualizer: React.FC<TimetableVisualizerProps> = ({
                   ))
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full text-slate-500">
-                    <ClockIcon className="h-12 w-12 mb-2 text-slate-300" />
+                    <Clock className="h-12 w-12 mb-2 text-slate-300" />
                     <p className="text-lg">No activities scheduled for this day</p>
                     <p className="text-sm">Start a conversation with the AI assistant to create a timetable</p>
                   </div>
@@ -623,7 +623,7 @@ const TimetableVisualizer: React.FC<TimetableVisualizerProps> = ({
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center h-64 text-slate-500 border rounded-lg">
-                  <ClockIcon className="h-12 w-12 mb-2 text-slate-300" />
+                  <Clock className="h-12 w-12 mb-2 text-slate-300" />
                   <p className="text-lg">No activities scheduled for this day</p>
                   <p className="text-sm">Start a conversation with the AI assistant to create a timetable</p>
                 </div>
@@ -681,4 +681,37 @@ const TimetableVisualizer: React.FC<TimetableVisualizerProps> = ({
                       <div className="flex justify-end space-x-1 mt-2">
                         <Button
                           variant="ghost"
-                          
+                          size="sm"
+                          onClick={() => onEditEntry(entry, index)}
+                          className="h-8 px-2 bg-white/50 hover:bg-white/70"
+                        >
+                          <Edit className="h-3 w-3 mr-1" /> Edit
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onDeleteEntry(index)}
+                          className="h-8 px-2 text-red-500 bg-white/50 hover:bg-white/70"
+                        >
+                          <Trash2 className="h-3 w-3 mr-1" /> Remove
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-64 text-slate-500 border rounded-lg">
+                  <Clock className="h-12 w-12 mb-2 text-slate-300" />
+                  <p className="text-lg">No activities scheduled for this day</p>
+                  <p className="text-sm">Start a conversation with the AI assistant to create a timetable</p>
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        </div>
+      </div>
+    </Card>
+  );
+};
+
+export default TimetableVisualizer;
