@@ -1,145 +1,172 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 60 33% 98%;
-    --foreground: 229 7% 12%;
+    --background: 0 0% 100%;
+    --foreground: 222.2 47.4% 11.2%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 229 7% 12%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 229 7% 12%;
+    --popover-foreground: 222.2 47.4% 11.2%;
 
-    --primary: 150 25% 60%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 60 33% 96%;
-    --secondary-foreground: 229 7% 12%;
-
-    --muted: 60 33% 92%;
-    --muted-foreground: 229 5% 50%;
-
-    --accent: 150 25% 96%;
-    --accent-foreground: 229 7% 12%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 47.4% 11.2%;
+ 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 150 25% 60%;
+ 
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+ 
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+ 
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+ 
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
 
-    --radius: 0.75rem;
+    --ring: 222.2 84% 4.9%;
+ 
+    --radius: 0.5rem;
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Custom Wellness Colors */
+    --wellness-softBeige: #F9F6F1;
+    --wellness-softGreen: #D4E9E2;
+    --wellness-mediumGreen: #86C2B5;
+    --wellness-darkGreen: #4A8A81;
+    --wellness-charcoal: #5A5A5A;
   }
-
+ 
   .dark {
-    --background: 229 7% 12%;
-    --foreground: 0 0% 98%;
-
-    --card: 229 7% 12%;
-    --card-foreground: 0 0% 98%;
-
-    --popover: 229 7% 12%;
-    --popover-foreground: 0 0% 98%;
-
-    --primary: 150 25% 60%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 229 5% 22%;
-    --secondary-foreground: 0 0% 98%;
-
-    --muted: 229 5% 22%;
-    --muted-foreground: 229 5% 70%;
-
-    --accent: 150 25% 30%;
-    --accent-foreground: 0 0% 98%;
-
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+ 
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 41.4% 34.1%;
+ 
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+ 
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+ 
+    --border: 216 34% 17%;
+    --input: 216 34% 17%;
+ 
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+ 
+    --secondary: 215 27.9% 16.9%;
+    --secondary-foreground: 210 40% 98%;
+ 
+    --accent: 215 27.9% 16.9%;
+    --accent-foreground: 210 40% 98%;
+ 
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive-foreground: 210 40% 98%;
+ 
+    --ring: 217.2 32.6% 17.5%;
+ 
+    --radius: 0.5rem;
 
-    --border: 229 5% 22%;
-    --input: 229 5% 22%;
-    --ring: 150 25% 60%;
+    /* Dark Mode Custom Wellness Colors */
+    --wellness-softBeige: #1E1E1E;
+    --wellness-softGreen: #334A46;
+    --wellness-mediumGreen: #86C2B5;
+    --wellness-darkGreen: #D4E9E2;
+    --wellness-charcoal: #D1D1D1;
   }
 }
-
+ 
 @layer base {
   * {
     @apply border-border;
   }
-
-  html {
-    @apply scroll-smooth;
-  }
-
   body {
-    @apply bg-wellness-softBeige text-wellness-charcoal font-sans antialiased;
-  }
-
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-medium tracking-tight;
-  }
-
-  h1 {
-    @apply text-4xl sm:text-5xl lg:text-6xl;
-  }
-
-  h2 {
-    @apply text-3xl sm:text-4xl lg:text-5xl;
-  }
-
-  h3 {
-    @apply text-2xl sm:text-3xl;
-  }
-
-  p {
-    @apply text-base sm:text-lg leading-relaxed;
-  }
-
-  button, .btn {
-    @apply rounded-full transition-all duration-300;
-  }
-  
-  input, textarea, select {
-    @apply rounded-lg transition-all duration-300;
+    @apply bg-background text-foreground;
   }
 }
 
-@layer components {
-  .feature-card {
-    @apply bg-white bg-opacity-50 backdrop-blur-md rounded-2xl overflow-hidden shadow-sm hover:shadow-md border border-wellness-softGreen transition-all duration-500 ease-out-expo;
+/* Custom Wellness Classes */
+.bg-wellness-softBeige {
+  background-color: var(--wellness-softBeige);
+}
+
+.bg-wellness-softGreen {
+  background-color: var(--wellness-softGreen);
+}
+
+.bg-wellness-mediumGreen {
+  background-color: var(--wellness-mediumGreen);
+}
+
+.bg-wellness-darkGreen {
+  background-color: var(--wellness-darkGreen);
+}
+
+.text-wellness-softBeige {
+  color: var(--wellness-softBeige);
+}
+
+.text-wellness-softGreen {
+  color: var(--wellness-softGreen);
+}
+
+.text-wellness-mediumGreen {
+  color: var(--wellness-mediumGreen);
+}
+
+.text-wellness-darkGreen {
+  color: var(--wellness-darkGreen);
+}
+
+.text-wellness-charcoal {
+  color: var(--wellness-charcoal);
+}
+
+/* Additional styles for the wellness journey */
+.glass-panel {
+  background-color: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(12px);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.1);
+}
+
+.btn-primary {
+  @apply px-6 py-3 bg-wellness-darkGreen text-white font-medium rounded-lg hover:bg-wellness-mediumGreen transition-colors;
+}
+
+.btn-secondary {
+  @apply px-6 py-3 bg-wellness-softGreen text-wellness-darkGreen font-medium rounded-lg hover:bg-wellness-softGreen/80 transition-colors border border-wellness-mediumGreen/30;
+}
+
+.btn-outline {
+  @apply px-6 py-3 bg-white bg-opacity-50 text-wellness-darkGreen font-medium rounded-lg hover:bg-wellness-softGreen/50 transition-colors border border-wellness-softGreen;
+}
+
+.input-field {
+  @apply px-4 py-3 rounded-lg border border-wellness-softGreen/50 focus:border-wellness-mediumGreen focus:outline-none focus:ring-1 focus:ring-wellness-mediumGreen bg-white bg-opacity-70;
+}
+
+/* Animation for fade in */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
   }
-  
-  .glass-panel {
-    @apply bg-white bg-opacity-60 backdrop-blur-md rounded-2xl border border-white border-opacity-30 shadow-sm;
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
-  
-  .btn-primary {
-    @apply bg-wellness-darkGreen hover:bg-wellness-darkGreen/90 text-white font-medium px-6 py-3 shadow-sm transition-all duration-300;
-  }
-  
-  .btn-secondary {
-    @apply bg-wellness-softGreen hover:bg-wellness-softGreen/80 text-wellness-darkGreen font-medium px-6 py-3 shadow-sm transition-all duration-300;
-  }
-  
-  .input-field {
-    @apply bg-white border border-wellness-softGreen/50 focus:border-wellness-mediumGreen focus:ring-1 focus:ring-wellness-mediumGreen px-4 py-3 outline-none transition-all duration-300;
-  }
-  
-  .circle-feature {
-    @apply rounded-full flex items-center justify-center bg-white shadow-sm border border-wellness-softGreen hover:border-wellness-mediumGreen transition-all duration-500 ease-bounce-out hover:shadow-md hover:scale-105;
-  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease forwards;
 }
