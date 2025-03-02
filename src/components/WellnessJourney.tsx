@@ -1,13 +1,15 @@
-
 import React, { useState, useEffect } from 'react';
 import { getWellnessInsights } from '../services/api';
 import { Target, Activity, Leaf, ChevronRight, ChevronDown, CheckCircle2, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Checkbox } from './ui/checkbox';
 import { toast } from 'sonner';
-
 interface WellnessState {
-  goals: { id: number; text: string; selected: boolean }[];
+  goals: {
+    id: number;
+    text: string;
+    selected: boolean;
+  }[];
   recommendations: string[];
   milestones: string[];
   loading: boolean;
@@ -18,50 +20,63 @@ interface WellnessInsights {
   recommendations: string[];
   milestones: string[];
 }
-
 const WellnessJourney: React.FC = () => {
   const [state, setState] = useState<WellnessState>({
-    goals: [
-      { id: 1, text: 'Eat healthier meals', selected: false },
-      { id: 2, text: 'Improve fitness level', selected: false },
-      { id: 3, text: 'Lose weight', selected: false },
-      { id: 4, text: 'Gain muscle', selected: false },
-      { id: 5, text: 'Get better sleep', selected: false },
-      { id: 6, text: 'Reduce stress', selected: false },
-    ],
+    goals: [{
+      id: 1,
+      text: 'Eat healthier meals',
+      selected: false
+    }, {
+      id: 2,
+      text: 'Improve fitness level',
+      selected: false
+    }, {
+      id: 3,
+      text: 'Lose weight',
+      selected: false
+    }, {
+      id: 4,
+      text: 'Gain muscle',
+      selected: false
+    }, {
+      id: 5,
+      text: 'Get better sleep',
+      selected: false
+    }, {
+      id: 6,
+      text: 'Reduce stress',
+      selected: false
+    }],
     recommendations: [],
     milestones: [],
     loading: false
   });
-  
   const [activeSection, setActiveSection] = useState<'goals' | 'plan'>('goals');
-  
   const toggleGoal = (id: number) => {
     setState({
       ...state,
-      goals: state.goals.map(goal => 
-        goal.id === id ? { ...goal, selected: !goal.selected } : goal
-      )
+      goals: state.goals.map(goal => goal.id === id ? {
+        ...goal,
+        selected: !goal.selected
+      } : goal)
     });
   };
-  
   const getSelectedGoals = () => {
     return state.goals.filter(goal => goal.selected).map(goal => goal.text);
   };
-  
   const generatePlan = async () => {
     const selectedGoals = getSelectedGoals();
-    
     if (selectedGoals.length === 0) {
       toast.error("Please select at least one goal");
       return;
     }
-    
-    setState({ ...state, loading: true });
-    
+    setState({
+      ...state,
+      loading: true
+    });
     try {
       // Explicitly type the result from getWellnessInsights
-      const insights = await getWellnessInsights(selectedGoals) as WellnessInsights;
+      const insights = (await getWellnessInsights(selectedGoals)) as WellnessInsights;
       setState({
         ...state,
         recommendations: insights.recommendations,
@@ -72,81 +87,51 @@ const WellnessJourney: React.FC = () => {
       toast.success("Your wellness plan is ready!");
     } catch (error) {
       console.error('Error generating wellness plan:', error);
-      setState({ ...state, loading: false });
+      setState({
+        ...state,
+        loading: false
+      });
       toast.error("Failed to generate wellness plan. Please try again.");
     }
   };
-  
   const renderGoalsSection = () => {
-    return (
-      <div className={`transition-opacity duration-500 ${activeSection === 'goals' ? 'opacity-100' : 'opacity-0 hidden'}`}>
+    return <div className={`transition-opacity duration-500 ${activeSection === 'goals' ? 'opacity-100' : 'opacity-0 hidden'}`}>
         <div className="mb-8 text-center">
           <h2 className="text-2xl text-wellness-darkGreen font-medium mb-3">Set Your Wellness Goals</h2>
           <p className="text-wellness-charcoal">Select all the goals that apply to you to create your personalized wellness journey.</p>
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-          {state.goals.map((goal, index) => (
-            <div 
-              key={goal.id}
-              className={`p-4 rounded-xl border transition-all duration-300 cursor-pointer opacity-0 animate-fade-in flex items-center ${ 
-                goal.selected 
-                  ? 'bg-white border-wellness-darkGreen shadow-sm' 
-                  : 'bg-white bg-opacity-60 border-wellness-softGreen hover:border-wellness-mediumGreen'
-              }`}
-              style={{ animationDelay: `${index * 100}ms` }}
-              onClick={() => toggleGoal(goal.id)}
-            >
+          {state.goals.map((goal, index) => <div key={goal.id} className={`p-4 rounded-xl border transition-all duration-300 cursor-pointer opacity-0 animate-fade-in flex items-center ${goal.selected ? 'bg-white border-wellness-darkGreen shadow-sm' : 'bg-white bg-opacity-60 border-wellness-softGreen hover:border-wellness-mediumGreen'}`} style={{
+          animationDelay: `${index * 100}ms`
+        }} onClick={() => toggleGoal(goal.id)}>
               <div className="flex items-center gap-2 w-full">
-                <Checkbox
-                  id={`goal-${goal.id}`}
-                  checked={goal.selected}
-                  onCheckedChange={() => toggleGoal(goal.id)}
-                  className="data-[state=checked]:bg-wellness-darkGreen data-[state=checked]:text-white border-wellness-darkGreen"
-                />
-                <label
-                  htmlFor={`goal-${goal.id}`}
-                  className="text-wellness-charcoal font-medium cursor-pointer flex-1"
-                >
+                <Checkbox id={`goal-${goal.id}`} checked={goal.selected} onCheckedChange={() => toggleGoal(goal.id)} className="data-[state=checked]:bg-wellness-darkGreen data-[state=checked]:text-white border-wellness-darkGreen" />
+                <label htmlFor={`goal-${goal.id}`} className="text-wellness-charcoal font-medium cursor-pointer flex-1">
                   {goal.text}
                 </label>
               </div>
-            </div>
-          ))}
+            </div>)}
         </div>
         
         <div className="flex justify-center">
-          <button
-            onClick={generatePlan}
-            disabled={getSelectedGoals().length === 0 || state.loading}
-            className={`px-6 py-3 rounded-lg bg-wellness-mediumGreen text-white font-medium flex items-center gap-2 transition-all hover:bg-wellness-darkGreen ${
-              getSelectedGoals().length === 0 ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
-          >
-            {state.loading ? (
-              <>
+          <button onClick={generatePlan} disabled={getSelectedGoals().length === 0 || state.loading} className={`px-6 py-3 rounded-lg bg-wellness-mediumGreen text-white font-medium flex items-center gap-2 transition-all hover:bg-wellness-darkGreen ${getSelectedGoals().length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}>
+            {state.loading ? <>
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 Generating Your Plan...
-              </>
-            ) : (
-              <>
+              </> : <>
                 <Target className="h-5 w-5" />
                 Generate My Wellness Plan
-              </>
-            )}
+              </>}
           </button>
         </div>
-      </div>
-    );
+      </div>;
   };
-  
   const renderPlanSection = () => {
     if (state.recommendations.length === 0 && state.milestones.length === 0) {
       return null;
     }
-    
-    return (
-      <div className={`transition-opacity duration-500 ${activeSection === 'plan' ? 'opacity-100' : 'opacity-0 hidden'}`}>
+    return <div className={`transition-opacity duration-500 ${activeSection === 'plan' ? 'opacity-100' : 'opacity-0 hidden'}`}>
         <div className="mb-6 text-center">
           <h3 className="text-2xl text-wellness-darkGreen font-medium mb-3">Your Personalized Wellness Journey</h3>
           <p className="text-wellness-charcoal">Based on your goals: {getSelectedGoals().join(', ')}</p>
@@ -162,16 +147,12 @@ const WellnessJourney: React.FC = () => {
             </div>
             
             <ul className="space-y-3">
-              {state.recommendations.map((recommendation, index) => (
-                <li 
-                  key={index}
-                  className="flex items-start gap-2 opacity-0 animate-fade-in"
-                  style={{ animationDelay: `${index * 150}ms` }}
-                >
+              {state.recommendations.map((recommendation, index) => <li key={index} className="flex items-start gap-2 opacity-0 animate-fade-in" style={{
+              animationDelay: `${index * 150}ms`
+            }}>
                   <ChevronRight className="h-5 w-5 text-wellness-darkGreen mt-0.5 flex-shrink-0" />
                   <p className="text-wellness-charcoal">{recommendation}</p>
-                </li>
-              ))}
+                </li>)}
             </ul>
           </div>
           
@@ -184,35 +165,25 @@ const WellnessJourney: React.FC = () => {
             </div>
             
             <ul className="space-y-3">
-              {state.milestones.map((milestone, index) => (
-                <li 
-                  key={index}
-                  className="flex items-start gap-2 opacity-0 animate-fade-in"
-                  style={{ animationDelay: `${(index + state.recommendations.length) * 150}ms` }}
-                >
+              {state.milestones.map((milestone, index) => <li key={index} className="flex items-start gap-2 opacity-0 animate-fade-in" style={{
+              animationDelay: `${(index + state.recommendations.length) * 150}ms`
+            }}>
                   <ChevronRight className="h-5 w-5 text-wellness-darkGreen mt-0.5 flex-shrink-0" />
                   <p className="text-wellness-charcoal">{milestone}</p>
-                </li>
-              ))}
+                </li>)}
             </ul>
           </div>
         </div>
         
         <div className="flex justify-center">
-          <button
-            onClick={() => setActiveSection('goals')}
-            className="px-6 py-3 rounded-lg bg-white text-wellness-darkGreen font-medium border border-wellness-mediumGreen flex items-center gap-2 transition-all hover:bg-wellness-softGreen/30"
-          >
+          <button onClick={() => setActiveSection('goals')} className="px-6 py-3 rounded-lg bg-white text-wellness-darkGreen font-medium border border-wellness-mediumGreen flex items-center gap-2 transition-all hover:bg-wellness-softGreen/30">
             <ChevronDown className="h-5 w-5" />
             Adjust My Goals
           </button>
         </div>
-      </div>
-    );
+      </div>;
   };
-
-  return (
-    <div className="w-full max-w-3xl mx-auto glass-panel p-6">
+  return <div className="w-full max-w-3xl mx-auto glass-panel p-6">
       <div className="mb-8">
         <Link to="/" className="inline-flex items-center text-wellness-darkGreen hover:text-wellness-mediumGreen transition-colors">
           <ArrowLeft className="h-4 w-4 mr-2" />
@@ -220,15 +191,13 @@ const WellnessJourney: React.FC = () => {
         </Link>
         
         <div className="mt-4">
-          <h1 className="text-3xl font-medium text-wellness-darkGreen">Your Wellness Journey</h1>
-          <p className="text-wellness-charcoal mt-2">Set your health goals and get a personalized wellness plan with AI-powered insights.</p>
+          
+          
         </div>
       </div>
       
       {renderGoalsSection()}
       {renderPlanSection()}
-    </div>
-  );
+    </div>;
 };
-
 export default WellnessJourney;
