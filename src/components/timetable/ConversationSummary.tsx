@@ -1,0 +1,36 @@
+
+import React from 'react';
+
+interface ConversationSummaryProps {
+  responses: { question: string; answer: string }[];
+}
+
+const ConversationSummary: React.FC<ConversationSummaryProps> = ({ responses }) => {
+  if (responses.length === 0) {
+    return null;
+  }
+  
+  return (
+    <div className="mt-4 border-t border-wellness-softGreen/20 pt-4">
+      <h3 className="text-sm font-medium text-wellness-darkGreen mb-2">Conversation Summary</h3>
+      <div className="space-y-3 max-h-60 overflow-y-auto p-2">
+        {responses.map((response, i) => (
+          <div key={i} className="space-y-1">
+            {response.question && (
+              <p className="text-sm font-medium text-wellness-darkGreen">
+                <span className="text-wellness-mediumGreen">Q:</span> {response.question}
+              </p>
+            )}
+            {response.answer && (
+              <p className="text-sm text-wellness-charcoal pl-4">
+                <span className="text-wellness-mediumGreen">A:</span> {response.answer}
+              </p>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export default ConversationSummary;

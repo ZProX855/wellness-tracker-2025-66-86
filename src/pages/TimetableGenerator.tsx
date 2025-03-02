@@ -1,26 +1,21 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Mic, MicOff, Edit, Save, Clock, Calendar, Download, RefreshCw, List, Grid, Palette, Settings, Share2 } from 'lucide-react';
+import { ArrowLeft, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Header from '../components/Header';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter } from "@/components/ui/drawer";
-import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { useConversation } from '@11labs/react';
 import { useMediaQuery } from '@/hooks/use-mobile';
 import TimetableVisualizer from '@/components/TimetableVisualizer';
 import useLocalStorage from '@/hooks/useLocalStorage';
-
-// Updated Agent ID for ElevenLabs
-const ELEVENLABS_AGENT_ID = "LF5rdFTcFtmNyiCIzjc5";
-// Updated API key for ElevenLabs
-const DEFAULT_ELEVENLABS_API_KEY = "sk_36070a7f0b1022f8908a1794fce6a0ce19f6668f365740d0";
-// Gemini API key and endpoint
-const GEMINI_API_KEY = "AIzaSyC3Er0jxIvcQCjPzGpp9xYH-Lc-8TuqqJc";
-const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+import VoiceAssistant from '@/components/timetable/VoiceAssistant';
+import TextChatAssistant from '@/components/timetable/TextChatAssistant';
+import ConversationSummary from '@/components/timetable/ConversationSummary';
+import TimetableGeneratorComponent from '@/components/timetable/TimetableGenerator';
+import ChatModeSelector from '@/components/timetable/ChatModeSelector';
 
 interface TimetableEntry {
   time: string;
@@ -38,7 +33,7 @@ interface ConversationResponse {
 
 const TimetableGenerator = () => {
   const [isConversationActive, setIsConversationActive] = useState(false);
-  const [isConnecting, setIsConnecting] = useState(false);
+  const [isTextChatActive, setIsTextChatActive] = useState(false);
   const [responses, setResponses] = useState<ConversationResponse[]>([]);
   const [timetable, setTimetable] = useLocalStorage<TimetableEntry[]>('wellness-timetable', []);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -64,281 +59,84 @@ const TimetableGenerator = () => {
   // Add state for generating after conversation
   const [isGeneratingAfterConversation, setIsGeneratingAfterConversation] = useState(false);
 
-  // Add new state for Web Speech API
-  const [isLocalSpeechRecognitionActive, setIsLocalSpeechRecognitionActive] = useState(false);
+  // Add state for transcript from Web Speech API
   const [transcript, setTranscript] = useState<string[]>([]);
   const [localConversation, setLocalConversation] = useState<{question: string, answer: string}[]>([]);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  
+  // Add state for chat mode selection
+  const [chatMode, setChatMode] = useState<'voice' | 'text' | null>(null);
   
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const { toast } = useToast();
   const navigate = useNavigate();
-  
-  // Initialize ElevenLabs conversation hook
-  const conversation = useConversation({
-    onMessage: (message) => {
-      console.log("Message received:", message);
-      // Save the conversation history
-      if (message.type === 'agent' && message.content) {
-        // This is a question from the agent
-        setResponses(prev => [...prev, { 
-          question: message.content, 
-          answer: '' 
-        }]);
-        
-        // Also add to local conversation for speech recognition backup
-        setLocalConversation(prev => [...prev, {
-          question: message.content,
-          answer: ''
-        }]);
-      } else if (message.type === 'user_message' && message.content) {
-        // Update the last response with the user's answer
-        setResponses(prev => {
-          const updated = [...prev];
-          if (updated.length > 0) {
-            updated[updated.length - 1].answer = message.content;
-          }
-          return updated;
-        });
-        
-        // Also update local conversation
-        setLocalConversation(prev => {
-          const updated = [...prev];
-          if (updated.length > 0) {
-            updated[updated.length - 1].answer = message.content;
-          }
-          return updated;
-        });
-      } else if (message.type === 'end_of_conversation') {
-        // Conversation has ended
-        setIsConversationActive(false);
-        setConversationComplete(true);
-        
-        // Stop local speech recognition if it's active
-        if (isLocalSpeechRecognitionActive) {
-          stopLocalSpeechRecognition();
-        }
-        
-        // Generate timetable from local conversation
-        generateTimetableFromLocalConversation();
-      }
-    },
-    onError: (error) => {
-      console.error("Conversation error:", error);
-      toast({
-        title: "Error",
-        description: "There was a problem with the conversation. Please try again.",
-        variant: "destructive"
-      });
-      setIsConversationActive(false);
-      
-      // Stop local speech recognition if it's active
-      if (isLocalSpeechRecognitionActive) {
-        stopLocalSpeechRecognition();
-      }
-    }
-  });
 
-  // Initialize the Web Speech API
+  // Initialize the app
   useEffect(() => {
-    // Check if SpeechRecognition is available
-    if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = true;
-      recognitionRef.current.interimResults = true;
-      
-      recognitionRef.current.onresult = (event) => {
-        const latestTranscript = Array.from(event.results)
-          .map(result => result[0].transcript)
-          .join(' ');
-        
-        setTranscript(prev => [...prev, latestTranscript]);
-        console.log("Local speech recognition transcript:", latestTranscript);
-      };
-      
-      recognitionRef.current.onerror = (event) => {
-        console.error("Speech recognition error:", event.error);
-      };
-    } else {
-      console.warn("Speech Recognition API is not supported in this browser");
+    // If we have a stored timetable, show it
+    if (timetable && timetable.length > 0) {
+      setShowTimetable(true);
     }
-    
-    return () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
-    };
   }, []);
 
-  // Start local speech recognition
-  const startLocalSpeechRecognition = () => {
-    if (recognitionRef.current) {
-      try {
-        recognitionRef.current.start();
-        setIsLocalSpeechRecognitionActive(true);
-        console.log("Local speech recognition started");
-      } catch (error) {
-        console.error("Error starting speech recognition:", error);
-      }
+  // Handle adding a new message to the responses
+  const handleAddResponse = (question: string, answer: string) => {
+    if (question && !answer) {
+      // This is a new question from the assistant
+      setResponses(prev => [...prev, { question, answer: '' }]);
+      setLocalConversation(prev => [...prev, { question, answer: '' }]);
+    } else if (answer) {
+      // This is an answer to the last question
+      setResponses(prev => {
+        const updated = [...prev];
+        if (updated.length > 0) {
+          updated[updated.length - 1].answer = answer;
+        }
+        return updated;
+      });
+      
+      setLocalConversation(prev => {
+        const updated = [...prev];
+        if (updated.length > 0) {
+          updated[updated.length - 1].answer = answer;
+        }
+        return updated;
+      });
     }
   };
 
-  // Stop local speech recognition
-  const stopLocalSpeechRecognition = () => {
-    if (recognitionRef.current) {
-      try {
-        recognitionRef.current.stop();
-        setIsLocalSpeechRecognitionActive(false);
-        console.log("Local speech recognition stopped");
-      } catch (error) {
-        console.error("Error stopping speech recognition:", error);
-      }
-    }
-  };
-
-  // Generate timetable from local conversation
-  const generateTimetableFromLocalConversation = async () => {
+  // Handle conversation completion
+  const handleConversationComplete = () => {
+    setConversationComplete(true);
     setIsGeneratingAfterConversation(true);
-    setShowTimetable(false);
     
-    toast({
-      title: "Processing",
-      description: "Please wait while we generate your timetable...",
-    });
-    
-    // Use the local transcript to generate a timetable
-    let conversationText;
-    
-    if (localConversation.length > 0) {
-      // Use the structured conversation if available
-      conversationText = localConversation.map(r => 
-        `Question: ${r.question}\nAnswer: ${r.answer}`
-      ).join('\n\n');
-    } else if (transcript.length > 0) {
-      // Use raw transcript as fallback
-      conversationText = transcript.join('\n');
-    } else if (responses.length > 0) {
-      // Use ElevenLabs responses as a last resort
-      conversationText = responses.map(r => 
-        `Question: ${r.question}\nAnswer: ${r.answer}`
-      ).join('\n\n');
-    } else {
-      // No conversation data available
-      toast({
-        title: "No Conversation Data",
-        description: "Could not generate a timetable because no conversation data was available.",
-        variant: "destructive"
-      });
-      setIsGeneratingAfterConversation(false);
-      return;
-    }
-    
-    console.log("Generating timetable from local conversation:", conversationText);
-    
-    try {
-      const prompt = `Based on the following conversation, generate a structured and balanced daily timetable. Format it with time slots and activities, ensuring it's well-balanced with work, meals, exercise, leisure, and rest.
-      
-      Conversation:
-      ${conversationText}
-      
-      Important: Return ONLY a nicely formatted timetable as plain text with the format "hh:mm AM/PM - Activity" on each line, and categorize each activity as one of these: routine, work, meal, exercise, leisure, learning, rest.`;
-      
-      console.log("Sending request to Gemini API with prompt:", prompt);
-      
-      // Call Gemini API
-      const response = await fetch(GEMINI_ENDPOINT, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: "user",
-              parts: [{ text: prompt }]
-            }
-          ]
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Gemini API error: ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      console.log("Gemini API response:", data);
-      
-      if (!data || !data.candidates || !data.candidates[0] || 
-          !data.candidates[0].content || !data.candidates[0].content.parts || 
-          !data.candidates[0].content.parts[0]) {
-        throw new Error("Invalid response format from Gemini API");
-      }
-      
-      const timetableText = data.candidates[0].content.parts[0].text;
-      console.log("Timetable text from Gemini:", timetableText);
-      
-      // Parse the timetable text into structured data
-      const parsedTimetable = parseTimetableText(timetableText);
-      
-      if (parsedTimetable.length === 0) {
-        throw new Error("Could not parse any timetable entries from the response");
-      }
-      
-      setTimetable(parsedTimetable);
-      setShowTimetable(true);
-      
-      toast({
-        title: "Timetable Generated",
-        description: "Your personalized timetable has been created based on your conversation!",
-      });
-    } catch (error) {
-      console.error("Error generating timetable from local conversation:", error);
-      
-      // Create a fallback timetable if generation fails
-      if (timetable.length === 0) {
-        const fallbackTimetable = createFallbackTimetable();
-        setTimetable(fallbackTimetable);
-        setShowTimetable(true);
-        
-        toast({
-          title: "Timetable Created",
-          description: "We've created a sample timetable for you. You can customize it to your needs.",
-        });
+    // Generate timetable automatically after conversation ends
+    setTimeout(() => {
+      if (chatMode === 'voice') {
+        // For voice, use the conversation data from ElevenLabs if available
+        currentConversationId 
+          ? fetchConversationData() 
+          : generateTimetableFromLocalConversation();
       } else {
-        toast({
-          title: "Generation Failed",
-          description: "There was a problem generating your timetable. Using your previous timetable.",
-          variant: "destructive"
-        });
-        setShowTimetable(true);
+        // For text chat, use the local conversation data
+        generateTimetableFromLocalConversation();
       }
-    } finally {
-      setIsGeneratingAfterConversation(false);
-      // Clear the transcript after generation
-      setTranscript([]);
-    }
+    }, 1000);
   };
 
-  // New combined function to fetch conversation data and generate timetable
-  const fetchConversationDataAndGenerateTimetable = async () => {
+  // Fetch conversation data from ElevenLabs
+  const fetchConversationData = async () => {
     if (!currentConversationId) {
       console.error("No conversation ID available");
       return;
     }
     
-    setIsGeneratingAfterConversation(true);
-    toast({
-      title: "Processing",
-      description: "Please wait while we generate your timetable...",
-    });
+    setLoadingTimetable(true);
     
     try {
-      // Fetch conversation history from ElevenLabs
       const response = await fetch(`https://api.elevenlabs.io/v1/convai/conversation/${currentConversationId}/history`, {
         method: 'GET',
         headers: {
-          'xi-api-key': DEFAULT_ELEVENLABS_API_KEY
+          'xi-api-key': "sk_36070a7f0b1022f8908a1794fce6a0ce19f6668f365740d0"
         }
       });
       
@@ -350,8 +148,8 @@ const TimetableGenerator = () => {
       console.log("Conversation data from ElevenLabs:", data);
       setConversationData(data);
       
-      // Automatically generate timetable with the fetched data
-      await generateTimetableFromElevenLabsData(data);
+      // Generate timetable with the fetched data
+      generateTimetableFromLocalConversation();
       
     } catch (error) {
       console.error("Error fetching conversation data:", error);
@@ -362,393 +160,15 @@ const TimetableGenerator = () => {
       });
       
       // Try to generate with local data as fallback
-      generateTimetable();
-    } finally {
-      setIsGeneratingAfterConversation(false);
-    }
-  };
-
-  // New function to generate timetable specifically from ElevenLabs data
-  const generateTimetableFromElevenLabsData = async (data: any) => {
-    if (!data || !data.history || data.history.length === 0) {
-      console.error("No valid ElevenLabs conversation data available");
-      // Fallback to regular generation
-      return generateTimetable();
-    }
-    
-    setLoadingTimetable(true);
-    setShowTimetable(true);
-    
-    try {
-      // Format the conversation history from ElevenLabs
-      const conversationHistory = data.history.map((item: any) => {
-        if (item.role === 'assistant') {
-          return `Question: ${item.text}`;
-        } else if (item.role === 'user') {
-          return `Answer: ${item.text}`;
-        }
-        return "";
-      }).filter(Boolean).join('\n\n');
-      
-      const prompt = `Based on the following user responses, generate a structured and balanced daily timetable for the user. Format it with time slots and activities, ensuring it's well-balanced with work, meals, exercise, leisure, and rest.
-      
-      User Responses:
-      ${conversationHistory}
-      
-      Important: Return ONLY a nicely formatted timetable as plain text with the format "hh:mm AM/PM - Activity" on each line, and categorize each activity as one of these: routine, work, meal, exercise, leisure, learning, rest.`;
-      
-      console.log("Sending request to Gemini API with prompt from ElevenLabs data:", prompt);
-      
-      // Call Gemini API
-      const response = await fetch(GEMINI_ENDPOINT, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: "user",
-              parts: [{ text: prompt }]
-            }
-          ]
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Gemini API error: ${response.statusText}`);
-      }
-      
-      const responseData = await response.json();
-      console.log("Gemini API response:", responseData);
-      
-      if (!responseData || !responseData.candidates || !responseData.candidates[0] || 
-          !responseData.candidates[0].content || !responseData.candidates[0].content.parts || 
-          !responseData.candidates[0].content.parts[0]) {
-        throw new Error("Invalid response format from Gemini API");
-      }
-      
-      const timetableText = responseData.candidates[0].content.parts[0].text;
-      console.log("Timetable text from Gemini:", timetableText);
-      
-      // Parse the timetable text into structured data
-      const parsedTimetable = parseTimetableText(timetableText);
-      
-      if (parsedTimetable.length === 0) {
-        throw new Error("Could not parse any timetable entries from the response");
-      }
-      
-      setTimetable(parsedTimetable);
-      
-      toast({
-        title: "Timetable Generated",
-        description: "Your personalized timetable has been created based on your conversation!",
-      });
-    } catch (error) {
-      console.error("Error generating timetable from ElevenLabs data:", error);
-      
-      // Create a fallback timetable if generation fails
-      if (timetable.length === 0) {
-        const fallbackTimetable = createFallbackTimetable();
-        setTimetable(fallbackTimetable);
-        
-        toast({
-          title: "Timetable Created",
-          description: "We've created a sample timetable for you. You can customize it to your needs.",
-        });
-      } else {
-        toast({
-          title: "Generation Failed",
-          description: "There was a problem generating your timetable. Using your previous timetable.",
-          variant: "destructive"
-        });
-      }
-    } finally {
-      setLoadingTimetable(false);
-    }
-  };
-
-  // Use default API key
-  useEffect(() => {
-    // Set the API key in the browser for the ElevenLabs library
-    window.localStorage.setItem('xi-api-key', DEFAULT_ELEVENLABS_API_KEY);
-    
-    // If we have a stored timetable, show it
-    if (timetable && timetable.length > 0) {
-      setShowTimetable(true);
-    }
-  }, []);
-
-  // Start conversation
-  const startConversation = async () => {
-    try {
-      setIsConnecting(true);
-      
-      // Reset timetable visibility when starting a new conversation
-      setShowTimetable(false);
-      
-      // Start the conversation session with the ElevenLabs agent
-      const conversationId = await conversation.startSession({
-        agentId: ELEVENLABS_AGENT_ID
-      });
-      
-      // Save the conversation ID
-      setCurrentConversationId(conversationId);
-      console.log("Conversation started with ID:", conversationId);
-      
-      setIsConversationActive(true);
-      setResponses([]);
-      setConversationComplete(false);
-      setConversationData(null);
-      setLocalConversation([]);
-      
-      // Start local speech recognition for backup
-      startLocalSpeechRecognition();
-      
-      toast({
-        title: "Conversation Started",
-        description: "The AI assistant is now listening. Please allow microphone access.",
-      });
-    } catch (error) {
-      console.error("Failed to start conversation:", error);
-      toast({
-        title: "Connection Failed",
-        description: "Could not connect to the ElevenLabs service. Please try again later.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsConnecting(false);
-    }
-  };
-
-  // End conversation
-  const endConversation = async () => {
-    try {
-      await conversation.endSession();
-      setIsConversationActive(false);
-      setConversationComplete(true);
-      
-      // Stop local speech recognition
-      if (isLocalSpeechRecognitionActive) {
-        stopLocalSpeechRecognition();
-      }
-      
-      // Show toast to indicate timetable generation is in progress
-      toast({
-        title: "Conversation Ended",
-        description: "Please wait while we generate your timetable...",
-      });
-      
-      // Generate timetable directly from local conversation
       generateTimetableFromLocalConversation();
-    } catch (error) {
-      console.error("Error ending conversation:", error);
-      toast({
-        title: "Error",
-        description: "There was a problem ending the conversation. Please try again.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  // Keep the existing generateTimetable function as fallback
-  const generateTimetable = async () => {
-    if (responses.length === 0) {
-      toast({
-        title: "No Conversation Data",
-        description: "Please have a conversation with the AI assistant first.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    setLoadingTimetable(true);
-    setShowTimetable(true);
-    
-    try {
-      // If we have data from ElevenLabs API, use that for a better timetable
-      let prompt = "";
-      
-      if (conversationData && conversationData.history && conversationData.history.length > 0) {
-        // Format the conversation history from ElevenLabs
-        const conversationHistory = conversationData.history.map((item: any) => {
-          if (item.role === 'assistant') {
-            return `Question: ${item.text}`;
-          } else if (item.role === 'user') {
-            return `Answer: ${item.text}`;
-          }
-          return "";
-        }).filter(Boolean).join('\n\n');
-        
-        prompt = `Based on the following user responses, generate a structured and balanced daily timetable for the user. Format it with time slots and activities, ensuring it's well-balanced with work, meals, exercise, leisure, and rest.
-        
-        User Responses:
-        ${conversationHistory}
-        
-        Important: Return ONLY a nicely formatted timetable as plain text with the format "hh:mm AM/PM - Activity" on each line, and categorize each activity as one of these: routine, work, meal, exercise, leisure, learning, rest.`;
-      } else {
-        // Format the conversation data from our state
-        const conversationText = responses.map(r => 
-          `Question: ${r.question}\nAnswer: ${r.answer}`
-        ).join('\n\n');
-        
-        prompt = `Based on the following user responses, generate a structured and balanced daily timetable for the user. Format it with time slots and activities, ensuring it's well-balanced with work, meals, exercise, leisure, and rest.
-        
-        User Responses:
-        ${conversationText}
-        
-        Important: Return ONLY a nicely formatted timetable as plain text with the format "hh:mm AM/PM - Activity" on each line, and categorize each activity as one of these: routine, work, meal, exercise, leisure, learning, rest.`;
-      }
-      
-      console.log("Sending request to Gemini API with prompt:", prompt);
-      
-      // Call Gemini API
-      const response = await fetch(GEMINI_ENDPOINT, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: "user",
-              parts: [{ text: prompt }]
-            }
-          ]
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Gemini API error: ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      console.log("Gemini API response:", data);
-      
-      if (!data || !data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts || !data.candidates[0].content.parts[0]) {
-        throw new Error("Invalid response format from Gemini API");
-      }
-      
-      const timetableText = data.candidates[0].content.parts[0].text;
-      console.log("Timetable text from Gemini:", timetableText);
-      
-      // Parse the timetable text into structured data
-      const parsedTimetable = parseTimetableText(timetableText);
-      
-      if (parsedTimetable.length === 0) {
-        throw new Error("Could not parse any timetable entries from the response");
-      }
-      
-      setTimetable(parsedTimetable);
-      
-      toast({
-        title: "Timetable Generated",
-        description: "Your personalized timetable has been created!",
-      });
-    } catch (error) {
-      console.error("Error generating timetable:", error);
-      
-      // Create a fallback timetable if generation fails
-      if (timetable.length === 0) {
-        const fallbackTimetable = createFallbackTimetable();
-        setTimetable(fallbackTimetable);
-        
-        toast({
-          title: "Timetable Created",
-          description: "We've created a sample timetable for you. You can customize it to your needs.",
-        });
-      } else {
-        toast({
-          title: "Generation Failed",
-          description: "There was a problem generating your timetable. Using your previous timetable.",
-          variant: "destructive"
-        });
-      }
     } finally {
       setLoadingTimetable(false);
     }
   };
 
-  // Create a fallback timetable if generation fails
-  const createFallbackTimetable = (): TimetableEntry[] => {
-    return [
-      { time: '7:00 AM', activity: 'Wake up and morning routine', category: 'routine', completed: false, important: true },
-      { time: '7:30 AM', activity: 'Breakfast', category: 'meal', completed: false, important: false },
-      { time: '8:30 AM', activity: 'Work/Study session 1', category: 'work', completed: false, important: true },
-      { time: '10:30 AM', activity: 'Short break', category: 'rest', completed: false, important: false },
-      { time: '10:45 AM', activity: 'Work/Study session 2', category: 'work', completed: false, important: true },
-      { time: '12:30 PM', activity: 'Lunch', category: 'meal', completed: false, important: false },
-      { time: '1:30 PM', activity: 'Exercise', category: 'exercise', completed: false, important: false },
-      { time: '2:30 PM', activity: 'Work/Study session 3', category: 'work', completed: false, important: true },
-      { time: '4:30 PM', activity: 'Learning something new', category: 'learning', completed: false, important: false },
-      { time: '5:30 PM', activity: 'Free time/Hobbies', category: 'leisure', completed: false, important: false },
-      { time: '7:00 PM', activity: 'Dinner', category: 'meal', completed: false, important: false },
-      { time: '8:00 PM', activity: 'Relaxation time', category: 'leisure', completed: false, important: false },
-      { time: '10:00 PM', activity: 'Bedtime routine', category: 'routine', completed: false, important: true }
-    ];
-  };
-
-  // Parse the timetable text into structured data
-  const parseTimetableText = (text: string): TimetableEntry[] => {
-    const lines = text.split('\n').filter(line => line.trim() !== '');
-    const entries: TimetableEntry[] = [];
-    
-    const timeRegex = /(\d{1,2}:\d{2}\s*(?:AM|PM))/i;
-    const categoryRegex = /(routine|work|meal|exercise|leisure|learning|rest)/i;
-    
-    for (const line of lines) {
-      // Skip headers or non-timetable lines
-      if (!timeRegex.test(line)) continue;
-      
-      const timeMatch = line.match(timeRegex);
-      if (!timeMatch) continue;
-      
-      const time = timeMatch[1];
-      let activityText = line.substring(line.indexOf('-') + 1).trim();
-      
-      // Try to extract category from the line if it's explicitly mentioned
-      let category: TimetableEntry['category'] = 'routine';
-      const categoryMatch = line.match(categoryRegex);
-      
-      if (categoryMatch) {
-        category = categoryMatch[1].toLowerCase() as TimetableEntry['category'];
-        // Remove the category from the activity text if it was in brackets or parentheses
-        activityText = activityText.replace(/\[(routine|work|meal|exercise|leisure|learning|rest)\]/i, '').trim();
-        activityText = activityText.replace(/\((routine|work|meal|exercise|leisure|learning|rest)\)/i, '').trim();
-        activityText = activityText.replace(/- (routine|work|meal|exercise|leisure|learning|rest)$/i, '').trim();
-      } else {
-        // Try to infer the category from keywords
-        const lowerActivity = activityText.toLowerCase();
-        if (lowerActivity.includes('wake') || lowerActivity.includes('sleep') || lowerActivity.includes('routine') || lowerActivity.includes('preparation')) {
-          category = 'routine';
-        } else if (lowerActivity.includes('work') || lowerActivity.includes('study') || lowerActivity.includes('meeting')) {
-          category = 'work';
-        } else if (lowerActivity.includes('breakfast') || lowerActivity.includes('lunch') || lowerActivity.includes('dinner') || lowerActivity.includes('meal')) {
-          category = 'meal';
-        } else if (lowerActivity.includes('exercise') || lowerActivity.includes('gym') || lowerActivity.includes('workout') || lowerActivity.includes('walk')) {
-          category = 'exercise';
-        } else if (lowerActivity.includes('relax') || lowerActivity.includes('entertainment') || lowerActivity.includes('hobby')) {
-          category = 'leisure';
-        } else if (lowerActivity.includes('learn') || lowerActivity.includes('read') || lowerActivity.includes('class') || lowerActivity.includes('course')) {
-          category = 'learning';
-        } else if (lowerActivity.includes('rest') || lowerActivity.includes('break')) {
-          category = 'rest';
-        }
-      }
-      
-      // Clean up the activity text
-      activityText = activityText.replace(/^\s*-\s*/, ''); // Remove leading dash if present
-      
-      entries.push({
-        time,
-        activity: activityText,
-        category,
-        completed: false,
-        important: category === 'work' || category === 'routine'  // Mark work and routine as important by default
-      });
-    }
-    
-    return entries;
+  const generateTimetableFromLocalConversation = () => {
+    setIsGeneratingAfterConversation(false);
+    setShowTimetable(true);
   };
 
   // Handle editing a timetable entry
@@ -900,10 +320,10 @@ const TimetableGenerator = () => {
               Back to Home
             </Link>
             <h1 className="text-3xl font-medium text-wellness-darkGreen mt-4 mb-2">
-              AI Voice Timetable Generator
+              AI Timetable Generator
             </h1>
             <p className="text-wellness-charcoal">
-              Have a natural conversation with our AI assistant to create your personalized daily timetable.
+              Have a conversation with our AI assistant to create your personalized daily timetable.
             </p>
           </div>
           
@@ -911,70 +331,39 @@ const TimetableGenerator = () => {
           <div className="bg-white bg-opacity-70 backdrop-blur-sm rounded-xl p-6 border border-wellness-softGreen/30 shadow-sm mb-8">
             <h2 className="text-xl font-medium text-wellness-darkGreen mb-4 flex items-center">
               <Clock className="h-5 w-5 mr-2" />
-              Voice Assistant
+              AI Assistant
             </h2>
             
-            <div className="mb-6">
-              <p className="text-sm text-wellness-charcoal mb-2">
-                The AI assistant will ask you questions about your daily routine and preferences to create a personalized timetable.
-              </p>
-              
-              {isConversationActive ? (
-                <div className="flex flex-col items-center py-4">
-                  <div className="h-16 w-16 rounded-full bg-wellness-softGreen/50 flex items-center justify-center mb-4 animate-pulse">
-                    <Mic className="h-8 w-8 text-wellness-darkGreen" />
-                  </div>
-                  <p className="text-wellness-darkGreen font-medium mb-2">
-                    Assistant is listening...
-                  </p>
-                  <p className="text-sm text-wellness-charcoal mb-4">
-                    Speak clearly to answer the assistant's questions
-                  </p>
-                  <Button 
-                    variant="destructive" 
-                    onClick={endConversation}
-                    className="flex items-center"
-                  >
-                    <MicOff className="h-4 w-4 mr-2" />
-                    End Conversation
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center py-4">
-                  <div className="h-16 w-16 rounded-full bg-wellness-softGreen/30 flex items-center justify-center mb-4">
-                    <Mic className="h-8 w-8 text-wellness-darkGreen/70" />
-                  </div>
-                  <Button 
-                    onClick={startConversation} 
-                    disabled={isConnecting || isGeneratingAfterConversation}
-                    className="bg-wellness-darkGreen hover:bg-wellness-mediumGreen text-white"
-                  >
-                    {isConnecting ? 'Connecting...' : (conversationComplete ? 'Start New Conversation' : 'Start Conversation')}
-                  </Button>
-                </div>
-              )}
-            </div>
+            {/* Chat Mode Selector */}
+            <ChatModeSelector 
+              chatMode={chatMode}
+              setChatMode={setChatMode}
+              isConversationActive={isConversationActive}
+              isTextChatActive={isTextChatActive}
+            />
             
-            {/* Conversation History */}
-            {responses.length > 0 && (
-              <div className="mt-4 border-t border-wellness-softGreen/20 pt-4">
-                <h3 className="text-sm font-medium text-wellness-darkGreen mb-2">Conversation Summary</h3>
-                <div className="space-y-3 max-h-60 overflow-y-auto p-2">
-                  {responses.map((response, i) => (
-                    <div key={i} className="space-y-1">
-                      <p className="text-sm font-medium text-wellness-darkGreen">
-                        <span className="text-wellness-mediumGreen">Q:</span> {response.question}
-                      </p>
-                      {response.answer && (
-                        <p className="text-sm text-wellness-charcoal pl-4">
-                          <span className="text-wellness-mediumGreen">A:</span> {response.answer}
-                        </p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
+            {/* Display appropriate chat interface based on selected mode */}
+            {chatMode === 'voice' && (
+              <VoiceAssistant 
+                isConversationActive={isConversationActive}
+                setIsConversationActive={setIsConversationActive}
+                onConversationComplete={handleConversationComplete}
+                onResponses={handleAddResponse}
+                onSetConversationId={setCurrentConversationId}
+              />
             )}
+            
+            {chatMode === 'text' && (
+              <TextChatAssistant 
+                isTextChatActive={isTextChatActive}
+                setIsTextChatActive={setIsTextChatActive}
+                onConversationComplete={handleConversationComplete}
+                onResponses={handleAddResponse}
+              />
+            )}
+            
+            {/* Conversation Summary */}
+            <ConversationSummary responses={responses} />
           </div>
           
           {/* Timetable Generation In Progress */}
@@ -996,28 +385,57 @@ const TimetableGenerator = () => {
               onToggleImportant={toggleImportant}
               onDownload={downloadTimetable}
               onShare={shareTimetable}
-              onRegenerate={generateTimetable}
+              onRegenerate={() => {
+                const timetableGenerator = document.getElementById('timetable-generator');
+                if (timetableGenerator) {
+                  timetableGenerator.scrollIntoView({ behavior: 'smooth' });
+                }
+              }}
               colorTheme={colorTheme}
             />
           )}
           
-          {/* Initial timetable creation prompt - only show if no conversation in progress, no timetable being generated, and no timetable is shown */}
-          {!showTimetable && !isConversationActive && !loadingTimetable && !isGeneratingAfterConversation && timetable.length === 0 && !conversationComplete && (
+          {/* Timetable Generator Component */}
+          <div id="timetable-generator">
+            {showTimetable && !loadingTimetable && !isGeneratingAfterConversation && (
+              <TimetableGeneratorComponent 
+                conversationData={conversationData}
+                localConversation={localConversation}
+                responses={responses}
+                transcript={transcript}
+                setTimetable={setTimetable}
+                setShowTimetable={setShowTimetable}
+                timetable={timetable}
+                currentConversationId={currentConversationId}
+              />
+            )}
+          </div>
+          
+          {/* Initial timetable creation prompt - only show if no conversation in progress and no timetable is shown */}
+          {!showTimetable && !isConversationActive && !isTextChatActive && !loadingTimetable && !isGeneratingAfterConversation && 
+           timetable.length === 0 && !conversationComplete && !chatMode && (
             <div className="flex flex-col items-center justify-center py-8 bg-white bg-opacity-70 backdrop-blur-sm rounded-xl p-6 border border-wellness-softGreen/30 shadow-sm">
               <p className="text-wellness-darkGreen font-medium mb-4 text-center">
                 Start a conversation with the AI assistant to create your personalized timetable
               </p>
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  setShowTimetable(true);
-                  setTimetable(createFallbackTimetable());
-                }}
-                className="border-wellness-darkGreen text-wellness-darkGreen"
-              >
-                <Calendar className="h-4 w-4 mr-2" />
-                Create Sample Timetable
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setChatMode('voice')}
+                  className="border-wellness-darkGreen text-wellness-darkGreen"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Start with Voice Chat
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setChatMode('text')}
+                  className="border-wellness-darkGreen text-wellness-darkGreen"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Start with Text Chat
+                </Button>
+              </div>
             </div>
           )}
         </div>
