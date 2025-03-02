@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -17,9 +17,13 @@ import {
   CheckCircle2, 
   Star, 
   StarOff,
-  RefreshCw
+  RefreshCw,
+  Square,
+  CheckSquare
 } from 'lucide-react';
 import { format } from 'date-fns';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 interface TimetableEntry {
   time: string;
@@ -73,19 +77,30 @@ const colorThemes = {
   }
 };
 
+// PDF color themes - we need explicit colors for PDF
+const pdfColorThemes = {
+  routine: { light: '#F8FAFC', dark: '#334155' },  // slate
+  work: { light: '#DBEAFE', dark: '#1E40AF' },     // blue
+  meal: { light: '#FEF3C7', dark: '#92400E' },     // amber
+  exercise: { light: '#DCFCE7', dark: '#166534' }, // green
+  leisure: { light: '#F3E8FF', dark: '#6B21A8' },  // purple
+  learning: { light: '#E0E7FF', dark: '#3730A3' }, // indigo
+  rest: { light: '#FFE4E6', dark: '#9F1239' },     // rose
+};
+
 const TimetableVisualizer: React.FC<TimetableVisualizerProps> = ({
   timetable,
   onEditEntry,
   onDeleteEntry,
   onToggleCompleted,
   onToggleImportant,
-  onDownload,
   onShare,
   onRegenerate,
   colorTheme
 }) => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [viewType, setViewType] = useState<"timeline" | "table" | "grid">("timeline");
+  const tableRef = useRef<HTMLDivElement>(null);
   
   // Get color based on activity category
   const getCategoryColor = (category: TimetableEntry['category']) => {
@@ -119,6 +134,185 @@ const TimetableVisualizer: React.FC<TimetableVisualizerProps> = ({
     return getTimePercentage(a.time) - getTimePercentage(b.time);
   });
 
+  // Enhanced PDF download function
+  const downloadTimetableAsPDF = async () => {
+    // Create new PDF
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+    
+    // Set title
+    pdf.setFont("helvetica", "bold");
+    pdf.setTextColor(40, 80, 60); // Teal color
+    pdf.setFontSize(18);
+    pdf.text(`Daily Timetable: ${formattedDate}`, 15, 15);
+    
+    // Draw decorative header
+    pdf.setFillColor(230, 245, 240); // Light teal background
+    pdf.roundedRect(10, 20, 190, 10, 2, 2, 'F');
+    pdf.setTextColor(40, 80, 60);
+    pdf.setFontSize(10);
+    pdf.text('Time', 15, 27);
+    pdf.text('Activity', 60, 27);
+    pdf.text('Category', 140, 27);
+    pdf.text('Done', 175, 27);
+    
+    // Set start Y position for timetable entries
+    let yPos = 40;
+    const entryHeight = 15;
+    const pageHeight = 270;
+    
+    // Function to check if we need a new page
+    const checkForNewPage = (currentY: number, entryHeight: number) => {
+      if (currentY + entryHeight > pageHeight) {
+        pdf.addPage();
+        yPos = 20;
+        return true;
+      }
+      return false;
+    };
+    
+    // Draw color category legend
+    pdf.setFontSize(9);
+    pdf.setTextColor(80, 80, 80);
+    pdf.text('Categories:', 15, pageHeight + 10);
+    
+    let legendX = 40;
+    const categories = ['routine', 'work', 'meal', 'exercise', 'leisure', 'learning', 'rest'] as const;
+    
+    categories.forEach((cat) => {
+      const color = pdfColorThemes[cat];
+      pdf.setFillColor(hexToRgb(color.light).r, hexToRgb(color.light).g, hexToRgb(color.light).b);
+      pdf.roundedRect(legendX, pageHeight + 7, 6, 6, 1, 1, 'F');
+      pdf.setTextColor(hexToRgb(color.dark).r, hexToRgb(color.dark).g, hexToRgb(color.dark).b);
+      pdf.text(cat.charAt(0).toUpperCase() + cat.slice(1), legendX + 8, pageHeight + 11);
+      legendX += 25;
+    });
+    
+    // Draw timetable entries
+    for (const entry of sortedTimetable) {
+      // Check if we need a new page
+      checkForNewPage(yPos, entryHeight);
+      
+      // Get category colors
+      const color = pdfColorThemes[entry.category];
+      
+      // Draw background for entry
+      pdf.setFillColor(hexToRgb(color.light).r, hexToRgb(color.light).g, hexToRgb(color.light).b);
+      pdf.roundedRect(10, yPos - 4, 190, entryHeight, 2, 2, 'F');
+      
+      // Draw time
+      pdf.setTextColor(hexToRgb(color.dark).r, hexToRgb(color.dark).g, hexToRgb(color.dark).b);
+      pdf.setFontSize(10);
+      pdf.setFont("helvetica", "bold");
+      pdf.text(entry.time, 15, yPos + 3);
+      
+      // Draw activity (with strikethrough if completed)
+      pdf.setFont("helvetica", entry.completed ? "italic" : "normal");
+      const activityText = entry.activity.length > 50 ? entry.activity.substring(0, 47) + '...' : entry.activity;
+      
+      if (entry.completed) {
+        // For completed items, show in lighter color
+        pdf.setTextColor(hexToRgb(color.dark).r, hexToRgb(color.dark).g, hexToRgb(color.dark).b, 0.7);
+        pdf.text(activityText, 60, yPos + 3);
+        
+        // Draw strikethrough line
+        pdf.setDrawColor(hexToRgb(color.dark).r, hexToRgb(color.dark).g, hexToRgb(color.dark).b, 0.5);
+        const textWidth = pdf.getTextWidth(activityText);
+        pdf.line(60, yPos + 1, 60 + textWidth, yPos + 1);
+      } else {
+        pdf.setTextColor(hexToRgb(color.dark).r, hexToRgb(color.dark).g, hexToRgb(color.dark).b);
+        pdf.text(activityText, 60, yPos + 3);
+      }
+      
+      // Add description if exists (smaller text)
+      if (entry.description) {
+        const descriptionText = entry.description.length > 60 ? entry.description.substring(0, 57) + '...' : entry.description;
+        pdf.setFontSize(8);
+        pdf.setTextColor(hexToRgb(color.dark).r, hexToRgb(color.dark).g, hexToRgb(color.dark).b, 0.7);
+        pdf.text(descriptionText, 60, yPos + 8);
+      }
+      
+      // Draw category badge
+      pdf.setFillColor(hexToRgb(color.dark).r, hexToRgb(color.dark).g, hexToRgb(color.dark).b, 0.1);
+      pdf.setDrawColor(hexToRgb(color.dark).r, hexToRgb(color.dark).g, hexToRgb(color.dark).b);
+      pdf.roundedRect(140, yPos - 1, 25, 6, 1, 1, 'FD');
+      pdf.setFontSize(7);
+      pdf.setTextColor(hexToRgb(color.dark).r, hexToRgb(color.dark).g, hexToRgb(color.dark).b);
+      pdf.text(entry.category.charAt(0).toUpperCase() + entry.category.slice(1), 143, yPos + 2.5);
+      
+      // Draw checkbox
+      pdf.setDrawColor(80, 80, 80);
+      pdf.setFillColor(255, 255, 255);
+      pdf.roundedRect(175, yPos - 1, 6, 6, 1, 1, entry.completed ? 'F' : 'FD');
+      
+      // If completed, draw a checkmark
+      if (entry.completed) {
+        pdf.setDrawColor(40, 167, 69); // Green color
+        pdf.setLineWidth(0.5);
+        // Draw a checkmark
+        pdf.line(176, yPos + 2, 178, yPos + 4);
+        pdf.line(178, yPos + 4, 181, yPos);
+      }
+      
+      // Add star for important items
+      if (entry.important) {
+        pdf.setFillColor(255, 193, 7); // Amber color
+        const starSize = 3;
+        const starX = 50;
+        const starY = yPos + 1;
+        drawStar(pdf, starX, starY, 5, starSize, starSize/2);
+      }
+      
+      // Increase Y position for next entry
+      yPos += entryHeight + 2;
+    }
+    
+    // Add footer
+    pdf.setTextColor(100, 100, 100);
+    pdf.setFontSize(8);
+    pdf.text('Generated by Wellness Assistant', 80, 285);
+    
+    // Save PDF
+    pdf.save(`timetable_${format(selectedDate, 'yyyy-MM-dd')}.pdf`);
+  };
+  
+  // Helper function to draw a star
+  const drawStar = (pdf: jsPDF, cx: number, cy: number, spikes: number, outerRadius: number, innerRadius: number) => {
+    let rot = Math.PI/2*3;
+    let x = cx;
+    let y = cy;
+    const step = Math.PI / spikes;
+    
+    pdf.setFillColor(255, 193, 7); // Amber color for stars
+    
+    pdf.beginPath();
+    
+    for(let i = 0; i < spikes; i++) {
+      x = cx + Math.cos(rot) * outerRadius;
+      y = cy + Math.sin(rot) * outerRadius;
+      pdf.lines([[x-cx, y-cy]], cx, cy);
+      rot += step;
+      
+      x = cx + Math.cos(rot) * innerRadius;
+      y = cy + Math.sin(rot) * innerRadius;
+      pdf.lines([[x-cx, y-cy]], cx, cy);
+      rot += step;
+    }
+    
+    pdf.fill();
+  };
+  
+  // Helper function to convert hex to rgb
+  const hexToRgb = (hex: string, alpha = 1) => {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return { r, g, b, a: alpha };
+  };
+
   return (
     <Card className="p-6 shadow-md bg-white rounded-xl">
       <div className="flex justify-between items-center mb-6">
@@ -150,11 +344,11 @@ const TimetableVisualizer: React.FC<TimetableVisualizerProps> = ({
           <Button 
             variant="outline" 
             size="sm" 
-            onClick={onDownload}
+            onClick={downloadTimetableAsPDF}
             className="text-teal-600 border-teal-200 hover:bg-teal-50"
           >
             <Download className="h-4 w-4 mr-2" />
-            Download
+            Download PDF
           </Button>
         </div>
       </div>
@@ -215,7 +409,7 @@ const TimetableVisualizer: React.FC<TimetableVisualizerProps> = ({
             </TabsList>
             
             <TabsContent value="timeline" className="mt-0">
-              <div className="relative h-[500px] border-l-2 border-slate-200 ml-6 pl-6 overflow-y-auto pr-2">
+              <div className="relative h-[500px] border-l-2 border-slate-200 ml-6 pl-6 overflow-y-auto pr-2" ref={tableRef}>
                 {sortedTimetable.length > 0 ? (
                   sortedTimetable.map((entry, index) => (
                     <div 
@@ -245,7 +439,10 @@ const TimetableVisualizer: React.FC<TimetableVisualizerProps> = ({
                               className="h-7 w-7 p-0 hover:bg-white/20"
                               title={entry.completed ? "Mark as not completed" : "Mark as completed"}
                             >
-                              <CheckCircle2 className={`h-5 w-5 ${entry.completed ? 'text-green-600' : 'text-slate-400'}`} />
+                              {entry.completed ? 
+                                <CheckSquare className="h-5 w-5 text-green-600" /> : 
+                                <Square className="h-5 w-5 text-slate-400" />
+                              }
                             </Button>
                             <Button 
                               variant="ghost" 
@@ -342,7 +539,10 @@ const TimetableVisualizer: React.FC<TimetableVisualizerProps> = ({
                                 className={`h-8 w-8 p-0 rounded-full ${entry.completed ? 'bg-green-100' : 'bg-gray-100'}`}
                                 title={entry.completed ? "Mark as not completed" : "Mark as completed"}
                               >
-                                <CheckCircle2 className={`h-5 w-5 ${entry.completed ? 'text-green-600' : 'text-gray-400'}`} />
+                                {entry.completed ? 
+                                  <CheckSquare className="h-5 w-5 text-green-600" /> : 
+                                  <Square className="h-5 w-5 text-gray-400" />
+                                }
                               </Button>
                               <Button 
                                 variant="ghost" 
@@ -417,7 +617,10 @@ const TimetableVisualizer: React.FC<TimetableVisualizerProps> = ({
                             className="h-7 w-7 p-0 hover:bg-white/20"
                             title={entry.completed ? "Mark as not completed" : "Mark as completed"}
                           >
-                            <CheckCircle2 className={`h-5 w-5 ${entry.completed ? 'text-green-600' : 'text-slate-400'}`} />
+                            {entry.completed ? 
+                              <CheckSquare className="h-5 w-5 text-green-600" /> : 
+                              <Square className="h-5 w-5 text-slate-400" />
+                            }
                           </Button>
                           <Button 
                             variant="ghost" 
