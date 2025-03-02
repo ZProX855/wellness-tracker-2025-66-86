@@ -20,7 +20,7 @@ interface TimetableEntry {
 interface TimetableVisualizerProps {
   timetable: TimetableEntry[];
   onEditEntry: (entry: TimetableEntry, index: number) => void;
-  onDeleteEntry: (index: number) => void;
+  onDeleteEntry: (index: TimetableEntry, index: number) => void;
   onToggleCompleted: (index: number) => void;
   onToggleImportant: (index: number) => void;
   onDownload: () => void;
@@ -94,19 +94,9 @@ const getCategoryBadgeColor = (category: string) => {
   return badgeColorMap[category as keyof typeof badgeColorMap] || 'bg-gray-100 text-gray-800';
 };
 
-// New helper function to get PDF-friendly light colors
-const getPDFCategoryColor = (category: string) => {
-  const pdfColorMap = {
-    routine: '#F1F0FB', // Soft Gray
-    work: '#D3E4FD',    // Soft Blue
-    meal: '#FDE1D3',    // Soft Peach
-    exercise: '#F2FCE2', // Soft Green
-    leisure: '#E5DEFF',  // Soft Purple
-    learning: '#D3E4FD', // Soft Blue
-    rest: '#FFDEE2'      // Soft Pink
-  };
-  
-  return pdfColorMap[category as keyof typeof pdfColorMap] || '#F5F5F5';
+// Updated helper function to get PDF-friendly colors (using plain white)
+const getPDFCategoryColor = () => {
+  return '#FFFFFF'; // Plain white for all categories
 };
 
 // New helper function to get PDF-friendly text colors
@@ -142,32 +132,36 @@ const TimetableVisualizer: React.FC<TimetableVisualizerProps> = ({
       
       // Create header
       const header = document.createElement('h2');
-      header.textContent = `Daily Timetable: ${selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', d: 'numeric', year: 'numeric' })}`;
-      header.style.color = '#2A6041'; // Wellness dark green
+      header.textContent = `Daily Timetable: ${selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}`;
+      header.style.color = '#333333'; // Dark text for better readability
       header.style.marginBottom = '16px';
       header.style.fontSize = '16px';
+      header.style.fontWeight = 'bold';
+      header.style.textAlign = 'center';
       pdfContent.appendChild(header);
       
-      // Create table element
+      // Create table element with clean design
       const table = document.createElement('table');
       table.style.width = '100%';
       table.style.borderCollapse = 'collapse';
       table.style.fontSize = '10px';
+      table.style.border = '1px solid #ddd';
       
       // Add table header
       const thead = document.createElement('thead');
       const headerRow = document.createElement('tr');
       
-      const headers = ['Time', 'Activity', 'Category', 'Done'];
+      const headers = ['Time', 'Activity', 'Category', 'Status'];
       
       headers.forEach(headerText => {
         const th = document.createElement('th');
         th.textContent = headerText;
-        th.style.padding = '6px';
+        th.style.padding = '8px';
         th.style.textAlign = 'left';
         th.style.borderBottom = '1px solid #ddd';
-        th.style.backgroundColor = '#F8F9FA';
-        th.style.color = '#2A6041';
+        th.style.backgroundColor = '#f5f5f5'; // Light gray background
+        th.style.color = '#333333';
+        th.style.fontWeight = 'bold';
         headerRow.appendChild(th);
       });
       
@@ -180,46 +174,63 @@ const TimetableVisualizer: React.FC<TimetableVisualizerProps> = ({
       timetable.forEach((entry, index) => {
         const row = document.createElement('tr');
         
-        // Alternating row colors based on category
-        row.style.backgroundColor = getPDFCategoryColor(entry.category);
+        // Simple alternating row colors for better readability
+        row.style.backgroundColor = index % 2 === 0 ? '#ffffff' : '#f9f9f9';
+        row.style.borderBottom = '1px solid #eee';
         
         // Time cell
         const timeCell = document.createElement('td');
         timeCell.textContent = entry.time;
         timeCell.style.padding = '8px';
-        timeCell.style.borderBottom = '1px solid #eee';
         timeCell.style.color = getPDFTextColor();
+        timeCell.style.borderRight = '1px solid #eee';
         row.appendChild(timeCell);
         
         // Activity cell
         const activityCell = document.createElement('td');
         activityCell.textContent = entry.activity;
         activityCell.style.padding = '8px';
-        activityCell.style.borderBottom = '1px solid #eee';
         activityCell.style.color = getPDFTextColor();
+        activityCell.style.borderRight = '1px solid #eee';
         
         // Add strikethrough for completed items
         if (entry.completed) {
           activityCell.style.textDecoration = 'line-through';
           activityCell.style.color = '#999';
         }
+        
+        // Add important indicator
+        if (entry.important) {
+          activityCell.textContent = `${entry.activity} (Important)`;
+          activityCell.style.fontWeight = 'bold';
+        }
+        
+        // Add description if available
+        if (entry.description) {
+          const descSpan = document.createElement('div');
+          descSpan.textContent = entry.description;
+          descSpan.style.fontSize = '8px';
+          descSpan.style.color = '#666';
+          descSpan.style.marginTop = '2px';
+          activityCell.appendChild(descSpan);
+        }
+        
         row.appendChild(activityCell);
         
         // Category cell
         const categoryCell = document.createElement('td');
         categoryCell.textContent = entry.category.charAt(0).toUpperCase() + entry.category.slice(1);
         categoryCell.style.padding = '8px';
-        categoryCell.style.borderBottom = '1px solid #eee';
         categoryCell.style.color = getPDFTextColor();
+        categoryCell.style.borderRight = '1px solid #eee';
         row.appendChild(categoryCell);
         
-        // Done/Checkbox cell
-        const doneCell = document.createElement('td');
-        doneCell.style.padding = '8px';
-        doneCell.style.borderBottom = '1px solid #eee';
-        doneCell.innerHTML = entry.completed ? '☑' : '☐';
-        doneCell.style.textAlign = 'center';
-        row.appendChild(doneCell);
+        // Status cell
+        const statusCell = document.createElement('td');
+        statusCell.style.padding = '8px';
+        statusCell.textContent = entry.completed ? 'Completed' : 'Pending';
+        statusCell.style.color = entry.completed ? '#4CAF50' : '#FF9800';
+        row.appendChild(statusCell);
         
         tbody.appendChild(row);
       });
@@ -227,48 +238,58 @@ const TimetableVisualizer: React.FC<TimetableVisualizerProps> = ({
       table.appendChild(tbody);
       pdfContent.appendChild(table);
       
-      // Add categories legend at the bottom
-      const legend = document.createElement('div');
-      legend.style.marginTop = '16px';
-      legend.style.fontSize = '9px';
+      // Add summary section
+      const summarySection = document.createElement('div');
+      summarySection.style.marginTop = '16px';
+      summarySection.style.fontSize = '9px';
       
-      const categories = ['routine', 'work', 'meal', 'exercise', 'leisure', 'learning', 'rest'];
-      legend.innerHTML = '<div style="margin-bottom: 4px;">Categories:</div>';
-      
-      const legendFlex = document.createElement('div');
-      legendFlex.style.display = 'flex';
-      legendFlex.style.flexWrap = 'wrap';
-      legendFlex.style.gap = '8px';
-      
-      categories.forEach(category => {
-        const catSpan = document.createElement('span');
-        catSpan.style.display = 'inline-flex';
-        catSpan.style.alignItems = 'center';
-        catSpan.style.marginRight = '8px';
-        
-        const colorBox = document.createElement('span');
-        colorBox.style.display = 'inline-block';
-        colorBox.style.width = '10px';
-        colorBox.style.height = '10px';
-        colorBox.style.backgroundColor = getPDFCategoryColor(category);
-        colorBox.style.marginRight = '4px';
-        
-        catSpan.appendChild(colorBox);
-        catSpan.appendChild(document.createTextNode(category.charAt(0).toUpperCase() + category.slice(1)));
-        legendFlex.appendChild(catSpan);
+      // Count activities by category
+      const categoryCounts: Record<string, number> = {};
+      timetable.forEach(entry => {
+        if (!categoryCounts[entry.category]) {
+          categoryCounts[entry.category] = 0;
+        }
+        categoryCounts[entry.category]++;
       });
       
-      legend.appendChild(legendFlex);
+      // Add summary header
+      const summaryHeader = document.createElement('div');
+      summaryHeader.textContent = 'Summary';
+      summaryHeader.style.fontWeight = 'bold';
+      summaryHeader.style.marginBottom = '4px';
+      summarySection.appendChild(summaryHeader);
+      
+      // Add category counts
+      const categoryList = document.createElement('ul');
+      categoryList.style.margin = '0';
+      categoryList.style.paddingLeft = '16px';
+      
+      Object.entries(categoryCounts).forEach(([category, count]) => {
+        const listItem = document.createElement('li');
+        listItem.textContent = `${category.charAt(0).toUpperCase() + category.slice(1)}: ${count} activities`;
+        categoryList.appendChild(listItem);
+      });
+      
+      summarySection.appendChild(categoryList);
+      
+      // Add completion status
+      const completedCount = timetable.filter(entry => entry.completed).length;
+      const completionStatus = document.createElement('div');
+      completionStatus.style.marginTop = '4px';
+      completionStatus.textContent = `Completed: ${completedCount} of ${timetable.length} (${Math.round((completedCount / timetable.length) * 100)}%)`;
+      summarySection.appendChild(completionStatus);
+      
+      pdfContent.appendChild(summarySection);
       
       // Add signature
       const signature = document.createElement('div');
-      signature.style.marginTop = '8px';
+      signature.style.marginTop = '16px';
       signature.style.fontSize = '8px';
       signature.style.color = '#999';
+      signature.style.textAlign = 'center';
       signature.textContent = 'Generated by Wellness Assistant';
       
-      legend.appendChild(signature);
-      pdfContent.appendChild(legend);
+      pdfContent.appendChild(signature);
       
       // Append to DOM temporarily (invisible)
       pdfContent.style.position = 'absolute';
