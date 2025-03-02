@@ -1,6 +1,7 @@
 
 import React, { useState, useRef } from 'react';
 import { Upload, Camera, Image as ImageIcon, X, CheckCircle, EggIcon, Loader, AlertCircle, InfoIcon } from 'lucide-react';
+// Make sure recognizeMeal is properly imported
 import { recognizeMeal } from '../services/api';
 import { toast } from 'sonner';
 
