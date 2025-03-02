@@ -15,6 +15,7 @@ import TextChatAssistant from '@/components/timetable/TextChatAssistant';
 import ConversationSummary from '@/components/timetable/ConversationSummary';
 import TimetableGeneratorComponent from '@/components/timetable/TimetableGenerator';
 import ChatModeSelector from '@/components/timetable/ChatModeSelector';
+import TimetableInsights from '@/components/timetable/TimetableInsights';
 
 interface TimetableEntry {
   time: string;
@@ -53,38 +54,27 @@ const TimetableGenerator = () => {
   });
   const [showTimetable, setShowTimetable] = useState(false);
   const [conversationData, setConversationData] = useState<any>(null);
-  // Store the conversation ID separately
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
-  // Add state for generating after conversation
   const [isGeneratingAfterConversation, setIsGeneratingAfterConversation] = useState(false);
-
-  // Add state for transcript from Web Speech API
   const [transcript, setTranscript] = useState<string[]>([]);
   const [localConversation, setLocalConversation] = useState<{question: string, answer: string}[]>([]);
-  
-  // Add state for chat mode selection
   const [chatMode, setChatMode] = useState<'voice' | 'text' | null>(null);
-  
+
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Initialize the app
   useEffect(() => {
-    // If we have a stored timetable, show it
     if (timetable && timetable.length > 0) {
       setShowTimetable(true);
     }
   }, []);
 
-  // Handle adding a new message to the responses
   const handleAddResponse = (question: string, answer: string) => {
     if (question && !answer) {
-      // This is a new question from the assistant
       setResponses(prev => [...prev, { question, answer: '' }]);
       setLocalConversation(prev => [...prev, { question, answer: '' }]);
     } else if (answer) {
-      // This is an answer to the last question
       setResponses(prev => {
         const updated = [...prev];
         if (updated.length > 0) {
@@ -103,26 +93,21 @@ const TimetableGenerator = () => {
     }
   };
 
-  // Handle conversation completion
   const handleConversationComplete = () => {
     setConversationComplete(true);
     setIsGeneratingAfterConversation(true);
     
-    // Generate timetable automatically after conversation ends
     setTimeout(() => {
       if (chatMode === 'voice') {
-        // For voice, use the conversation data from ElevenLabs if available
         currentConversationId 
           ? fetchConversationData() 
           : generateTimetableFromLocalConversation();
       } else {
-        // For text chat, use the local conversation data
         generateTimetableFromLocalConversation();
       }
     }, 1000);
   };
 
-  // Fetch conversation data from ElevenLabs
   const fetchConversationData = async () => {
     if (!currentConversationId) {
       console.error("No conversation ID available");
@@ -147,7 +132,6 @@ const TimetableGenerator = () => {
       console.log("Conversation data from ElevenLabs:", data);
       setConversationData(data);
       
-      // Generate timetable with the fetched data
       generateTimetableFromLocalConversation();
       
     } catch (error) {
@@ -158,7 +142,6 @@ const TimetableGenerator = () => {
         variant: "destructive"
       });
       
-      // Try to generate with local data as fallback
       generateTimetableFromLocalConversation();
     } finally {
       setLoadingTimetable(false);
@@ -170,14 +153,12 @@ const TimetableGenerator = () => {
     setShowTimetable(true);
   };
 
-  // Handle editing a timetable entry
   const handleEditEntry = (entry: TimetableEntry, index: number) => {
     setEditEntry({ ...entry });
     setEditIndex(index);
     setIsDrawerOpen(true);
   };
 
-  // Save edited timetable entry
   const saveEditedEntry = () => {
     if (editEntry && editIndex !== null) {
       const updatedTimetable = [...timetable];
@@ -192,7 +173,6 @@ const TimetableGenerator = () => {
     }
   };
 
-  // Add new entry to timetable
   const addNewEntry = () => {
     if (newEntry.time && newEntry.activity) {
       setTimetable(prev => [...prev, { ...newEntry, completed: false, important: false }]);
@@ -217,7 +197,6 @@ const TimetableGenerator = () => {
     }
   };
 
-  // Delete entry from timetable
   const deleteEntry = (entry: TimetableEntry, index: number) => {
     const updatedTimetable = [...timetable];
     updatedTimetable.splice(index, 1);
@@ -229,29 +208,24 @@ const TimetableGenerator = () => {
     });
   };
 
-  // Toggle completed status
   const toggleCompleted = (index: number) => {
     const updatedTimetable = [...timetable];
     updatedTimetable[index].completed = !updatedTimetable[index].completed;
     setTimetable(updatedTimetable);
   };
 
-  // Toggle important status
   const toggleImportant = (index: number) => {
     const updatedTimetable = [...timetable];
     updatedTimetable[index].important = !updatedTimetable[index].important;
     setTimetable(updatedTimetable);
   };
 
-  // Share timetable
   const shareTimetable = async () => {
     try {
-      // Format timetable as text
       const timetableText = timetable.map(entry => 
         `${entry.time} - ${entry.activity}${entry.description ? ` (${entry.description})` : ''}`
       ).join('\n');
       
-      // Try to use the Web Share API if available
       if (navigator.share) {
         await navigator.share({
           title: 'My Daily Timetable',
@@ -263,7 +237,6 @@ const TimetableGenerator = () => {
           description: "Your timetable has been shared successfully.",
         });
       } else {
-        // Fallback: copy to clipboard
         await navigator.clipboard.writeText(timetableText);
         
         toast({
@@ -282,7 +255,6 @@ const TimetableGenerator = () => {
     }
   };
 
-  // Download timetable as text file
   const downloadTimetable = () => {
     const timetableText = timetable.map(entry => 
       `${entry.time} - ${entry.activity}${entry.description ? ` (${entry.description})` : ''}`
@@ -326,14 +298,12 @@ const TimetableGenerator = () => {
             </p>
           </div>
           
-          {/* Conversation Section */}
           <div className="bg-white bg-opacity-70 backdrop-blur-sm rounded-xl p-6 border border-wellness-softGreen/30 shadow-sm mb-8 hover:shadow-md transition-shadow">
             <h2 className="text-xl font-medium text-wellness-darkGreen mb-4 flex items-center">
               <Clock className="h-5 w-5 mr-2 text-wellness-mediumGreen" />
               AI Assistant
             </h2>
             
-            {/* Chat Mode Selector */}
             <ChatModeSelector 
               chatMode={chatMode}
               setChatMode={setChatMode}
@@ -341,7 +311,6 @@ const TimetableGenerator = () => {
               isTextChatActive={isTextChatActive}
             />
             
-            {/* Display appropriate chat interface based on selected mode */}
             {chatMode === 'voice' && (
               <VoiceAssistant 
                 isConversationActive={isConversationActive}
@@ -361,14 +330,21 @@ const TimetableGenerator = () => {
               />
             )}
             
-            {/* Conversation Summary - Only show for voice mode */}
             <ConversationSummary 
               responses={responses} 
               showSummary={chatMode === 'voice'} 
             />
           </div>
           
-          {/* Timetable Generation In Progress */}
+          {(showTimetable && !loadingTimetable && !isGeneratingAfterConversation && timetable.length > 0) && (
+            <TimetableInsights 
+              timetable={timetable}
+              conversationData={conversationData}
+              localConversation={localConversation}
+              responses={responses}
+            />
+          )}
+          
           {(isGeneratingAfterConversation || loadingTimetable) && (
             <div className="flex flex-col items-center justify-center py-12">
               <div className="rounded-full h-16 w-16 border-b-2 border-t-2 border-wellness-darkGreen animate-spin mb-4"></div>
@@ -377,7 +353,6 @@ const TimetableGenerator = () => {
             </div>
           )}
           
-          {/* Timetable Section - Only show if showTimetable is true and not currently loading */}
           {(showTimetable && !loadingTimetable && !isGeneratingAfterConversation && timetable.length > 0) && (
             <TimetableVisualizer 
               timetable={timetable}
@@ -397,7 +372,6 @@ const TimetableGenerator = () => {
             />
           )}
           
-          {/* Timetable Generator Component */}
           <div id="timetable-generator" className="animate-fade-in">
             {showTimetable && !loadingTimetable && !isGeneratingAfterConversation && (
               <TimetableGeneratorComponent 
@@ -413,7 +387,6 @@ const TimetableGenerator = () => {
             )}
           </div>
           
-          {/* Initial timetable creation prompt - only show if no conversation in progress and no timetable is shown */}
           {!showTimetable && !isConversationActive && !isTextChatActive && !loadingTimetable && !isGeneratingAfterConversation && 
            timetable.length === 0 && !conversationComplete && !chatMode && (
             <div className="flex flex-col items-center justify-center py-8 bg-white bg-opacity-70 backdrop-blur-sm rounded-xl p-6 border border-wellness-softGreen/30 shadow-sm hover:shadow-md transition-shadow animate-fade-in">
@@ -443,7 +416,6 @@ const TimetableGenerator = () => {
         </div>
       </main>
       
-      {/* Edit Entry Drawer */}
       <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
         <DrawerContent>
           <DrawerHeader>
@@ -550,7 +522,6 @@ const TimetableGenerator = () => {
         </DrawerContent>
       </Drawer>
 
-      {/* Add New Entry Drawer */}
       <Drawer open={isAddEntryDrawerOpen} onOpenChange={setIsAddEntryDrawerOpen}>
         <DrawerContent>
           <DrawerHeader>
