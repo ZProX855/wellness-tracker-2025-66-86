@@ -38,8 +38,8 @@ const TextChatAssistant: React.FC<TextChatAssistantProps> = ({
   const startTextChat = async () => {
     setIsTextChatActive(true);
     
-    // First message from the assistant
-    const initialPrompt = "Hi there! I'll help you create a personalized daily timetable. To get started, could you tell me about your typical day, including when you wake up and go to sleep?";
+    // First message from the assistant - more friendly and concise with emoji
+    const initialPrompt = "👋 Hi there! I'll help create your daily schedule. Could you tell me when you usually wake up and go to sleep?";
     
     setConversationHistory([
       { role: 'assistant', content: initialPrompt }
@@ -59,8 +59,8 @@ const TextChatAssistant: React.FC<TextChatAssistantProps> = ({
     onConversationComplete();
     
     toast({
-      title: "Conversation Ended",
-      description: "Please wait while we generate your timetable...",
+      title: "✨ Conversation Ended",
+      description: "Creating your personalized timetable now...",
     });
   };
 
@@ -91,14 +91,37 @@ const TextChatAssistant: React.FC<TextChatAssistantProps> = ({
         parts: [{ text: userMessage }]
       });
       
-      // Call Gemini API
+      // Enhanced prompt for Gemini API to generate more concise, friendly responses with emojis
       const response = await fetch(GEMINI_ENDPOINT, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          contents: formattedHistory,
+          contents: [
+            {
+              role: "user",
+              parts: [
+                {
+                  text: `You are a friendly AI assistant helping create a daily timetable. 
+The user has said: "${userMessage}"
+
+Please respond in a very concise, friendly way (max 2-3 sentences). 
+Include 1-2 relevant emojis.
+Ask just ONE clear question at a time about their routine or preferences.
+Focus on collecting practical information for their timetable.
+
+Previous conversation: ${JSON.stringify(formattedHistory)}`
+                }
+              ]
+            }
+          ],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 150,
+            topP: 0.8,
+            topK: 40
+          },
           safetySettings: [
             {
               category: "HARM_CATEGORY_HARASSMENT",
@@ -131,7 +154,7 @@ const TextChatAssistant: React.FC<TextChatAssistantProps> = ({
       // Check if we've asked enough questions (at least 5 exchanges)
       if (conversationHistory.length >= 10) { // 5 questions + 5 answers
         // Ask if the user wants to continue or generate the timetable
-        const followupMessage = "I think I have enough information to generate your timetable. Would you like to add anything else, or should we generate your timetable now?";
+        const followupMessage = "✅ Thanks for all this info! Ready to create your timetable? Or is there anything else you'd like to add?";
         
         setConversationHistory(prev => [...prev, { role: 'assistant', content: followupMessage }]);
         onResponses(followupMessage, '');

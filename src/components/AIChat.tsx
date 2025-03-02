@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Dumbbell, Coffee, Heart, Leaf, Apple } from 'lucide-react';
 import { getChatResponse } from '../services/api';
@@ -7,7 +6,7 @@ import { toast } from 'sonner';
 const AIChat: React.FC = () => {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<{ text: string; isUser: boolean }[]>([
-    { text: "👋 Hi there! I'm your friendly AI nutrition assistant powered by Gemini 2.0. Ask me anything about nutrition, diet, or wellness!", isUser: false }
+    { text: "👋 Hi! I'm your AI nutrition assistant. How can I help today?", isUser: false }
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -38,10 +37,9 @@ const AIChat: React.FC = () => {
     try {
       const response = await getChatResponse(userMessage);
       if (response.error) {
-        // Handle API error but don't show the technical details to the user
         console.error("Chat API error:", response.error);
         setMessages(prev => [...prev, { 
-          text: "I'm sorry, I couldn't process your request right now. Please try again later.", 
+          text: "🙁 Sorry, I couldn't process that right now. Could you try again?", 
           isUser: false 
         }]);
         toast.error("Couldn't get a response. Please try again.");
@@ -51,7 +49,7 @@ const AIChat: React.FC = () => {
     } catch (error) {
       console.error("Chat error:", error);
       setMessages(prev => [...prev, { 
-        text: "I'm sorry, I couldn't process your request right now. Please try again later.", 
+        text: "🙁 Sorry, I couldn't process that right now. Could you try again?", 
         isUser: false 
       }]);
       toast.error("Couldn't get a response. Please try again.");
@@ -73,7 +71,7 @@ const AIChat: React.FC = () => {
   return (
     <div className="w-full max-w-2xl mx-auto bg-white bg-opacity-80 backdrop-blur-sm shadow-sm rounded-2xl border border-wellness-softGreen/30 overflow-hidden flex flex-col h-[600px]">
       <div className="p-4 bg-wellness-softGreen border-b border-wellness-softGreen/30">
-        <h2 className="text-xl font-medium text-wellness-darkGreen">AI Nutrition Assistant</h2>
+        <h2 className="text-xl font-medium text-wellness-darkGreen">🍎 AI Nutrition Assistant</h2>
         <p className="text-sm text-wellness-charcoal">Powered by Gemini 2.0 Flash</p>
       </div>
       
@@ -109,7 +107,6 @@ const AIChat: React.FC = () => {
         <div ref={messagesEndRef} />
       </div>
       
-      {/* Suggestions */}
       <div className="px-4 py-2 bg-white border-t border-wellness-softGreen/30">
         <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
           {suggestionTopics.map((suggestion, index) => (
@@ -125,7 +122,6 @@ const AIChat: React.FC = () => {
         </div>
       </div>
       
-      {/* Input area */}
       <div className="p-4 bg-white border-t border-wellness-softGreen/20">
         <div className="flex items-center gap-2">
           <input

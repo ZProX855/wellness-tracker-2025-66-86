@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Mic, MicOff } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -62,14 +61,31 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
     };
   }, []);
 
-  // Initialize ElevenLabs conversation hook
+  // Initialize ElevenLabs conversation hook with modified message handler for friendlier responses
   const conversation = useConversation({
     onMessage: (message) => {
       console.log("Message received:", message);
       
       if (message.type === 'agent' && message.content) {
-        // This is a question from the agent
-        onResponses(message.content, '');
+        // This is a question from the agent - store the original question
+        // Check if the message is too verbose and trim it if needed
+        let formattedQuestion = message.content;
+        
+        // Optionally, we could add emoji to the question here if desired
+        if (!formattedQuestion.includes('👋') && !formattedQuestion.includes('😊')) {
+          // Add emoji for greeting messages
+          if (formattedQuestion.toLowerCase().includes('hello') || 
+              formattedQuestion.toLowerCase().includes('hi') || 
+              formattedQuestion.toLowerCase().includes('welcome')) {
+            formattedQuestion = `👋 ${formattedQuestion}`;
+          }
+          // Add emoji for thank you messages
+          else if (formattedQuestion.toLowerCase().includes('thank')) {
+            formattedQuestion = `😊 ${formattedQuestion}`;
+          }
+        }
+        
+        onResponses(formattedQuestion, '');
       } else if (message.type === 'user_message' && message.content) {
         // Update the response with the user's answer
         onResponses('', message.content);
@@ -82,6 +98,12 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
         if (isLocalSpeechRecognitionActive) {
           stopLocalSpeechRecognition();
         }
+        
+        // Show a friendly toast notification
+        toast({
+          title: "✨ Conversation Completed!",
+          description: "Creating your personalized timetable now...",
+        });
       }
     },
     onError: (error) => {
@@ -151,14 +173,14 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
       startLocalSpeechRecognition();
       
       toast({
-        title: "Conversation Started",
-        description: "The AI assistant is now listening. Please allow microphone access.",
+        title: "🎙️ Conversation Started",
+        description: "The AI assistant is listening. Please speak clearly.",
       });
     } catch (error) {
       console.error("Failed to start conversation:", error);
       toast({
         title: "Connection Failed",
-        description: "Could not connect to the ElevenLabs service. Please try again later.",
+        description: "Could not connect to the voice service. Please try again later.",
         variant: "destructive"
       });
     } finally {
@@ -179,8 +201,8 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
       
       // Show toast to indicate timetable generation is in progress
       toast({
-        title: "Conversation Ended",
-        description: "Please wait while we generate your timetable...",
+        title: "✨ Conversation Ended",
+        description: "Creating your personalized timetable now...",
       });
       
       onConversationComplete();
@@ -197,7 +219,7 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
   return (
     <div className="mb-6">
       <p className="text-sm text-wellness-charcoal mb-2">
-        The voice assistant will ask you questions about your daily routine and preferences to create a personalized timetable.
+        👋 Let's create your personal timetable! I'll ask about your daily routine and preferences.
       </p>
       
       {isConversationActive ? (
@@ -206,10 +228,10 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
             <Mic className="h-8 w-8 text-wellness-darkGreen" />
           </div>
           <p className="text-wellness-darkGreen font-medium mb-2">
-            Assistant is listening...
+            🎙️ Assistant is listening...
           </p>
           <p className="text-sm text-wellness-charcoal mb-4">
-            Speak clearly to answer the assistant's questions
+            Speak clearly to answer the questions
           </p>
           <Button 
             variant="destructive" 
@@ -230,7 +252,7 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
             disabled={isConnecting}
             className="bg-wellness-darkGreen hover:bg-wellness-mediumGreen text-white"
           >
-            {isConnecting ? 'Connecting...' : 'Start Voice Conversation'}
+            {isConnecting ? 'Connecting...' : '🎙️ Start Voice Conversation'}
           </Button>
         </div>
       )}
