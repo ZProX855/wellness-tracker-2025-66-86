@@ -3,19 +3,23 @@ import React from 'react';
 
 interface ConversationSummaryProps {
   responses: { question: string; answer: string }[];
+  showSummary?: boolean;
 }
 
-const ConversationSummary: React.FC<ConversationSummaryProps> = ({ responses }) => {
-  if (responses.length === 0) {
+const ConversationSummary: React.FC<ConversationSummaryProps> = ({ 
+  responses, 
+  showSummary = true 
+}) => {
+  if (responses.length === 0 || !showSummary) {
     return null;
   }
   
   return (
-    <div className="mt-4 border-t border-wellness-softGreen/20 pt-4">
+    <div className="mt-4 border-t border-wellness-softGreen/20 pt-4 animate-fade-in">
       <h3 className="text-sm font-medium text-wellness-darkGreen mb-2">Conversation Summary</h3>
-      <div className="space-y-3 max-h-60 overflow-y-auto p-2">
+      <div className="space-y-3 max-h-60 overflow-y-auto p-2 rounded-md bg-white/50 backdrop-blur-sm">
         {responses.map((response, i) => (
-          <div key={i} className="space-y-1">
+          <div key={i} className="space-y-1 hover:bg-white/60 p-2 rounded-md transition-colors">
             {response.question && (
               <p className="text-sm font-medium text-wellness-darkGreen">
                 <span className="text-wellness-mediumGreen">Q:</span> {response.question}

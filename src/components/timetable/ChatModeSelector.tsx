@@ -21,14 +21,14 @@ const ChatModeSelector: React.FC<ChatModeSelectorProps> = ({
   }
   
   return (
-    <div className="mb-6">
+    <div className="mb-6 animate-fade-in">
       <h3 className="text-sm font-medium text-wellness-darkGreen mb-3">Choose Conversation Mode</h3>
       <div className="flex flex-col sm:flex-row gap-4">
         <Button 
           variant={chatMode === 'voice' ? 'default' : 'outline'}
-          className={chatMode === 'voice' 
-            ? 'bg-wellness-darkGreen text-white' 
-            : 'border-wellness-darkGreen text-wellness-darkGreen'}
+          className={`hover-scale transition-all ${chatMode === 'voice' 
+            ? 'bg-gradient-to-r from-wellness-darkGreen to-wellness-mediumGreen text-white shadow-md' 
+            : 'border-wellness-darkGreen text-wellness-darkGreen hover:bg-wellness-softGreen/20'}`}
           onClick={() => setChatMode('voice')}
         >
           <Mic className="h-4 w-4 mr-2" />
@@ -36,9 +36,9 @@ const ChatModeSelector: React.FC<ChatModeSelectorProps> = ({
         </Button>
         <Button 
           variant={chatMode === 'text' ? 'default' : 'outline'}
-          className={chatMode === 'text' 
-            ? 'bg-wellness-darkGreen text-white' 
-            : 'border-wellness-darkGreen text-wellness-darkGreen'}
+          className={`hover-scale transition-all ${chatMode === 'text' 
+            ? 'bg-gradient-to-r from-wellness-darkGreen to-wellness-mediumGreen text-white shadow-md' 
+            : 'border-wellness-darkGreen text-wellness-darkGreen hover:bg-wellness-softGreen/20'}`}
           onClick={() => setChatMode('text')}
         >
           <MessageSquare className="h-4 w-4 mr-2" />

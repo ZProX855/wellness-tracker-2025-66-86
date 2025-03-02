@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Clock } from 'lucide-react';
@@ -319,18 +318,18 @@ const TimetableGenerator = () => {
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Home
             </Link>
-            <h1 className="text-3xl font-medium text-wellness-darkGreen mt-4 mb-2">
+            <h1 className="text-3xl font-medium text-wellness-darkGreen mt-4 mb-2 animate-fade-in">
               AI Timetable Generator
             </h1>
-            <p className="text-wellness-charcoal">
+            <p className="text-wellness-charcoal animate-fade-in">
               Have a conversation with our AI assistant to create your personalized daily timetable.
             </p>
           </div>
           
           {/* Conversation Section */}
-          <div className="bg-white bg-opacity-70 backdrop-blur-sm rounded-xl p-6 border border-wellness-softGreen/30 shadow-sm mb-8">
+          <div className="bg-white bg-opacity-70 backdrop-blur-sm rounded-xl p-6 border border-wellness-softGreen/30 shadow-sm mb-8 hover:shadow-md transition-shadow">
             <h2 className="text-xl font-medium text-wellness-darkGreen mb-4 flex items-center">
-              <Clock className="h-5 w-5 mr-2" />
+              <Clock className="h-5 w-5 mr-2 text-wellness-mediumGreen" />
               AI Assistant
             </h2>
             
@@ -362,8 +361,11 @@ const TimetableGenerator = () => {
               />
             )}
             
-            {/* Conversation Summary */}
-            <ConversationSummary responses={responses} />
+            {/* Conversation Summary - Only show for voice mode */}
+            <ConversationSummary 
+              responses={responses} 
+              showSummary={chatMode === 'voice'} 
+            />
           </div>
           
           {/* Timetable Generation In Progress */}
@@ -396,7 +398,7 @@ const TimetableGenerator = () => {
           )}
           
           {/* Timetable Generator Component */}
-          <div id="timetable-generator">
+          <div id="timetable-generator" className="animate-fade-in">
             {showTimetable && !loadingTimetable && !isGeneratingAfterConversation && (
               <TimetableGeneratorComponent 
                 conversationData={conversationData}
@@ -414,7 +416,7 @@ const TimetableGenerator = () => {
           {/* Initial timetable creation prompt - only show if no conversation in progress and no timetable is shown */}
           {!showTimetable && !isConversationActive && !isTextChatActive && !loadingTimetable && !isGeneratingAfterConversation && 
            timetable.length === 0 && !conversationComplete && !chatMode && (
-            <div className="flex flex-col items-center justify-center py-8 bg-white bg-opacity-70 backdrop-blur-sm rounded-xl p-6 border border-wellness-softGreen/30 shadow-sm">
+            <div className="flex flex-col items-center justify-center py-8 bg-white bg-opacity-70 backdrop-blur-sm rounded-xl p-6 border border-wellness-softGreen/30 shadow-sm hover:shadow-md transition-shadow animate-fade-in">
               <p className="text-wellness-darkGreen font-medium mb-4 text-center">
                 Start a conversation with the AI assistant to create your personalized timetable
               </p>
@@ -422,17 +424,17 @@ const TimetableGenerator = () => {
                 <Button 
                   variant="outline" 
                   onClick={() => setChatMode('voice')}
-                  className="border-wellness-darkGreen text-wellness-darkGreen"
+                  className="border-wellness-darkGreen text-wellness-darkGreen hover:bg-wellness-softGreen/20 hover-scale transition-all"
                 >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  <Mic className="h-4 w-4 mr-2" />
                   Start with Voice Chat
                 </Button>
                 <Button 
                   variant="outline" 
                   onClick={() => setChatMode('text')}
-                  className="border-wellness-darkGreen text-wellness-darkGreen"
+                  className="border-wellness-darkGreen text-wellness-darkGreen hover:bg-wellness-softGreen/20 hover-scale transition-all"
                 >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  <MessageSquare className="h-4 w-4 mr-2" />
                   Start with Text Chat
                 </Button>
               </div>
