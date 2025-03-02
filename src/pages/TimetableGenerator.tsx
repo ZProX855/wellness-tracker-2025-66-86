@@ -276,6 +276,16 @@ const TimetableGenerator = () => {
     });
   };
 
+  const handleStartVoiceConversation = () => {
+    setIsConversationActive(true);
+    setShowTimetable(false);
+  };
+
+  const handleStartTextConversation = () => {
+    setIsTextChatActive(true);
+    setShowTimetable(false);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-wellness-softBeige to-wellness-softGreen/30">
       <Header />
@@ -314,7 +324,7 @@ const TimetableGenerator = () => {
             {chatMode === 'voice' && (
               <VoiceAssistant 
                 isConversationActive={isConversationActive}
-                setIsConversationActive={setIsConversationActive}
+                setIsConversationActive={handleStartVoiceConversation}
                 onConversationComplete={handleConversationComplete}
                 onResponses={handleAddResponse}
                 onSetConversationId={setCurrentConversationId}
@@ -324,7 +334,7 @@ const TimetableGenerator = () => {
             {chatMode === 'text' && (
               <TextChatAssistant 
                 isTextChatActive={isTextChatActive}
-                setIsTextChatActive={setIsTextChatActive}
+                setIsTextChatActive={handleStartTextConversation}
                 onConversationComplete={handleConversationComplete}
                 onResponses={handleAddResponse}
               />

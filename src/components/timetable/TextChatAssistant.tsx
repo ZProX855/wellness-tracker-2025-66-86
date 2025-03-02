@@ -36,6 +36,7 @@ const TextChatAssistant: React.FC<TextChatAssistantProps> = ({
   }, [conversationHistory]);
 
   const startTextChat = async () => {
+    // Call the parent component's setIsTextChatActive to hide the timetable
     setIsTextChatActive(true);
     
     // First message from the assistant - more friendly and concise with emoji

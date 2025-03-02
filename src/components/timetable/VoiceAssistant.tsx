@@ -158,6 +158,9 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
     try {
       setIsConnecting(true);
       
+      // Call the parent component's setIsConversationActive to hide the timetable
+      setIsConversationActive(true);
+      
       // Start the conversation session with the ElevenLabs agent
       const conversationId = await conversation.startSession({
         agentId: ELEVENLABS_AGENT_ID
@@ -166,8 +169,6 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
       // Save the conversation ID
       onSetConversationId(conversationId);
       console.log("Conversation started with ID:", conversationId);
-      
-      setIsConversationActive(true);
       
       // Start local speech recognition for backup
       startLocalSpeechRecognition();
