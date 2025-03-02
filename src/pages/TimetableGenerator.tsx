@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Clock, Mic, MessageSquare } from 'lucide-react';
@@ -219,7 +218,7 @@ const TimetableGenerator = () => {
   };
 
   // Delete entry from timetable
-  const deleteEntry = (index: number) => {
+  const deleteEntry = (entry: TimetableEntry, index: number) => {
     const updatedTimetable = [...timetable];
     updatedTimetable.splice(index, 1);
     setTimetable(updatedTimetable);

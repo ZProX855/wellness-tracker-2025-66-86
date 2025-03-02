@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { Card } from '@/components/ui/card';
@@ -20,7 +21,7 @@ interface TimetableEntry {
 interface TimetableVisualizerProps {
   timetable: TimetableEntry[];
   onEditEntry: (entry: TimetableEntry, index: number) => void;
-  onDeleteEntry: (index: TimetableEntry, index: number) => void;
+  onDeleteEntry: (entry: TimetableEntry, index: number) => void;
   onToggleCompleted: (index: number) => void;
   onToggleImportant: (index: number) => void;
   onDownload: () => void;
@@ -500,7 +501,7 @@ const TimetableVisualizer: React.FC<TimetableVisualizerProps> = ({
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => onDeleteEntry(index)}
+                                onClick={() => onDeleteEntry(entry, index)}
                                 className="h-8 px-2 text-red-500 bg-white/50 hover:bg-white/70"
                               >
                                 <Trash2 className="h-3 w-3 mr-1" /> Remove
@@ -573,7 +574,7 @@ const TimetableVisualizer: React.FC<TimetableVisualizerProps> = ({
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => onDeleteEntry(index)}
+                                onClick={() => onDeleteEntry(entry, index)}
                                 className="h-8 px-2 text-red-500 hover:bg-gray-100"
                               >
                                 <Trash2 className="h-3 w-3 mr-1" /> Remove
