@@ -120,17 +120,20 @@ const TimetableVisualizer: React.FC<TimetableVisualizerProps> = ({
     if (!pdfRef.current) return;
     
     try {
-      // Create a temporary div for PDF content
+      // Create a temporary div for PDF content with specific styling for better control
       const pdfContent = document.createElement('div');
+      pdfContent.style.width = '100%';
+      pdfContent.style.maxWidth = '800px'; // Set a max width to ensure content fits
       pdfContent.style.padding = '20px';
       pdfContent.style.background = '#FFFFFF';
+      pdfContent.style.boxSizing = 'border-box';
       
       // Create header
       const header = document.createElement('h2');
       header.textContent = `Daily Timetable: ${selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}`;
-      header.style.color = '#333333'; // Dark text for better readability
+      header.style.color = '#333333';
       header.style.marginBottom = '16px';
-      header.style.fontSize = '16px';
+      header.style.fontSize = '18px';
       header.style.fontWeight = 'bold';
       header.style.textAlign = 'center';
       pdfContent.appendChild(header);
@@ -139,7 +142,7 @@ const TimetableVisualizer: React.FC<TimetableVisualizerProps> = ({
       const table = document.createElement('table');
       table.style.width = '100%';
       table.style.borderCollapse = 'collapse';
-      table.style.fontSize = '10px';
+      table.style.fontSize = '12px';
       table.style.border = '1px solid #ddd';
       
       // Add table header
@@ -194,11 +197,11 @@ const TimetableVisualizer: React.FC<TimetableVisualizerProps> = ({
           activityCell.style.color = '#999';
         }
         
-        // Add description if available (but not "Important" mark)
+        // Add description if available
         if (entry.description) {
           const descSpan = document.createElement('div');
           descSpan.textContent = entry.description;
-          descSpan.style.fontSize = '8px';
+          descSpan.style.fontSize = '10px';
           descSpan.style.color = '#666';
           descSpan.style.marginTop = '2px';
           activityCell.appendChild(descSpan);
@@ -221,24 +224,20 @@ const TimetableVisualizer: React.FC<TimetableVisualizerProps> = ({
         
         // Create a checkbox-like element
         const checkbox = document.createElement('div');
-        checkbox.style.width = '12px';
-        checkbox.style.height = '12px';
+        checkbox.style.width = '16px';
+        checkbox.style.height = '16px';
         checkbox.style.border = '1px solid #333';
         checkbox.style.display = 'inline-block';
+        checkbox.style.position = 'relative';
         
         if (entry.completed) {
-          // Add checkmark for completed items
-          checkbox.style.backgroundColor = '#fff';
-          checkbox.style.position = 'relative';
-          
+          // Draw a checkmark for completed items
           const checkmark = document.createElement('div');
           checkmark.textContent = '✓';
           checkmark.style.position = 'absolute';
-          checkmark.style.top = '-5px';
-          checkmark.style.left = '1px';
-          checkmark.style.fontSize = '12px';
-          checkmark.style.color = '#333';
-          
+          checkmark.style.top = '-3px';
+          checkmark.style.left = '3px';
+          checkmark.style.fontSize = '14px';
           checkbox.appendChild(checkmark);
         }
         
@@ -254,7 +253,7 @@ const TimetableVisualizer: React.FC<TimetableVisualizerProps> = ({
       // Add summary section
       const summarySection = document.createElement('div');
       summarySection.style.marginTop = '16px';
-      summarySection.style.fontSize = '9px';
+      summarySection.style.fontSize = '12px';
       
       // Count activities by category
       const categoryCounts: Record<string, number> = {};
@@ -289,7 +288,7 @@ const TimetableVisualizer: React.FC<TimetableVisualizerProps> = ({
       const completedCount = timetable.filter(entry => entry.completed).length;
       const completionStatus = document.createElement('div');
       completionStatus.style.marginTop = '4px';
-      completionStatus.textContent = `Completed: ${completedCount} of ${timetable.length} (${Math.round((completedCount / timetable.length) * 100)}%)`;
+      completionStatus.textContent = `Completed: ${completedCount} of ${timetable.length} (${Math.round((completedCount / timetable.length) * 100) || 0}%)`;
       summarySection.appendChild(completionStatus);
       
       pdfContent.appendChild(summarySection);
@@ -297,7 +296,7 @@ const TimetableVisualizer: React.FC<TimetableVisualizerProps> = ({
       // Add signature
       const signature = document.createElement('div');
       signature.style.marginTop = '16px';
-      signature.style.fontSize = '8px';
+      signature.style.fontSize = '10px';
       signature.style.color = '#999';
       signature.style.textAlign = 'center';
       signature.textContent = 'Generated by Wellness Assistant';
@@ -305,32 +304,51 @@ const TimetableVisualizer: React.FC<TimetableVisualizerProps> = ({
       pdfContent.appendChild(signature);
       
       // Append to DOM temporarily (invisible)
-      pdfContent.style.position = 'absolute';
+      pdfContent.style.position = 'fixed';
       pdfContent.style.left = '-9999px';
       document.body.appendChild(pdfContent);
       
-      // Generate canvas from the custom HTML
+      // Generate canvas from the custom HTML with a higher scale factor for better quality
       const canvas = await html2canvas(pdfContent, {
-        scale: 2,
+        scale: 2, // Increase scale for better quality
         backgroundColor: '#ffffff',
-        logging: false
+        logging: false,
+        windowWidth: 1200, // Set a fixed width for consistent rendering
+        useCORS: true, // Allow cross-origin images
+        onclone: (clonedDoc) => {
+          // Any additional manipulations to the cloned document if needed
+          const clonedContent = clonedDoc.body.firstChild as HTMLElement;
+          if (clonedContent) {
+            clonedContent.style.position = 'static';
+            clonedContent.style.left = '0';
+          }
+        }
       });
       
       // Remove from DOM
       document.body.removeChild(pdfContent);
       
-      // Create PDF with reduced size (A5 instead of A4)
+      // Create PDF with appropriate size
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
-        format: 'a5' // Using A5 for smaller PDF
+        format: 'a4' // Using A4 for more space to fit full schedule
       });
       
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
       
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      // If content is too tall for one page, adjust the scale
+      if (pdfHeight > pdf.internal.pageSize.getHeight()) {
+        const scaleFactor = pdf.internal.pageSize.getHeight() / pdfHeight * 0.9; // 90% of max height
+        const scaledWidth = pdfWidth * scaleFactor;
+        
+        pdf.addImage(imgData, 'PNG', (pdfWidth - scaledWidth) / 2, 10, scaledWidth, pdfHeight * scaleFactor);
+      } else {
+        pdf.addImage(imgData, 'PNG', 0, 10, pdfWidth, pdfHeight);
+      }
+      
       pdf.save('my_timetable.pdf');
       
     } catch (error) {
