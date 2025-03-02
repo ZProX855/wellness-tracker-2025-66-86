@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { Card } from '@/components/ui/card';
@@ -95,6 +94,26 @@ const getCategoryBadgeColor = (category: string) => {
   return badgeColorMap[category as keyof typeof badgeColorMap] || 'bg-gray-100 text-gray-800';
 };
 
+// New helper function to get PDF-friendly light colors
+const getPDFCategoryColor = (category: string) => {
+  const pdfColorMap = {
+    routine: '#F1F0FB', // Soft Gray
+    work: '#D3E4FD',    // Soft Blue
+    meal: '#FDE1D3',    // Soft Peach
+    exercise: '#F2FCE2', // Soft Green
+    leisure: '#E5DEFF',  // Soft Purple
+    learning: '#D3E4FD', // Soft Blue
+    rest: '#FFDEE2'      // Soft Pink
+  };
+  
+  return pdfColorMap[category as keyof typeof pdfColorMap] || '#F5F5F5';
+};
+
+// New helper function to get PDF-friendly text colors
+const getPDFTextColor = () => {
+  return '#333333'; // Dark gray but not too dark
+};
+
 const TimetableVisualizer: React.FC<TimetableVisualizerProps> = ({
   timetable,
   onEditEntry,
@@ -109,55 +128,177 @@ const TimetableVisualizer: React.FC<TimetableVisualizerProps> = ({
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [view, setView] = useState<'list' | 'card'>('list');
   const pdfRef = useRef<HTMLDivElement>(null);
+  const printRef = useRef<HTMLDivElement>(null);
   
   // Generate a PDF of the timetable
   const generatePDF = async () => {
     if (!pdfRef.current) return;
     
     try {
-      // Pre-PDF generation style adjustments - use lighter colors and flag icons
-      const elements = pdfRef.current.querySelectorAll('.important-flag');
-      elements.forEach(el => {
-        (el as HTMLElement).style.visibility = 'visible';
-        (el as HTMLElement).style.color = '#F97316'; // bright orange for importance
+      // Create a temporary div for PDF content
+      const pdfContent = document.createElement('div');
+      pdfContent.style.padding = '20px';
+      pdfContent.style.background = '#FFFFFF';
+      
+      // Create header
+      const header = document.createElement('h2');
+      header.textContent = `Daily Timetable: ${selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', d: 'numeric', year: 'numeric' })}`;
+      header.style.color = '#2A6041'; // Wellness dark green
+      header.style.marginBottom = '16px';
+      header.style.fontSize = '16px';
+      pdfContent.appendChild(header);
+      
+      // Create table element
+      const table = document.createElement('table');
+      table.style.width = '100%';
+      table.style.borderCollapse = 'collapse';
+      table.style.fontSize = '10px';
+      
+      // Add table header
+      const thead = document.createElement('thead');
+      const headerRow = document.createElement('tr');
+      
+      const headers = ['Time', 'Activity', 'Category', 'Done'];
+      
+      headers.forEach(headerText => {
+        const th = document.createElement('th');
+        th.textContent = headerText;
+        th.style.padding = '6px';
+        th.style.textAlign = 'left';
+        th.style.borderBottom = '1px solid #ddd';
+        th.style.backgroundColor = '#F8F9FA';
+        th.style.color = '#2A6041';
+        headerRow.appendChild(th);
       });
       
-      // Remove any dark backgrounds for PDF generation
-      const darkElements = pdfRef.current.querySelectorAll('.dark-bg');
-      darkElements.forEach(el => {
-        (el as HTMLElement).style.backgroundColor = '#ffffff';
-        (el as HTMLElement).style.color = '#333333';
+      thead.appendChild(headerRow);
+      table.appendChild(thead);
+      
+      // Add table body
+      const tbody = document.createElement('tbody');
+      
+      timetable.forEach((entry, index) => {
+        const row = document.createElement('tr');
+        
+        // Alternating row colors based on category
+        row.style.backgroundColor = getPDFCategoryColor(entry.category);
+        
+        // Time cell
+        const timeCell = document.createElement('td');
+        timeCell.textContent = entry.time;
+        timeCell.style.padding = '8px';
+        timeCell.style.borderBottom = '1px solid #eee';
+        timeCell.style.color = getPDFTextColor();
+        row.appendChild(timeCell);
+        
+        // Activity cell
+        const activityCell = document.createElement('td');
+        activityCell.textContent = entry.activity;
+        activityCell.style.padding = '8px';
+        activityCell.style.borderBottom = '1px solid #eee';
+        activityCell.style.color = getPDFTextColor();
+        
+        // Add strikethrough for completed items
+        if (entry.completed) {
+          activityCell.style.textDecoration = 'line-through';
+          activityCell.style.color = '#999';
+        }
+        row.appendChild(activityCell);
+        
+        // Category cell
+        const categoryCell = document.createElement('td');
+        categoryCell.textContent = entry.category.charAt(0).toUpperCase() + entry.category.slice(1);
+        categoryCell.style.padding = '8px';
+        categoryCell.style.borderBottom = '1px solid #eee';
+        categoryCell.style.color = getPDFTextColor();
+        row.appendChild(categoryCell);
+        
+        // Done/Checkbox cell
+        const doneCell = document.createElement('td');
+        doneCell.style.padding = '8px';
+        doneCell.style.borderBottom = '1px solid #eee';
+        doneCell.innerHTML = entry.completed ? '☑' : '☐';
+        doneCell.style.textAlign = 'center';
+        row.appendChild(doneCell);
+        
+        tbody.appendChild(row);
       });
       
-      const canvas = await html2canvas(pdfRef.current, {
+      table.appendChild(tbody);
+      pdfContent.appendChild(table);
+      
+      // Add categories legend at the bottom
+      const legend = document.createElement('div');
+      legend.style.marginTop = '16px';
+      legend.style.fontSize = '9px';
+      
+      const categories = ['routine', 'work', 'meal', 'exercise', 'leisure', 'learning', 'rest'];
+      legend.innerHTML = '<div style="margin-bottom: 4px;">Categories:</div>';
+      
+      const legendFlex = document.createElement('div');
+      legendFlex.style.display = 'flex';
+      legendFlex.style.flexWrap = 'wrap';
+      legendFlex.style.gap = '8px';
+      
+      categories.forEach(category => {
+        const catSpan = document.createElement('span');
+        catSpan.style.display = 'inline-flex';
+        catSpan.style.alignItems = 'center';
+        catSpan.style.marginRight = '8px';
+        
+        const colorBox = document.createElement('span');
+        colorBox.style.display = 'inline-block';
+        colorBox.style.width = '10px';
+        colorBox.style.height = '10px';
+        colorBox.style.backgroundColor = getPDFCategoryColor(category);
+        colorBox.style.marginRight = '4px';
+        
+        catSpan.appendChild(colorBox);
+        catSpan.appendChild(document.createTextNode(category.charAt(0).toUpperCase() + category.slice(1)));
+        legendFlex.appendChild(catSpan);
+      });
+      
+      legend.appendChild(legendFlex);
+      
+      // Add signature
+      const signature = document.createElement('div');
+      signature.style.marginTop = '8px';
+      signature.style.fontSize = '8px';
+      signature.style.color = '#999';
+      signature.textContent = 'Generated by Wellness Assistant';
+      
+      legend.appendChild(signature);
+      pdfContent.appendChild(legend);
+      
+      // Append to DOM temporarily (invisible)
+      pdfContent.style.position = 'absolute';
+      pdfContent.style.left = '-9999px';
+      document.body.appendChild(pdfContent);
+      
+      // Generate canvas from the custom HTML
+      const canvas = await html2canvas(pdfContent, {
         scale: 2,
         backgroundColor: '#ffffff',
         logging: false
       });
       
+      // Remove from DOM
+      document.body.removeChild(pdfContent);
+      
+      // Create PDF with reduced size (A5 instead of A4)
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
-        format: 'a4'
+        format: 'a5' // Using A5 for smaller PDF
       });
       
-      const imgProps = pdf.getImageProperties(imgData);
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
       
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
       pdf.save('my_timetable.pdf');
       
-      // Reset styles after PDF generation if necessary
-      elements.forEach(el => {
-        (el as HTMLElement).style.visibility = '';
-      });
-      
-      darkElements.forEach(el => {
-        (el as HTMLElement).style.backgroundColor = '';
-        (el as HTMLElement).style.color = '';
-      });
     } catch (error) {
       console.error('Error generating PDF:', error);
     }
