@@ -4,11 +4,13 @@ import Header from '../components/Header';
 import WellnessJourneyComponent from '../components/WellnessJourney';
 import { ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { Toaster } from 'sonner';
 
 const WellnessJourney = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-wellness-softBeige to-wellness-softGreen/30">
       <Header />
+      <Toaster position="top-center" />
       
       <main className="pt-24 pb-16 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto">

@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { getWellnessInsights } from '../services/api';
 import { Target, Activity, Leaf, ChevronRight, ChevronDown, CheckCircle2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface WellnessState {
   goals: { id: number; text: string; selected: boolean }[];
@@ -50,6 +51,7 @@ const WellnessJourney: React.FC = () => {
     const selectedGoals = getSelectedGoals();
     
     if (selectedGoals.length === 0) {
+      toast.error('Please select at least one wellness goal');
       return;
     }
     
@@ -58,16 +60,24 @@ const WellnessJourney: React.FC = () => {
     try {
       // Explicitly type the result from getWellnessInsights
       const insights = await getWellnessInsights(selectedGoals) as WellnessInsights;
+      
+      if (insights.recommendations.length === 0 && insights.milestones.length === 0) {
+        throw new Error('Failed to generate wellness plan');
+      }
+      
       setState({
         ...state,
         recommendations: insights.recommendations,
         milestones: insights.milestones,
         loading: false
       });
+      
       setActiveSection('plan');
+      toast.success('Your wellness plan is ready!');
     } catch (error) {
       console.error('Error generating wellness plan:', error);
       setState({ ...state, loading: false });
+      toast.error('Failed to generate wellness plan. Please try again.');
     }
   };
   

@@ -692,35 +692,77 @@ export const getWellnessInsights = async (goals: string[]): Promise<WellnessInsi
       Make sure to include emojis at the beginning of each recommendation and milestone.
       Each item should be very concise (15 words or less).
       For milestones, include a timeframe (e.g., "Week 1-2:", "Month 3:")
+      
+      IMPORTANT: Respond ONLY with the JSON object, no markdown, no code blocks, no additional text.
     `;
     
     const aiResponse = await callGeminiAPI(prompt);
     
     try {
-      // Try to parse the response as JSON
-      const parsedResponse = JSON.parse(aiResponse);
+      // Clean up the response to handle potential markdown code blocks
+      let jsonString = aiResponse;
+      
+      // Remove markdown code blocks if present
+      if (jsonString.includes('```json')) {
+        jsonString = jsonString.replace(/```json\n|\n```/g, '');
+      } else if (jsonString.includes('```')) {
+        jsonString = jsonString.replace(/```\n|\n```/g, '');
+      }
+      
+      // Trim any extra whitespace
+      jsonString = jsonString.trim();
+      
+      // Try to parse the cleaned response as JSON
+      const parsedResponse = JSON.parse(jsonString);
+      
       return {
         recommendations: Array.isArray(parsedResponse.recommendations) ? parsedResponse.recommendations : [],
         milestones: Array.isArray(parsedResponse.milestones) ? parsedResponse.milestones : []
       };
     } catch (parseError) {
       console.error("Failed to parse AI response as JSON:", parseError);
+      console.log("Raw AI response:", aiResponse);
       
       // Fallback: Try to extract recommendations and milestones from text
-      const recommendationsMatch = aiResponse.match(/recommendations:?\s*\n((?:- [^\n]+\n?)+)/i);
-      const milestonesMatch = aiResponse.match(/milestones:?\s*\n((?:- [^\n]+\n?)+)/i);
+      const recommendationsMatch = aiResponse.match(/recommendations["\s:]+\[(.*?)\]/s);
+      const milestonesMatch = aiResponse.match(/milestones["\s:]+\[(.*?)\]/s);
       
-      const recommendations = recommendationsMatch ? 
-        recommendationsMatch[1].split('\n')
-          .filter(line => line.trim().startsWith('- '))
-          .map(line => line.trim().substring(2)) : 
-        [];
+      let recommendations: string[] = [];
+      let milestones: string[] = [];
       
-      const milestones = milestonesMatch ? 
-        milestonesMatch[1].split('\n')
-          .filter(line => line.trim().startsWith('- '))
-          .map(line => line.trim().substring(2)) : 
-        [];
+      if (recommendationsMatch && recommendationsMatch[1]) {
+        recommendations = recommendationsMatch[1]
+          .split(/",\s*"/)
+          .map(item => item.replace(/^["']|["']$/g, '').trim())
+          .filter(item => item.length > 0);
+      }
+      
+      if (milestonesMatch && milestonesMatch[1]) {
+        milestones = milestonesMatch[1]
+          .split(/",\s*"/)
+          .map(item => item.replace(/^["']|["']$/g, '').trim())
+          .filter(item => item.length > 0);
+      }
+      
+      // If still no recommendations/milestones, use the fallback data
+      if (recommendations.length === 0 && milestones.length === 0) {
+        return {
+          recommendations: [
+            "🥗 Start with small, achievable daily habits",
+            "📊 Track your progress beyond just the scale",
+            "🍎 Focus on how foods make you feel",
+            "💪 Include strength training alongside cardio",
+            "😴 Prioritize sleep for recovery and reduced cravings"
+          ],
+          milestones: [
+            "Week 1-2: 🌱 Notice improved energy levels",
+            "Week 3-4: 💪 Feel stronger during workouts",
+            "Week 6-8: 👖 Clothes fit differently",
+            "Month 3: 🏆 Significant habit changes established",
+            "Month 6: 🌟 Major progress toward your goals"
+          ]
+        };
+      }
       
       return { recommendations, milestones };
     }
