@@ -8,7 +8,6 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar as CalendarIcon, Clock, Edit, Download, RefreshCw, List, Grid, Palette, Share2, Trash2, Flag } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import * as SelectPrimitive from "@radix-ui/react-select"
 
 interface TimetableEntry {
   time: string;
@@ -116,6 +115,20 @@ const TimetableVisualizer: React.FC<TimetableVisualizerProps> = ({
     if (!pdfRef.current) return;
     
     try {
+      // Pre-PDF generation style adjustments - use lighter colors and flag icons
+      const elements = pdfRef.current.querySelectorAll('.important-flag');
+      elements.forEach(el => {
+        (el as HTMLElement).style.visibility = 'visible';
+        (el as HTMLElement).style.color = '#F97316'; // bright orange for importance
+      });
+      
+      // Remove any dark backgrounds for PDF generation
+      const darkElements = pdfRef.current.querySelectorAll('.dark-bg');
+      darkElements.forEach(el => {
+        (el as HTMLElement).style.backgroundColor = '#ffffff';
+        (el as HTMLElement).style.color = '#333333';
+      });
+      
       const canvas = await html2canvas(pdfRef.current, {
         scale: 2,
         backgroundColor: '#ffffff',
@@ -135,6 +148,16 @@ const TimetableVisualizer: React.FC<TimetableVisualizerProps> = ({
       
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
       pdf.save('my_timetable.pdf');
+      
+      // Reset styles after PDF generation if necessary
+      elements.forEach(el => {
+        (el as HTMLElement).style.visibility = '';
+      });
+      
+      darkElements.forEach(el => {
+        (el as HTMLElement).style.backgroundColor = '';
+        (el as HTMLElement).style.color = '';
+      });
     } catch (error) {
       console.error('Error generating PDF:', error);
     }
@@ -273,7 +296,7 @@ const TimetableVisualizer: React.FC<TimetableVisualizerProps> = ({
                                     {entry.activity}
                                   </h4>
                                   {entry.important && (
-                                    <Flag className="h-3.5 w-3.5 ml-1.5 text-wellness-mediumGreen" />
+                                    <Flag className="h-3.5 w-3.5 ml-1.5 text-amber-500 important-flag" />
                                   )}
                                 </div>
                                 <Badge variant="outline" className={`mt-1 text-xs ${getCategoryBadgeColor(entry.category)}`}>
@@ -365,7 +388,7 @@ const TimetableVisualizer: React.FC<TimetableVisualizerProps> = ({
                                     {entry.activity}
                                   </h4>
                                   {entry.important && (
-                                    <Flag className="h-3.5 w-3.5 ml-1.5 text-wellness-mediumGreen" />
+                                    <Flag className="h-3.5 w-3.5 ml-1.5 text-amber-500 important-flag" />
                                   )}
                                 </div>
                                 {entry.description && (
@@ -436,7 +459,7 @@ const TimetableVisualizer: React.FC<TimetableVisualizerProps> = ({
                                     {entry.activity}
                                   </span>
                                   {entry.important && (
-                                    <Flag className="h-3.5 w-3.5 ml-1.5 text-wellness-mediumGreen" />
+                                    <Flag className="h-3.5 w-3.5 ml-1.5 text-amber-500 important-flag" />
                                   )}
                                 </div>
                                 {entry.description && (
