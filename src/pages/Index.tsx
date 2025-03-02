@@ -1,7 +1,25 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
-import { MessageSquare, Apple, ActivitySquare, Camera, Target, HeartPulse, Moon, Clock } from 'lucide-react';
+import { MessageSquare, Apple, ActivitySquare, Camera, Target, HeartPulse, Moon, Clock, UtensilsCrossed } from 'lucide-react';
+
+// Define categories and their tools
+interface ToolCategory {
+  name: string;
+  icon: React.ElementType;
+  color: string;
+  tools: Tool[];
+}
+
+interface Tool {
+  title: string;
+  description: string;
+  icon: React.ElementType;
+  color: string;
+  path: string;
+  delay: number;
+}
 
 const Index = () => {
   const navigate = useNavigate();
@@ -15,58 +33,88 @@ const Index = () => {
     return () => clearTimeout(timer);
   }, []);
   
-  const features = [{
-    title: 'AI Nutrition Assistant',
-    description: 'Chat with our AI for personalized nutrition advice',
-    icon: MessageSquare,
-    color: 'from-emerald-100 to-emerald-200',
-    path: '/chat-assistant',
-    delay: 100
-  }, {
-    title: 'Food Comparison',
-    description: 'Compare the nutritional value of different foods',
-    icon: Apple,
-    color: 'from-amber-100 to-amber-200',
-    path: '/food-compare',
-    delay: 200
-  }, {
-    title: 'BMI Calculator',
-    description: 'Calculate your BMI and get personalized advice',
-    icon: HeartPulse,
-    color: 'from-rose-100 to-rose-200',
-    path: '/bmi-calculator',
-    delay: 300
-  }, {
-    title: 'Meal Recognition',
-    description: 'Upload a photo of your meal for nutritional analysis',
-    icon: Camera,
-    color: 'from-blue-100 to-blue-200',
-    path: '/meal-recognition',
-    delay: 400
-  }, {
-    title: 'Wellness Journey',
-    description: 'Set goals and get a personalized wellness plan',
-    icon: Target,
-    color: 'from-purple-100 to-purple-200',
-    path: '/wellness-journey',
-    delay: 500
-  }, {
-    title: 'Sleep Tracker',
-    description: 'Monitor sleep patterns and get AI-powered tips',
-    icon: Moon,
-    color: 'from-indigo-100 to-indigo-200',
-    path: '/sleep-tracker',
-    delay: 600
-  }, {
-    title: 'Timetable Generator',
-    description: 'Create a daily timetable with AI voice assistant',
-    icon: Clock,
-    color: 'from-teal-100 to-teal-200',
-    path: '/timetable-generator',
-    delay: 700
-  }];
+  // Define all tools
+  const allTools: Tool[] = [
+    {
+      title: 'AI Nutrition Assistant',
+      description: 'Chat with our AI for personalized nutrition advice',
+      icon: MessageSquare,
+      color: 'from-emerald-100 to-emerald-200',
+      path: '/chat-assistant',
+      delay: 100
+    }, 
+    {
+      title: 'Food Comparison',
+      description: 'Compare the nutritional value of different foods',
+      icon: Apple,
+      color: 'from-amber-100 to-amber-200',
+      path: '/food-compare',
+      delay: 200
+    }, 
+    {
+      title: 'BMI Calculator',
+      description: 'Calculate your BMI and get personalized advice',
+      icon: HeartPulse,
+      color: 'from-rose-100 to-rose-200',
+      path: '/bmi-calculator',
+      delay: 300
+    }, 
+    {
+      title: 'Meal Recognition',
+      description: 'Upload a photo of your meal for nutritional analysis',
+      icon: Camera,
+      color: 'from-blue-100 to-blue-200',
+      path: '/meal-recognition',
+      delay: 400
+    }, 
+    {
+      title: 'Wellness Journey',
+      description: 'Set goals and get a personalized wellness plan',
+      icon: Target,
+      color: 'from-purple-100 to-purple-200',
+      path: '/wellness-journey',
+      delay: 500
+    }, 
+    {
+      title: 'Sleep Tracker',
+      description: 'Monitor sleep patterns and get AI-powered tips',
+      icon: Moon,
+      color: 'from-indigo-100 to-indigo-200',
+      path: '/sleep-tracker',
+      delay: 600
+    }, 
+    {
+      title: 'Timetable Generator',
+      description: 'Create a daily timetable with AI voice assistant',
+      icon: Clock,
+      color: 'from-teal-100 to-teal-200',
+      path: '/timetable-generator',
+      delay: 700
+    }
+  ];
   
-  return <div className="min-h-screen bg-gradient-to-b from-wellness-softBeige to-wellness-softGreen/30">
+  // Organize tools into categories
+  const categories: ToolCategory[] = [
+    {
+      name: "Diet & Nutrition",
+      icon: UtensilsCrossed,
+      color: "from-green-100 to-green-200",
+      tools: allTools.filter(tool => 
+        ["AI Nutrition Assistant", "Food Comparison", "BMI Calculator", "Meal Recognition"].includes(tool.title)
+      )
+    },
+    {
+      name: "Wellness & Planning",
+      icon: Target,
+      color: "from-purple-100 to-purple-200",
+      tools: allTools.filter(tool => 
+        ["Wellness Journey", "Sleep Tracker", "Timetable Generator"].includes(tool.title)
+      )
+    }
+  ];
+  
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-wellness-softBeige to-wellness-softGreen/30">
       <Header />
       
       <main className="pt-24 pb-16 px-4 sm:px-6">
@@ -82,20 +130,38 @@ const Index = () => {
             Track your nutrition, monitor your health, and achieve your wellness goals with our smart, AI-powered tools.
           </p>
           
-          {/* Feature Circle Navigation */}
-          <div className="flex flex-wrap justify-center gap-8 mb-16">
-            {features.map((feature, index) => <div key={index} className="opacity-0 animate-fade-in" style={{
-            animationDelay: `${feature.delay}ms`
-          }}>
-                <button onClick={() => navigate(feature.path)} className="circle-feature h-28 w-28 sm:h-32 sm:w-32 flex-col text-center p-2 py-[78px]">
-                  <div className={`h-12 w-12 rounded-full bg-gradient-to-r ${feature.color} flex items-center justify-center mb-2`}>
-                    <feature.icon className="h-6 w-6 text-wellness-darkGreen" />
-                  </div>
-                  <span className="text-sm font-medium text-wellness-darkGreen">
-                    {feature.title}
-                  </span>
-                </button>
-              </div>)}
+          {/* Categories Section */}
+          <div className="mb-16">
+            {categories.map((category, categoryIndex) => (
+              <div key={categoryIndex} className="mb-12">
+                <h2 className="text-2xl font-medium text-wellness-darkGreen mb-6 flex items-center justify-center">
+                  <category.icon className="h-6 w-6 mr-2 text-wellness-mediumGreen" />
+                  {category.name}
+                </h2>
+                
+                <div className="flex flex-wrap justify-center gap-8">
+                  {category.tools.map((tool, toolIndex) => (
+                    <div 
+                      key={toolIndex} 
+                      className="opacity-0 animate-fade-in" 
+                      style={{animationDelay: `${tool.delay}ms`}}
+                    >
+                      <button 
+                        onClick={() => navigate(tool.path)} 
+                        className="circle-feature h-28 w-28 sm:h-32 sm:w-32 flex-col text-center p-2 py-[78px]"
+                      >
+                        <div className={`h-12 w-12 rounded-full bg-gradient-to-r ${tool.color} flex items-center justify-center mb-2`}>
+                          <tool.icon className="h-6 w-6 text-wellness-darkGreen" />
+                        </div>
+                        <span className="text-sm font-medium text-wellness-darkGreen">
+                          {tool.title}
+                        </span>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         </section>
         
@@ -158,7 +224,8 @@ const Index = () => {
           </p>
         </div>
       </footer>
-    </div>;
+    </div>
+  );
 };
 
 export default Index;
