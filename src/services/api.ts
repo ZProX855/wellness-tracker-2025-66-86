@@ -1,3 +1,4 @@
+<lov-code>
 // API service with Gemini 2.0 Flash integration
 
 // Use this API key for the Gemini AI model
@@ -431,50 +432,4 @@ export const calculateBMI = async (height: number, weight: number) => {
     let fallbackAdvice = '';
     
     if (bmi < 18.5) {
-      fallbackAdvice = "🥗 Focus on nutrient-dense foods to help you gain weight in a healthy way. Include healthy fats like avocados, nuts, and olive oil. Strength training can help build muscle mass. Consider smaller, more frequent meals throughout the day.";
-    } else if (bmi >= 18.5 && bmi < 25) {
-      fallbackAdvice = "✅ Your BMI is in a healthy range! Continue to maintain a balanced diet with plenty of fruits, vegetables, lean proteins, and whole grains. Regular physical activity is important for maintaining your weight and overall health.";
-    } else if (bmi >= 25 && bmi < 30) {
-      fallbackAdvice = "🏃‍♂️ Consider incorporating more physical activity into your routine, aiming for at least 150 minutes of moderate exercise per week. Focus on portion control and increasing your intake of fiber-rich foods, which help you feel fuller longer.";
-    } else {
-      fallbackAdvice = "❗ Consider consulting with a healthcare provider to develop a personalized plan. Focus on making small, sustainable changes to your diet and activity levels rather than drastic changes. Increase water intake and reduce processed foods.";
-    }
-    
-    return {
-      bmi: bmiValue, 
-      category,
-      advice: fallbackAdvice
-    };
-  }
-};
-
-// Add missing meal recognition functionality
-export const recognizeMeal = async (imageData: string) => {
-  try {
-    const prompt = `
-      Analyze this food image and provide:
-      1. What foods you can identify in the image
-      2. Approximate calorie content of the meal
-      3. Protein, carbs, and fat breakdown
-      4. How balanced this meal is nutritionally
-      5. Any suggestions to improve the nutritional value
-      
-      Format your response with clear sections and bullet points. If you cannot clearly identify the food, make your best educated guess but mention that it's an approximation.
-    `;
-    
-    const analysis = await callGeminiAPI(prompt, 0.7, true, imageData);
-    
-    return {
-      success: true,
-      analysis,
-      error: null
-    };
-  } catch (error) {
-    console.error("Meal recognition API error:", error);
-    return {
-      success: false,
-      analysis: null,
-      error: "Failed to analyze the meal image. Please try again with a clearer image."
-    };
-  }
-};
+      fallbackAdvice = "🥗 Focus on nutrient-dense foods to help you gain weight in a healthy way. Include healthy fats like avocados, nuts, and olive oil. Strength training can help build muscle mass. Consider smaller, more frequent
