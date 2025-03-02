@@ -1,4 +1,4 @@
-<lov-code>
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
@@ -18,11 +18,13 @@ interface SleepSession {
   factors: string[];
   notes: string;
 }
+
 interface SleepInsight {
   type: 'info' | 'warning' | 'success' | 'tip';
   message: string;
   icon: React.ReactNode;
 }
+
 interface SleepChartData {
   date: string;
   duration: number;
@@ -380,16 +382,15 @@ const SleepTracker = () => {
     const mins = minutes % 60;
     return `${hours}h ${mins}m`;
   };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const {
-      name,
-      value
-    } = e.target;
+    const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
   };
+
   const handleFactorToggle = (factor: string) => {
     setFormData(prev => {
       const currentFactors = [...prev.factors];
@@ -406,6 +407,7 @@ const SleepTracker = () => {
       }
     });
   };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -509,29 +511,29 @@ const SleepTracker = () => {
     const totalDuration = recentData.reduce((sum, session) => sum + session.duration, 0);
     return totalDuration / recentData.length;
   };
+  
   const avgDuration = getAverageSleepDuration();
 
   // Custom tooltip for the line chart
-  const CustomTooltip = ({
-    active,
-    payload,
-    label
-  }: any) => {
+  const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
-      return <div className="bg-white p-3 rounded shadow-md border border-wellness-softGreen/30 text-sm">
+      return (
+        <div className="bg-white p-3 rounded shadow-md border border-wellness-softGreen/30 text-sm">
           <p className="font-medium text-wellness-darkGreen">{label}</p>
-          {payload.map((entry: any, index: number) => <p key={index} style={{
-          color: entry.color
-        }}>
+          {payload.map((entry: any, index: number) => (
+            <p key={index} style={{ color: entry.color }}>
               {entry.name === 'qualityScore' ? 'Quality: ' : entry.name === 'sleepScore' ? 'Sleep Score: ' : 'Duration: '}
               {entry.name === 'duration' ? `${entry.value}h` : `${entry.value}`}
-            </p>)}
-        </div>;
+            </p>
+          ))}
+        </div>
+      );
     }
     return null;
   };
 
-  return <div className="min-h-screen bg-gradient-to-b from-wellness-softBeige to-wellness-softGreen/30">
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-wellness-softBeige to-wellness-softGreen/30">
       <Header />
       
       <main className="pt-24 pb-16 px-4 sm:px-6">
@@ -565,9 +567,11 @@ const SleepTracker = () => {
                 </div>
                 <h3 className="text-lg font-medium text-wellness-darkGreen mb-1">Sleep Score</h3>
                 <p className="text-2xl font-bold text-wellness-darkGreen">
-                  {sleepData.length > 0 ? <span className={getSleepScoreColor(calculateSleepScore(sleepData[0]))}>
+                  {sleepData.length > 0 ? (
+                    <span className={getSleepScoreColor(calculateSleepScore(sleepData[0]))}>
                       {calculateSleepScore(sleepData[0])}
-                    </span> : 'No data'}
+                    </span>
+                  ) : 'No data'}
                 </p>
                 <p className="text-sm text-wellness-charcoal">Last night</p>
               </div>
@@ -584,7 +588,8 @@ const SleepTracker = () => {
               </div>
             </div>
             
-            {sleepData.length > 0 ? <div className="mt-6 flex justify-center gap-4">
+            {sleepData.length > 0 ? (
+              <div className="mt-6 flex justify-center gap-4">
                 <button onClick={() => setShowAddForm(true)} className="btn-primary rounded-lg">
                   Add Sleep Data
                 </button>
@@ -595,7 +600,9 @@ const SleepTracker = () => {
                   <Calculator className="h-4 w-4 mr-2" />
                   {showSleepCalculator ? 'Hide Sleep Calculator' : 'Sleep Time Calculator'}
                 </button>
-              </div> : <div className="mt-8 text-center">
+              </div>
+            ) : (
+              <div className="mt-8 text-center">
                 <p className="text-wellness-charcoal mb-4">Start tracking your sleep to get personalized insights!</p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <button onClick={() => setShowAddForm(true)} className="btn-primary rounded-lg">
@@ -609,7 +616,8 @@ const SleepTracker = () => {
                     Sleep Time Calculator
                   </button>
                 </div>
-              </div>}
+              </div>
+            )}
           </div>
           
           {/* Sleep Time Calculator */}
@@ -745,4 +753,428 @@ const SleepTracker = () => {
                             </div>
                           ))}
                         </div>
-                        <p className="text-xs text-wellness-charcoal mt
+                        <p className="text-xs text-wellness-charcoal mt-2">These times account for the average 15 minutes it takes to fall asleep.</p>
+                      </div>
+                    ) : (
+                      <div className="bg-wellness-softGreen/10 p-4 rounded-lg mb-4">
+                        <p className="text-sm text-wellness-charcoal mb-2">Based on your bedtime, you should wake up at:</p>
+                        <div className="bg-white rounded-lg p-3 text-center border border-wellness-softGreen/30">
+                          <p className="text-xl font-bold text-wellness-darkGreen">{calculatedTimes[0]}</p>
+                          <p className="text-xs text-wellness-charcoal">
+                            {sleepCycles} cycles • {Math.round((sleepCycles * 90 + 15) / 60 * 10) / 10}h
+                          </p>
+                        </div>
+                        <p className="text-xs text-wellness-charcoal mt-2">This time accounts for the average 15 minutes it takes to fall asleep.</p>
+                      </div>
+                    )}
+                    
+                    {/* Sleep Advice */}
+                    <div className="mt-4">
+                      <h4 className="text-lg font-medium text-wellness-darkGreen mb-3 flex items-center">
+                        <Zap className="h-5 w-5 mr-2 text-wellness-mediumGreen" />
+                        Sleep Tips
+                      </h4>
+                      <div className="space-y-3">
+                        {sleepAdvice.map((advice, index) => (
+                          <div key={index} className={`p-3 rounded-lg flex items-start ${
+                            advice.type === 'warning' ? 'bg-amber-50' : 
+                            advice.type === 'success' ? 'bg-green-50' : 
+                            advice.type === 'tip' ? 'bg-blue-50' : 'bg-violet-50'
+                          }`}>
+                            <div className="flex-shrink-0 mr-3 mt-1">
+                              {advice.icon}
+                            </div>
+                            <p className="text-sm text-wellness-charcoal">{advice.message}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          
+          {/* Main content tabs */}
+          <div className="glass-panel p-6">
+            <div className="flex border-b border-wellness-softGreen/30 mb-6">
+              <button
+                onClick={() => setActiveTab('insights')}
+                className={`pb-3 px-4 font-medium ${activeTab === 'insights' ? 'text-wellness-darkGreen border-b-2 border-wellness-mediumGreen' : 'text-wellness-charcoal'}`}
+              >
+                <span className="flex items-center">
+                  <Zap className="h-4 w-4 mr-2" />
+                  Insights
+                </span>
+              </button>
+              <button
+                onClick={() => setActiveTab('history')}
+                className={`pb-3 px-4 font-medium ${activeTab === 'history' ? 'text-wellness-darkGreen border-b-2 border-wellness-mediumGreen' : 'text-wellness-charcoal'}`}
+              >
+                <span className="flex items-center">
+                  <Calendar className="h-4 w-4 mr-2" />
+                  History
+                </span>
+              </button>
+              <button
+                onClick={() => setActiveTab('trends')}
+                className={`pb-3 px-4 font-medium ${activeTab === 'trends' ? 'text-wellness-darkGreen border-b-2 border-wellness-mediumGreen' : 'text-wellness-charcoal'}`}
+              >
+                <span className="flex items-center">
+                  <BarChart2 className="h-4 w-4 mr-2" />
+                  Trends
+                </span>
+              </button>
+            </div>
+            
+            {/* Tab content */}
+            {activeTab === 'insights' && (
+              <div>
+                {loading ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-wellness-mediumGreen mx-auto"></div>
+                    <p className="mt-2 text-wellness-charcoal">Analyzing your sleep data...</p>
+                  </div>
+                ) : sleepData.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-wellness-charcoal">Add sleep data to get personalized insights!</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {insights.map((insight, index) => (
+                      <div 
+                        key={index} 
+                        className={`p-4 rounded-lg flex items-start ${
+                          insight.type === 'warning' ? 'bg-amber-50' : 
+                          insight.type === 'success' ? 'bg-green-50' : 
+                          insight.type === 'tip' ? 'bg-blue-50' : 'bg-violet-50'
+                        }`}
+                      >
+                        <div className="flex-shrink-0 mr-3 mt-1">
+                          {insight.icon}
+                        </div>
+                        <div>
+                          <p className="text-wellness-charcoal">{insight.message}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {activeTab === 'history' && (
+              <div>
+                {sleepData.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-wellness-charcoal">No sleep data recorded yet.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {[...sleepData].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map(session => (
+                      <div key={session.id} className="bg-white bg-opacity-70 rounded-lg p-4 border border-wellness-softGreen/30">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h4 className="font-medium text-wellness-darkGreen">{new Date(session.date).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</h4>
+                            <div className="flex items-center text-sm text-wellness-charcoal mt-1">
+                              <Clock className="h-4 w-4 mr-1" />
+                              <span>
+                                {session.bedTime} - {session.wakeTime} ({formatDuration(session.duration)})
+                              </span>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="inline-block rounded-full px-3 py-1 text-sm font-medium bg-wellness-softGreen/20 text-wellness-darkGreen">
+                              {session.quality}
+                            </div>
+                            <div className={`text-sm font-medium mt-1 ${getSleepScoreColor(calculateSleepScore(session))}`}>
+                              Score: {calculateSleepScore(session)}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {session.factors.length > 0 && (
+                          <div className="mt-3">
+                            <p className="text-xs text-wellness-charcoal mb-1">Factors affecting sleep:</p>
+                            <div className="flex flex-wrap gap-1">
+                              {session.factors.map(factor => (
+                                <span key={factor} className="text-xs bg-wellness-softGreen/10 text-wellness-darkGreen px-2 py-0.5 rounded">
+                                  {factor}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {session.notes && (
+                          <div className="mt-3">
+                            <p className="text-xs text-wellness-charcoal mb-1">Notes:</p>
+                            <p className="text-sm text-wellness-charcoal bg-wellness-softGreen/5 p-2 rounded">{session.notes}</p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {activeTab === 'trends' && (
+              <div>
+                {chartData.length < 2 ? (
+                  <div className="text-center py-8">
+                    <p className="text-wellness-charcoal">Need more data to show trends. Add at least two sleep records.</p>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="bg-white bg-opacity-80 rounded-lg p-4 border border-wellness-softGreen/30 mb-6">
+                      <h4 className="font-medium text-wellness-darkGreen mb-4">Sleep Duration Over Time</h4>
+                      <div className="h-72">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart
+                            data={chartData}
+                            margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                            <XAxis dataKey="date" stroke="#4b5563" />
+                            <YAxis tickFormatter={(value) => `${value}h`} stroke="#4b5563" />
+                            <Tooltip content={<CustomTooltip />} />
+                            <Legend />
+                            <Line type="monotone" dataKey="duration" name="Duration (hours)" stroke="#3b82f6" activeDot={{ r: 8 }} strokeWidth={2} />
+                            <Line type="monotone" dataKey="sleepScore" name="Sleep Score" stroke="#10b981" dot={{ r: 4 }} strokeWidth={2} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="bg-white bg-opacity-80 rounded-lg p-4 border border-wellness-softGreen/30">
+                        <h4 className="font-medium text-wellness-darkGreen mb-2">Sleep Quality Distribution</h4>
+                        <p className="text-sm text-wellness-charcoal mb-4">How often you experience different sleep quality levels</p>
+                        
+                        {/* Simple bar chart showing quality distribution */}
+                        <div className="space-y-3">
+                          {['Restful', 'Good', 'Average', 'Light', 'Disturbed', 'Poor'].map(quality => {
+                            const count = sleepData.filter(s => s.quality === quality).length;
+                            const percentage = sleepData.length > 0 ? Math.round((count / sleepData.length) * 100) : 0;
+                            
+                            return (
+                              <div key={quality} className="relative">
+                                <div className="flex justify-between text-xs mb-1">
+                                  <span className="font-medium text-wellness-charcoal">{quality}</span>
+                                  <span className="text-wellness-charcoal">{percentage}% ({count})</span>
+                                </div>
+                                <div className="h-2 bg-gray-100 rounded overflow-hidden">
+                                  <div 
+                                    className={`h-full ${
+                                      quality === 'Restful' ? 'bg-green-500' : 
+                                      quality === 'Good' ? 'bg-emerald-500' : 
+                                      quality === 'Average' ? 'bg-teal-500' : 
+                                      quality === 'Light' ? 'bg-yellow-500' : 
+                                      quality === 'Disturbed' ? 'bg-orange-500' : 
+                                      'bg-red-500'
+                                    }`} 
+                                    style={{ width: `${percentage}%` }}
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      
+                      <div className="bg-white bg-opacity-80 rounded-lg p-4 border border-wellness-softGreen/30">
+                        <h4 className="font-medium text-wellness-darkGreen mb-2">Common Sleep Factors</h4>
+                        <p className="text-sm text-wellness-charcoal mb-4">Factors that may be affecting your sleep</p>
+                        
+                        {/* Factors chart */}
+                        <div className="space-y-3">
+                          {(() => {
+                            const factorCounts: Record<string, number> = {};
+                            sleepData.forEach(session => {
+                              session.factors.forEach(factor => {
+                                factorCounts[factor] = (factorCounts[factor] || 0) + 1;
+                              });
+                            });
+                            
+                            const sortedFactors = Object.entries(factorCounts)
+                              .sort((a, b) => b[1] - a[1])
+                              .slice(0, 6);
+                            
+                            if (sortedFactors.length === 0) {
+                              return <p className="text-sm text-wellness-charcoal">No factors recorded yet.</p>;
+                            }
+                            
+                            return sortedFactors.map(([factor, count]) => {
+                              const percentage = Math.round((count / sleepData.length) * 100);
+                              const isNegative = ['Caffeine', 'Alcohol', 'Screen time', 'Stress', 'Noise'].includes(factor);
+                              
+                              return (
+                                <div key={factor} className="relative">
+                                  <div className="flex justify-between text-xs mb-1">
+                                    <span className="font-medium text-wellness-charcoal">{factor}</span>
+                                    <span className="text-wellness-charcoal">{percentage}% ({count})</span>
+                                  </div>
+                                  <div className="h-2 bg-gray-100 rounded overflow-hidden">
+                                    <div 
+                                      className={isNegative ? 'bg-amber-500 h-full' : 'bg-emerald-500 h-full'} 
+                                      style={{ width: `${percentage}%` }}
+                                    />
+                                  </div>
+                                </div>
+                              );
+                            });
+                          })()}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          
+          {/* Add Sleep Data Form */}
+          {showAddForm && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+              <div className="bg-white rounded-lg max-w-xl w-full max-h-[90vh] overflow-y-auto">
+                <div className="p-6">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-xl font-medium text-wellness-darkGreen">Add Sleep Data</h3>
+                    <button onClick={() => setShowAddForm(false)} className="text-wellness-charcoal hover:text-wellness-darkGreen">
+                      ✕
+                    </button>
+                  </div>
+                  
+                  <form onSubmit={handleSubmit}>
+                    <div className="space-y-4">
+                      {/* Date */}
+                      <div>
+                        <label htmlFor="date" className="block text-sm font-medium text-wellness-charcoal mb-1">
+                          Date
+                        </label>
+                        <input
+                          type="date"
+                          id="date"
+                          name="date"
+                          value={formData.date}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 bg-white border border-wellness-softGreen/40 rounded-lg focus:outline-none focus:ring-2 focus:ring-wellness-mediumGreen"
+                          required
+                        />
+                      </div>
+                      
+                      {/* Bed Time */}
+                      <div>
+                        <label htmlFor="bedTime" className="block text-sm font-medium text-wellness-charcoal mb-1">
+                          Bed Time
+                        </label>
+                        <input
+                          type="time"
+                          id="bedTime"
+                          name="bedTime"
+                          value={formData.bedTime}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 bg-white border border-wellness-softGreen/40 rounded-lg focus:outline-none focus:ring-2 focus:ring-wellness-mediumGreen"
+                          required
+                        />
+                      </div>
+                      
+                      {/* Wake Time */}
+                      <div>
+                        <label htmlFor="wakeTime" className="block text-sm font-medium text-wellness-charcoal mb-1">
+                          Wake Time
+                        </label>
+                        <input
+                          type="time"
+                          id="wakeTime"
+                          name="wakeTime"
+                          value={formData.wakeTime}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 bg-white border border-wellness-softGreen/40 rounded-lg focus:outline-none focus:ring-2 focus:ring-wellness-mediumGreen"
+                          required
+                        />
+                      </div>
+                      
+                      {/* Sleep Quality */}
+                      <div>
+                        <label htmlFor="quality" className="block text-sm font-medium text-wellness-charcoal mb-1">
+                          Sleep Quality
+                        </label>
+                        <select
+                          id="quality"
+                          name="quality"
+                          value={formData.quality}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 bg-white border border-wellness-softGreen/40 rounded-lg focus:outline-none focus:ring-2 focus:ring-wellness-mediumGreen"
+                          required
+                        >
+                          <option value="Restful">Restful - Woke up completely refreshed</option>
+                          <option value="Good">Good - Woke up feeling rested</option>
+                          <option value="Average">Average - Felt okay upon waking</option>
+                          <option value="Light">Light - Sleep was not deep enough</option>
+                          <option value="Disturbed">Disturbed - Woke up multiple times</option>
+                          <option value="Poor">Poor - Barely slept, feel exhausted</option>
+                        </select>
+                      </div>
+                      
+                      {/* Factors affecting sleep */}
+                      <div>
+                        <label className="block text-sm font-medium text-wellness-charcoal mb-1">
+                          Factors affecting sleep (select all that apply)
+                        </label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {['Caffeine', 'Alcohol', 'Exercise', 'Screen time', 'Stress', 'Meditation', 'Reading', 'Noise', 'Temperature', 'Late meal'].map(factor => (
+                            <div key={factor} className="flex items-center">
+                              <input
+                                type="checkbox"
+                                id={`factor-${factor}`}
+                                checked={formData.factors.includes(factor)}
+                                onChange={() => handleFactorToggle(factor)}
+                                className="h-4 w-4 text-wellness-mediumGreen rounded border-wellness-softGreen focus:ring-wellness-mediumGreen"
+                              />
+                              <label htmlFor={`factor-${factor}`} className="ml-2 text-sm text-wellness-charcoal">
+                                {factor}
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      {/* Notes */}
+                      <div>
+                        <label htmlFor="notes" className="block text-sm font-medium text-wellness-charcoal mb-1">
+                          Notes (optional)
+                        </label>
+                        <textarea
+                          id="notes"
+                          name="notes"
+                          value={formData.notes}
+                          onChange={handleInputChange}
+                          rows={3}
+                          className="w-full px-3 py-2 bg-white border border-wellness-softGreen/40 rounded-lg focus:outline-none focus:ring-2 focus:ring-wellness-mediumGreen"
+                          placeholder="Any additional notes about your sleep..."
+                        />
+                      </div>
+                      
+                      <div className="pt-2">
+                        <button
+                          type="submit"
+                          className="w-full bg-wellness-darkGreen text-white py-2 px-4 rounded-lg hover:bg-wellness-mediumGreen transition-colors"
+                        >
+                          Save Sleep Data
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default SleepTracker;
