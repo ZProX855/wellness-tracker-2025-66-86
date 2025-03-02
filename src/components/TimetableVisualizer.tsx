@@ -1,4 +1,4 @@
-
+<lov-code>
 import React, { useState, useRef } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { Card } from '@/components/ui/card';
@@ -279,7 +279,7 @@ const TimetableVisualizer: React.FC<TimetableVisualizerProps> = ({
     pdf.save(`timetable_${format(selectedDate, 'yyyy-MM-dd')}.pdf`);
   };
   
-  // Helper function to draw a star
+  // Helper function to draw a star - modified to use jsPDF methods
   const drawStar = (pdf: jsPDF, cx: number, cy: number, spikes: number, outerRadius: number, innerRadius: number) => {
     let rot = Math.PI/2*3;
     let x = cx;
@@ -288,21 +288,57 @@ const TimetableVisualizer: React.FC<TimetableVisualizerProps> = ({
     
     pdf.setFillColor(255, 193, 7); // Amber color for stars
     
-    pdf.beginPath();
+    // Create polygon points for the star
+    const points = [];
     
     for(let i = 0; i < spikes; i++) {
+      // Outer point
       x = cx + Math.cos(rot) * outerRadius;
       y = cy + Math.sin(rot) * outerRadius;
-      pdf.lines([[x-cx, y-cy]], cx, cy);
+      points.push([x, y]);
       rot += step;
       
+      // Inner point
       x = cx + Math.cos(rot) * innerRadius;
       y = cy + Math.sin(rot) * innerRadius;
-      pdf.lines([[x-cx, y-cy]], cx, cy);
+      points.push([x, y]);
       rot += step;
     }
     
-    pdf.fill();
+    // Draw the star using a polygon
+    if (points.length > 0) {
+      // Convert points to the format jsPDF expects
+      const flatPoints: number[] = [];
+      for (const [px, py] of points) {
+        flatPoints.push(px, py);
+      }
+      
+      // Draw the polygon
+      pdf.triangle(
+        points[0][0], points[0][1],
+        points[1][0], points[1][1],
+        points[2][0], points[2][1],
+        'F'
+      );
+      
+      // Draw the remaining triangles to complete the star
+      for (let i = 2; i < points.length - 1; i++) {
+        pdf.triangle(
+          points[0][0], points[0][1],
+          points[i][0], points[i][1],
+          points[i+1][0], points[i+1][1],
+          'F'
+        );
+      }
+      
+      // Close the star by connecting the last point to the first
+      pdf.triangle(
+        points[0][0], points[0][1],
+        points[points.length-1][0], points[points.length-1][1],
+        points[1][0], points[1][1],
+        'F'
+      );
+    }
   };
   
   // Helper function to convert hex to rgb
@@ -645,40 +681,4 @@ const TimetableVisualizer: React.FC<TimetableVisualizerProps> = ({
                       <div className="flex justify-end space-x-1 mt-2">
                         <Button
                           variant="ghost"
-                          size="sm"
-                          onClick={() => onEditEntry(entry, index)}
-                          className="h-8 px-2 bg-white/50 hover:bg-white/70"
-                        >
-                          <Edit className="h-3 w-3 mr-1" /> Edit
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => onDeleteEntry(index)}
-                          className="h-8 px-2 text-red-500 bg-white/50 hover:bg-white/70"
-                        >
-                          <Trash2 className="h-3 w-3 mr-1" /> Remove
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center h-64 text-slate-500 border rounded-lg">
-                  <ClockIcon className="h-12 w-12 mb-2 text-slate-300" />
-                  <p className="text-lg">No activities scheduled for this day</p>
-                  <p className="text-sm">Start a conversation with the AI assistant to create a timetable</p>
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
-        </div>
-      </div>
-    </Card>
-  );
-};
-
-// For the TypeScript error, we need to define a ClockIcon since it's used but not imported
-const ClockIcon = Clock;
-
-export default TimetableVisualizer;
+                          
