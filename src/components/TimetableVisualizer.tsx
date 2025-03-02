@@ -94,6 +94,11 @@ const getCategoryBadgeColor = (category: string) => {
   return badgeColorMap[category as keyof typeof badgeColorMap] || 'bg-gray-100 text-gray-800';
 };
 
+// Helper function to get PDF-friendly text colors
+const getPDFTextColor = () => {
+  return '#333333'; // Dark gray but not too dark
+};
+
 const TimetableVisualizer: React.FC<TimetableVisualizerProps> = ({
   timetable,
   onEditEntry,
