@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { Card } from '@/components/ui/card';
@@ -95,16 +94,6 @@ const getCategoryBadgeColor = (category: string) => {
   return badgeColorMap[category as keyof typeof badgeColorMap] || 'bg-gray-100 text-gray-800';
 };
 
-// Updated helper function to get PDF-friendly colors (using plain white)
-const getPDFCategoryColor = () => {
-  return '#FFFFFF'; // Plain white for all categories
-};
-
-// New helper function to get PDF-friendly text colors
-const getPDFTextColor = () => {
-  return '#333333'; // Dark gray but not too dark
-};
-
 const TimetableVisualizer: React.FC<TimetableVisualizerProps> = ({
   timetable,
   onEditEntry,
@@ -152,7 +141,7 @@ const TimetableVisualizer: React.FC<TimetableVisualizerProps> = ({
       const thead = document.createElement('thead');
       const headerRow = document.createElement('tr');
       
-      const headers = ['Time', 'Activity', 'Category', 'Status'];
+      const headers = ['Time', 'Activity', 'Category', 'Completed'];
       
       headers.forEach(headerText => {
         const th = document.createElement('th');
@@ -200,13 +189,7 @@ const TimetableVisualizer: React.FC<TimetableVisualizerProps> = ({
           activityCell.style.color = '#999';
         }
         
-        // Add important indicator
-        if (entry.important) {
-          activityCell.textContent = `${entry.activity} (Important)`;
-          activityCell.style.fontWeight = 'bold';
-        }
-        
-        // Add description if available
+        // Add description if available (but not "Important" mark)
         if (entry.description) {
           const descSpan = document.createElement('div');
           descSpan.textContent = entry.description;
@@ -226,12 +209,36 @@ const TimetableVisualizer: React.FC<TimetableVisualizerProps> = ({
         categoryCell.style.borderRight = '1px solid #eee';
         row.appendChild(categoryCell);
         
-        // Status cell
-        const statusCell = document.createElement('td');
-        statusCell.style.padding = '8px';
-        statusCell.textContent = entry.completed ? 'Completed' : 'Pending';
-        statusCell.style.color = entry.completed ? '#4CAF50' : '#FF9800';
-        row.appendChild(statusCell);
+        // Completed checkbox cell
+        const completedCell = document.createElement('td');
+        completedCell.style.padding = '8px';
+        completedCell.style.textAlign = 'center';
+        
+        // Create a checkbox-like element
+        const checkbox = document.createElement('div');
+        checkbox.style.width = '12px';
+        checkbox.style.height = '12px';
+        checkbox.style.border = '1px solid #333';
+        checkbox.style.display = 'inline-block';
+        
+        if (entry.completed) {
+          // Add checkmark for completed items
+          checkbox.style.backgroundColor = '#fff';
+          checkbox.style.position = 'relative';
+          
+          const checkmark = document.createElement('div');
+          checkmark.textContent = '✓';
+          checkmark.style.position = 'absolute';
+          checkmark.style.top = '-5px';
+          checkmark.style.left = '1px';
+          checkmark.style.fontSize = '12px';
+          checkmark.style.color = '#333';
+          
+          checkbox.appendChild(checkmark);
+        }
+        
+        completedCell.appendChild(checkbox);
+        row.appendChild(completedCell);
         
         tbody.appendChild(row);
       });
