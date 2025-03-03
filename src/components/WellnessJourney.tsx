@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { getWellnessInsights, calculateBMI } from '../services/api';
-import { Target, Activity, Leaf, ChevronRight, ChevronDown, CheckCircle2, Droplets, Dumbbell, Apple, ArrowRight, Calendar, Salad, AlarmClock, Brain, Heart, Scales, Sun, Award, Utensils } from 'lucide-react';
+import { Target, Activity, Leaf, ChevronRight, ChevronDown, CheckCircle2, Droplets, Dumbbell, Apple, ArrowRight, Calendar, Salad, AlarmClock, Brain, Heart, Scale, Sun, Award, Utensils, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import useLocalStorage from '../hooks/useLocalStorage';
@@ -463,7 +462,7 @@ const WellnessJourney: React.FC = () => {
             onClick={() => setShowBmiInfo(true)}
             className="text-sm text-wellness-mediumGreen underline mt-1 inline-flex items-center gap-1"
           >
-            <Scales className="h-3 w-3" />
+            <Scale className="h-3 w-3" />
             <span>What is BMI?</span>
           </button>
         </div>
@@ -471,7 +470,7 @@ const WellnessJourney: React.FC = () => {
         <div className="flex flex-col md:flex-row gap-6 mb-6">
           <div className="flex-1">
             <label className="block text-wellness-darkGreen font-medium mb-2 flex items-center gap-1">
-              <Scales className="h-4 w-4" />
+              <Scale className="h-4 w-4" />
               Height (cm)
             </label>
             <input
@@ -486,7 +485,7 @@ const WellnessJourney: React.FC = () => {
           </div>
           <div className="flex-1">
             <label className="block text-wellness-darkGreen font-medium mb-2 flex items-center gap-1">
-              <Scales className="h-4 w-4" />
+              <Scale className="h-4 w-4" />
               Weight (kg)
             </label>
             <input
@@ -760,308 +759,4 @@ const WellnessJourney: React.FC = () => {
               </div>
               <div>
                 <h4 className="text-xl font-medium text-wellness-darkGreen">Nutrition Plan</h4>
-                <p className="text-xs text-wellness-charcoal">Based on your {state.dietPreference} preference</p>
-              </div>
-            </div>
-            
-            <ul className="space-y-3">
-              {state.finalPlan.diet.map((item, index) => (
-                <li 
-                  key={index}
-                  className="flex items-start gap-2 opacity-0 animate-fade-in bg-white bg-opacity-50 p-3 rounded-lg border border-wellness-softGreen/20"
-                  style={{ animationDelay: `${index * 150}ms` }}
-                >
-                  <div className="mt-0.5">
-                    <ChevronRight className="h-5 w-5 text-wellness-darkGreen flex-shrink-0" />
-                  </div>
-                  <p className="text-wellness-charcoal">{item}</p>
-                </li>
-              ))}
-            </ul>
-          </div>
-          
-          {/* Hydration card */}
-          <div className="bg-white bg-opacity-80 rounded-xl p-5 shadow-sm border border-wellness-softGreen/40 transition-all duration-300 hover:shadow-md">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="h-12 w-12 rounded-full bg-wellness-softGreen flex items-center justify-center">
-                <Droplets className="h-6 w-6 text-wellness-darkGreen" />
-              </div>
-              <div>
-                <h4 className="text-xl font-medium text-wellness-darkGreen">Hydration Plan</h4>
-                <p className="text-xs text-wellness-charcoal">Personalized water intake recommendation</p>
-              </div>
-            </div>
-            
-            <div className="p-4 bg-wellness-softGreen/30 rounded-lg border border-wellness-softGreen/20">
-              <p className="text-wellness-charcoal">{state.finalPlan.water}</p>
-            </div>
-            
-            <div className="mt-3 flex justify-between items-center">
-              {[...Array(Math.min(state.waterIntake, 8))].map((_, i) => (
-                <div key={i} className="h-8 w-6 bg-blue-100 rounded-b-lg border border-blue-200 flex-grow mx-0.5"></div>
-              ))}
-              {state.waterIntake > 8 && (
-                <div className="text-sm font-medium text-wellness-darkGreen">+{state.waterIntake - 8} more</div>
-              )}
-            </div>
-          </div>
-          
-          {/* Training plan card */}
-          <div className="bg-white bg-opacity-80 rounded-xl p-5 shadow-sm border border-wellness-softGreen/40 transition-all duration-300 hover:shadow-md">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="h-12 w-12 rounded-full bg-wellness-softGreen flex items-center justify-center">
-                <Dumbbell className="h-6 w-6 text-wellness-darkGreen" />
-              </div>
-              <div>
-                <h4 className="text-xl font-medium text-wellness-darkGreen">Training Plan</h4>
-                <p className="text-xs text-wellness-charcoal">{state.trainingDays} days/week • {trainingOptions.find(o => o.value === state.trainingPreference)?.label.split(' ')[0]}</p>
-              </div>
-            </div>
-            
-            <ul className="space-y-3">
-              {state.finalPlan.training.map((item, index) => (
-                <li 
-                  key={index}
-                  className="flex items-start gap-2 opacity-0 animate-fade-in bg-white bg-opacity-50 p-3 rounded-lg border border-wellness-softGreen/20"
-                  style={{ animationDelay: `${(index + state.finalPlan.diet.length) * 150}ms` }}
-                >
-                  <div className="mt-0.5">
-                    <ChevronRight className="h-5 w-5 text-wellness-darkGreen flex-shrink-0" />
-                  </div>
-                  <p className="text-wellness-charcoal">{item}</p>
-                </li>
-              ))}
-            </ul>
-          </div>
-          
-          {/* Weekly schedule visualization */}
-          <div className="bg-white bg-opacity-80 rounded-xl p-5 shadow-sm border border-wellness-softGreen/40 transition-all duration-300 hover:shadow-md">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="h-12 w-12 rounded-full bg-wellness-softGreen flex items-center justify-center">
-                <Calendar className="h-6 w-6 text-wellness-darkGreen" />
-              </div>
-              <div>
-                <h4 className="text-xl font-medium text-wellness-darkGreen">Weekly Schedule</h4>
-                <p className="text-xs text-wellness-charcoal">Sample weekly pattern based on your preferences</p>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-7 gap-2 text-center">
-              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, i) => (
-                <div key={day} className="text-xs font-medium text-wellness-darkGreen">{day}</div>
-              ))}
-              
-              {/* Training schedule based on preferred days */}
-              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, i) => {
-                // Distribute training days throughout the week
-                const hasTraining = i < state.trainingDays && 
-                  // Skip consecutive days for strength training
-                  !(state.trainingPreference === 'strength' && i > 0 && i < state.trainingDays && i % 2 === 0);
-                
-                let icon;
-                if (hasTraining) {
-                  if (state.trainingPreference === 'cardio') icon = <Activity className="h-4 w-4" />;
-                  else if (state.trainingPreference === 'strength') icon = <Dumbbell className="h-4 w-4" />;
-                  else if (state.trainingPreference === 'flexibility') icon = <Sun className="h-4 w-4" />;
-                  else if (state.trainingPreference === 'hiit') icon = <Zap className="h-4 w-4" />;
-                  else if (state.trainingPreference === 'lowImpact') icon = <Leaf className="h-4 w-4" />;
-                  else icon = <Activity className="h-4 w-4" />;
-                }
-                
-                return (
-                  <div 
-                    key={`schedule-${day}`} 
-                    className={`p-2 rounded-lg text-xs border ${hasTraining 
-                      ? 'bg-wellness-softGreen/40 border-wellness-softGreen' 
-                      : 'bg-gray-50 border-gray-200'}`}
-                  >
-                    {hasTraining ? (
-                      <div className="flex flex-col items-center justify-center">
-                        {icon}
-                        <span className="mt-1">Training</span>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center text-gray-500">
-                        <AlarmClock className="h-4 w-4" />
-                        <span className="mt-1">Rest</span>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-          
-          {/* Wellness milestones */}
-          <div className="bg-white bg-opacity-80 rounded-xl p-5 shadow-sm border border-wellness-softGreen/40 transition-all duration-300 hover:shadow-md">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="h-12 w-12 rounded-full bg-wellness-softGreen flex items-center justify-center">
-                <Leaf className="h-6 w-6 text-wellness-darkGreen" />
-              </div>
-              <div>
-                <h4 className="text-xl font-medium text-wellness-darkGreen">Wellness Milestones</h4>
-                <p className="text-xs text-wellness-charcoal">Key achievements to look forward to on your journey</p>
-              </div>
-            </div>
-            
-            <ul className="space-y-3">
-              {state.milestones.map((milestone, index) => (
-                <li 
-                  key={index}
-                  className="flex items-start gap-2 opacity-0 animate-fade-in bg-white bg-opacity-50 p-3 rounded-lg border border-wellness-softGreen/20"
-                  style={{ animationDelay: `${(index + state.finalPlan.diet.length + state.finalPlan.training.length) * 150}ms` }}
-                >
-                  <div className="mt-0.5">
-                    <CheckCircle2 className="h-5 w-5 text-wellness-darkGreen flex-shrink-0" />
-                  </div>
-                  <p className="text-wellness-charcoal">{milestone}</p>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-        
-        <div className="flex justify-center">
-          <button
-            onClick={() => setActiveStep('preferences')}
-            className="btn-secondary rounded-lg flex items-center gap-2 mr-4"
-          >
-            <ChevronDown className="h-5 w-5" />
-            Adjust Preferences
-          </button>
-          
-          <button
-            onClick={() => window.print()}
-            className="btn-primary rounded-lg flex items-center gap-2"
-          >
-            <Activity className="h-5 w-5" />
-            Print My Plan
-          </button>
-        </div>
-      </div>
-    );
-  };
-  
-  // BMI Info Dialog
-  const renderBMIInfoDialog = () => {
-    return (
-      <Dialog open={showBmiInfo} onOpenChange={setShowBmiInfo}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Scales className="h-5 w-5 text-wellness-darkGreen" />
-              About Body Mass Index (BMI)
-            </DialogTitle>
-          </DialogHeader>
-          <div className="mt-2 space-y-4">
-            <p>
-              BMI is a numerical value calculated from your weight and height that provides a simple way to classify weight categories that may lead to health problems.
-            </p>
-            <div className="space-y-2">
-              <p className="font-medium">BMI Categories:</p>
-              <ul className="space-y-2">
-                <li className="flex items-center bg-amber-50 p-2 rounded-lg">
-                  <div className="h-4 w-4 bg-amber-500 rounded-full mr-2"></div>
-                  <span><strong>Underweight:</strong> BMI less than 18.5</span>
-                </li>
-                <li className="flex items-center bg-green-50 p-2 rounded-lg">
-                  <div className="h-4 w-4 bg-green-500 rounded-full mr-2"></div>
-                  <span><strong>Normal weight:</strong> BMI 18.5 to 24.9</span>
-                </li>
-                <li className="flex items-center bg-amber-50 p-2 rounded-lg">
-                  <div className="h-4 w-4 bg-amber-600 rounded-full mr-2"></div>
-                  <span><strong>Overweight:</strong> BMI 25 to 29.9</span>
-                </li>
-                <li className="flex items-center bg-red-50 p-2 rounded-lg">
-                  <div className="h-4 w-4 bg-red-500 rounded-full mr-2"></div>
-                  <span><strong>Obesity:</strong> BMI 30 or greater</span>
-                </li>
-              </ul>
-            </div>
-            <div className="text-sm bg-gray-50 p-3 rounded-lg border border-gray-200">
-              <p className="font-medium text-wellness-darkGreen mb-1">Important considerations:</p>
-              <ul className="list-disc list-inside space-y-1 text-wellness-charcoal/80">
-                <li>BMI doesn't directly measure body fat</li>
-                <li>Doesn't account for muscle mass, bone density, or overall body composition</li>
-                <li>Athletes may have high BMI due to muscle weight</li>
-                <li>Older adults may have lower muscle mass affecting interpretation</li>
-                <li>Some ethnic groups may have different associations between BMI and health</li>
-              </ul>
-              <p className="mt-2 text-xs italic">Always consult healthcare professionals for comprehensive health assessments.</p>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  };
-
-  return (
-    <div className="w-full max-w-3xl mx-auto glass-panel p-6">
-      {/* Progress Steps */}
-      <div className="mb-8">
-        <div className="flex justify-between items-center relative">
-          {/* Progress bar */}
-          <div className="absolute h-1 bg-wellness-softGreen/30 w-full top-4 z-0"></div>
-          <div 
-            className="absolute h-1 bg-wellness-darkGreen transition-all duration-500 top-4 z-0"
-            style={{ 
-              width: 
-                activeStep === 'goals' ? '0%' : 
-                activeStep === 'bmi' ? '33%' :
-                activeStep === 'preferences' ? '66%' : '100%'
-            }}
-          ></div>
-          
-          {/* Step indicators */}
-          <div 
-            className={`z-10 flex flex-col items-center cursor-pointer ${activeStep === 'goals' ? 'text-wellness-darkGreen' : 'text-wellness-mediumGreen'}`}
-            onClick={() => activeStep !== 'goals' && setActiveStep('goals')}
-          >
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white mb-2 ${activeStep === 'goals' ? 'bg-wellness-darkGreen' : 'bg-wellness-mediumGreen'}`}>
-              1
-            </div>
-            <span className="text-xs font-medium">Goals</span>
-          </div>
-          
-          <div 
-            className={`z-10 flex flex-col items-center ${state.recommendations.length > 0 ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'} ${activeStep === 'bmi' ? 'text-wellness-darkGreen' : 'text-wellness-mediumGreen'}`}
-            onClick={() => state.recommendations.length > 0 && setActiveStep('bmi')}
-          >
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white mb-2 ${activeStep === 'bmi' ? 'bg-wellness-darkGreen' : (state.recommendations.length > 0 ? 'bg-wellness-mediumGreen' : 'bg-wellness-softGreen')}`}>
-              2
-            </div>
-            <span className="text-xs font-medium">BMI</span>
-          </div>
-          
-          <div 
-            className={`z-10 flex flex-col items-center ${state.bmiResult ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'} ${activeStep === 'preferences' ? 'text-wellness-darkGreen' : 'text-wellness-mediumGreen'}`}
-            onClick={() => state.bmiResult && setActiveStep('preferences')}
-          >
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white mb-2 ${activeStep === 'preferences' ? 'bg-wellness-darkGreen' : (state.bmiResult ? 'bg-wellness-mediumGreen' : 'bg-wellness-softGreen')}`}>
-              3
-            </div>
-            <span className="text-xs font-medium">Preferences</span>
-          </div>
-          
-          <div 
-            className={`z-10 flex flex-col items-center ${state.finalPlan ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'} ${activeStep === 'plan' ? 'text-wellness-darkGreen' : 'text-wellness-mediumGreen'}`}
-            onClick={() => state.finalPlan && setActiveStep('plan')}
-          >
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white mb-2 ${activeStep === 'plan' ? 'bg-wellness-darkGreen' : (state.finalPlan ? 'bg-wellness-mediumGreen' : 'bg-wellness-softGreen')}`}>
-              4
-            </div>
-            <span className="text-xs font-medium">Plan</span>
-          </div>
-        </div>
-      </div>
-      
-      {renderGoalsSection()}
-      {renderBMISection()}
-      {renderPreferencesSection()}
-      {renderPlanSection()}
-      {renderBMIInfoDialog()}
-    </div>
-  );
-};
-
-export default WellnessJourney;
+                <p className="text-
