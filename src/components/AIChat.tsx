@@ -4,10 +4,36 @@ import { Send, Dumbbell, Coffee, Heart, Leaf, Apple } from 'lucide-react';
 import { getChatResponse } from '../services/api';
 import { toast } from 'sonner';
 
+// Helper function to format AI responses with bullet points and styling
+const formatAIResponse = (text: string) => {
+  // Replace asterisks with proper bullet points and formatting
+  const formattedText = text
+    // Convert markdown-style bullet points to HTML with emoji
+    .replace(/\*\s(.*?)(?=\n\*|\n\n|$)/g, '<li>$1</li>')
+    // Convert markdown bold to strong tags
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    // Convert numbered lists
+    .replace(/(\d+)\.\s(.*?)(?=\n\d+\.|\n\n|$)/g, '<li class="numbered">$1. $2</li>')
+    // Convert section headers (lines ending with colon)
+    .replace(/(^|\n)([^:\n]+):(\s*)\n/g, '$1<div class="section-header">$2:</div>');
+
+  // Wrap bullet points in a ul if there are any
+  if (formattedText.includes('<li>')) {
+    return formattedText
+      .replace(/<li>/g, '<li class="bullet-point">')
+      .replace(/(<li class="bullet-point">.*?<\/li>)+/g, '<ul class="response-list">$&</ul>');
+  }
+
+  return formattedText;
+};
+
 const AIChat: React.FC = () => {
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState<{ text: string; isUser: boolean }[]>([
-    { text: "👋 Hi! I'm your AI nutrition assistant. How can I help today?", isUser: false }
+  const [messages, setMessages] = useState<{ text: string; isUser: boolean; isFormatted?: boolean }[]>([
+    { 
+      text: "👋 Hi! I'm your AI nutrition assistant. How can I help today?", 
+      isUser: false 
+    }
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -46,7 +72,11 @@ const AIChat: React.FC = () => {
         }]);
         toast.error("Couldn't get a response. Please try again.");
       } else {
-        setMessages(prev => [...prev, { text: response.text, isUser: false }]);
+        setMessages(prev => [...prev, { 
+          text: response.text, 
+          isUser: false,
+          isFormatted: true
+        }]);
       }
     } catch (error) {
       console.error("Chat error:", error);
@@ -91,7 +121,14 @@ const AIChat: React.FC = () => {
                   : 'bg-wellness-softGreen/50 text-wellness-charcoal rounded-tl-none'
               }`}
             >
-              <div className="whitespace-pre-line">{message.text}</div>
+              {message.isFormatted ? (
+                <div 
+                  className="whitespace-pre-line chat-formatted-text" 
+                  dangerouslySetInnerHTML={{ __html: formatAIResponse(message.text) }}
+                />
+              ) : (
+                <div className="whitespace-pre-line">{message.text}</div>
+              )}
             </div>
           </div>
         ))}
