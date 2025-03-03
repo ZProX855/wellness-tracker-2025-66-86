@@ -1,8 +1,7 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
-import { MessageSquare, Apple, ActivitySquare, Camera, Target, HeartPulse, Moon, Clock, UtensilsCrossed } from 'lucide-react';
+import { MessageSquare, Apple, ActivitySquare, Camera, Target, Moon, Clock, UtensilsCrossed } from 'lucide-react';
 
 // Define categories and their tools
 interface ToolCategory {
@@ -52,20 +51,12 @@ const Index = () => {
       delay: 200
     }, 
     {
-      title: 'BMI Calculator',
-      description: 'Calculate your BMI and get personalized advice',
-      icon: HeartPulse,
-      color: 'from-rose-100 to-rose-200',
-      path: '/bmi-calculator',
-      delay: 300
-    }, 
-    {
       title: 'Meal Recognition',
       description: 'Upload a photo of your meal for nutritional analysis',
       icon: Camera,
       color: 'from-blue-100 to-blue-200',
       path: '/meal-recognition',
-      delay: 400
+      delay: 300
     }, 
     {
       title: 'Wellness Journey',
@@ -73,7 +64,7 @@ const Index = () => {
       icon: Target,
       color: 'from-purple-100 to-purple-200',
       path: '/wellness-journey',
-      delay: 500
+      delay: 400
     }, 
     {
       title: 'Sleep Tracker',
@@ -81,7 +72,7 @@ const Index = () => {
       icon: Moon,
       color: 'from-indigo-100 to-indigo-200',
       path: '/sleep-tracker',
-      delay: 600
+      delay: 500
     }, 
     {
       title: 'Timetable Generator',
@@ -89,7 +80,7 @@ const Index = () => {
       icon: Clock,
       color: 'from-teal-100 to-teal-200',
       path: '/timetable-generator',
-      delay: 700
+      delay: 600
     }
   ];
   
@@ -100,7 +91,7 @@ const Index = () => {
       icon: UtensilsCrossed,
       color: "from-green-100 to-green-200",
       tools: allTools.filter(tool => 
-        ["AI Nutrition Assistant", "Food Comparison", "BMI Calculator", "Meal Recognition"].includes(tool.title)
+        ["AI Nutrition Assistant", "Food Comparison", "Meal Recognition"].includes(tool.title)
       )
     },
     {
