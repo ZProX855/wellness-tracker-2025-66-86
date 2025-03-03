@@ -298,7 +298,7 @@ export const getChatResponse = async (message: string) => {
 };
 
 // Food comparison function with AI insights
-export const compareFoods = async (food1: string, food2: string) => {
+export const compareFoods = async (food1: string, food2: string, quantity1: number = 100, quantity2: number = 100) => {
   // First get the basic nutrition data from our database
   const allFoods = getAllFoods();
   const food1Data = allFoods.find(food => food.name.toLowerCase() === food1.toLowerCase());
@@ -310,10 +310,6 @@ export const compareFoods = async (food1: string, food2: string) => {
       data: null
     };
   }
-  
-  // Use default quantity values
-  const quantity1 = 100;
-  const quantity2 = 100;
   
   // Adjust for quantity
   const food1Adjusted = {
@@ -432,139 +428,362 @@ export const calculateBMI = async (height: number, weight: number) => {
     let fallbackAdvice = '';
     
     if (bmi < 18.5) {
-      fallbackAdvice = "🥗 Focus on nutrient-dense foods to help you gain weight in a healthy way. Include healthy fats like avocados, nuts, and olive oil. Strength training can help build muscle mass. Consider smaller, more frequent meals throughout the day.";
+      fallbackAdvice = "🥗 Focus on nutrient-dense foods to help you gain weight in a healthy way. Include healthy fats like avocados, nuts, and olive oil. Strength training can help build muscle mass. Consider smaller, more frequent meals if you struggle with appetite.";
     } else if (bmi >= 18.5 && bmi < 25) {
-      fallbackAdvice = "✅ Your BMI is in a healthy range! Continue to maintain a balanced diet with plenty of fruits, vegetables, lean proteins, and whole grains. Regular physical activity is important for maintaining your weight and overall health.";
+      fallbackAdvice = "🌟 You're in a healthy weight range! Focus on maintaining balanced nutrition with plenty of whole foods. Regular physical activity will help maintain muscle mass and cardiovascular health. Stay hydrated and prioritize quality sleep.";
     } else if (bmi >= 25 && bmi < 30) {
-      fallbackAdvice = "🏃‍♂️ Consider incorporating more physical activity into your routine, aiming for at least 150 minutes of moderate exercise per week. Focus on portion control and increasing your intake of fiber-rich foods, which help you feel fuller longer.";
+      fallbackAdvice = "🚶 Gradual changes to diet and increasing physical activity can help. Focus on whole foods, adequate protein, and plenty of vegetables. Even small amounts of daily movement can make a difference. Staying hydrated can help manage hunger.";
     } else {
-      fallbackAdvice = "❗ Consider consulting with a healthcare provider to develop a personalized plan. Focus on making small, sustainable changes to your diet and activity levels rather than drastic changes. Increase water intake and reduce processed foods.";
+      fallbackAdvice = "💪 Start with small, sustainable changes rather than drastic diets. Increasing protein and fiber can help manage hunger. Regular movement, even just walking, is beneficial. Consider consulting a healthcare provider for personalized guidance.";
     }
     
     return {
-      bmi: bmiValue, 
+      bmi: bmiValue,
       category,
       advice: fallbackAdvice
     };
   }
 };
 
-// Add meal recognition functionality
+// More robust meal recognition function with better error handling
 export const recognizeMeal = async (imageData: string) => {
   try {
-    const prompt = `
-      Analyze this food image and provide:
-      1. What foods you can identify in the image
-      2. Approximate calorie content of the meal
-      3. Protein, carbs, and fat breakdown
-      4. How balanced this meal is nutritionally
-      5. Any suggestions to improve the nutritional value
-      
-      Format your response with clear sections and bullet points. If you cannot clearly identify the food, make your best educated guess but mention that it's an approximation.
+    // First, validate the image data
+    if (!imageData || !imageData.startsWith('data:image/')) {
+      throw new Error("Invalid image data");
+    }
+    
+    // Use a single, well-structured prompt for better reliability
+    const analyzePrompt = `
+      You are a professional nutritionist analyzing a food image. 
+
+      TASK 1: FOOD IDENTIFICATION
+      Identify exactly what food is shown in this image in 1-2 sentences. Be specific and precise.
+      If you see multiple food items, list all major items.
+      If you cannot identify the food or there is no food in the image, reply with: "NO_FOOD_DETECTED"
+
+      TASK 2: NUTRITION ANALYSIS
+      If food is detected, provide nutrition estimates in the following format:
+      Calories: [number]
+      Protein: [number]g
+      Carbs: [number]g
+      Fats: [number]g
+      Fiber: [number]g
+
+      Use realistic values based on standard nutritional data. For example:
+      - A plate of pasta: 350-500 calories, 10-15g protein, 60-80g carbs, 5-15g fat, 2-4g fiber
+      - A salad: 150-300 calories, 5-10g protein, 10-20g carbs, 8-15g fat, 3-6g fiber
+      - A burger: 400-600 calories, 20-30g protein, 30-45g carbs, 20-35g fat, 2-5g fiber
+
+      TASK 3: RECOMMENDATIONS
+      Provide 3-4 specific nutritional recommendations or benefits about this meal in bullet point format.
+      Each bullet point should start with an emoji.
+
+      Format your complete response like this:
+      [FOOD_ID]
+      Description of the food items identified
+
+      [NUTRITION]
+      Calories: X
+      Protein: Xg
+      Carbs: Xg
+      Fats: Xg
+      Fiber: Xg
+
+      [RECOMMENDATIONS]
+      • Recommendation 1
+      • Recommendation 2
+      • Recommendation 3
     `;
     
-    const analysis = await callGeminiAPI(prompt, 0.7, true, imageData);
+    // Analyze with a more resilient approach using gemini-2.0-flash
+    const analysisResponse = await callGeminiAPI(analyzePrompt, 0.2, true, imageData);
+    
+    // Check if no food was identified
+    if (analysisResponse.includes("NO_FOOD_DETECTED")) {
+      return {
+        foodIdentified: "Could not identify the meal",
+        nutritionInfo: {
+          calories: 0,
+          protein: 0,
+          carbs: 0,
+          fats: 0,
+          fiber: 0
+        },
+        recommendations: "We couldn't identify any food in this image. Please try again with a clearer image of food items.",
+        fullAnalysis: analysisResponse
+      };
+    }
+    
+    // Parse the structured response
+    const sections = analysisResponse.split(/\[(\w+)\]\n/);
+    
+    let foodIdentified = "Unknown meal";
+    let caloriesValue = 0;
+    let proteinValue = 0;
+    let carbsValue = 0;
+    let fatsValue = 0;
+    let fiberValue = 0;
+    let recommendations = "No specific recommendations available.";
+    
+    // Extract information from structured sections
+    for (let i = 1; i < sections.length; i += 2) {
+      const sectionName = sections[i];
+      const content = sections[i + 1]?.trim() || "";
+      
+      if (sectionName === "FOOD_ID") {
+        foodIdentified = content;
+      } else if (sectionName === "NUTRITION") {
+        // Extract nutrition values
+        const caloriesMatch = content.match(/calories:?\s*(\d+)/i);
+        const proteinMatch = content.match(/protein:?\s*(\d+)/i);
+        const carbsMatch = content.match(/carbs:?\s*(\d+)/i);
+        const fatsMatch = content.match(/fats:?\s*(\d+)/i);
+        const fiberMatch = content.match(/fiber:?\s*(\d+)/i);
+        
+        caloriesValue = caloriesMatch ? parseInt(caloriesMatch[1]) : 0;
+        proteinValue = proteinMatch ? parseInt(proteinMatch[1]) : 0;
+        carbsValue = carbsMatch ? parseInt(carbsMatch[1]) : 0;
+        fatsValue = fatsMatch ? parseInt(fatsMatch[1]) : 0;
+        fiberValue = fiberMatch ? parseInt(fiberMatch[1]) : 0;
+        
+        // Validate the values against reasonable ranges
+        caloriesValue = Math.min(Math.max(caloriesValue, 0), 1500);
+        proteinValue = Math.min(Math.max(proteinValue, 0), 100);
+        carbsValue = Math.min(Math.max(carbsValue, 0), 150);
+        fatsValue = Math.min(Math.max(fatsValue, 0), 100);
+        fiberValue = Math.min(Math.max(fiberValue, 0), 40);
+      } else if (sectionName === "RECOMMENDATIONS") {
+        recommendations = content;
+      }
+    }
+    
+    // If no structured response was received, try to extract information using regex
+    if (!foodIdentified || foodIdentified === "Unknown meal") {
+      // Try to find food description in unstructured text
+      const foodMatch = analysisResponse.match(/(?:I see|This is|The image shows|This appears to be)\s+([^.!?]+[.!?])/i);
+      if (foodMatch) {
+        foodIdentified = foodMatch[1].trim();
+      }
+    }
+    
+    // If nutrition values weren't found, try alternative extraction
+    if (caloriesValue === 0 && proteinValue === 0 && carbsValue === 0) {
+      // Try to find nutrition values in unstructured text
+      const altCaloriesMatch = analysisResponse.match(/(?:estimated|approximately|about|around|roughly)\s+(\d+)\s*(?:to|-)\s*(\d+)\s*calories/i);
+      if (altCaloriesMatch) {
+        const minCal = parseInt(altCaloriesMatch[1]);
+        const maxCal = parseInt(altCaloriesMatch[2]);
+        caloriesValue = Math.floor((minCal + maxCal) / 2);
+      }
+      
+      // Make educated guesses based on food type
+      if (foodIdentified.toLowerCase().includes("salad")) {
+        caloriesValue = caloriesValue || 250;
+        proteinValue = proteinValue || 8;
+        carbsValue = carbsValue || 15;
+        fatsValue = fatsValue || 12;
+        fiberValue = fiberValue || 5;
+      } else if (foodIdentified.toLowerCase().includes("pasta") || foodIdentified.toLowerCase().includes("noodle")) {
+        caloriesValue = caloriesValue || 400;
+        proteinValue = proteinValue || 12;
+        carbsValue = carbsValue || 70;
+        fatsValue = fatsValue || 8;
+        fiberValue = fiberValue || 3;
+      } else if (foodIdentified.toLowerCase().includes("burger") || foodIdentified.toLowerCase().includes("sandwich")) {
+        caloriesValue = caloriesValue || 550;
+        proteinValue = proteinValue || 25;
+        carbsValue = carbsValue || 45;
+        fatsValue = fatsValue || 30;
+        fiberValue = fiberValue || 3;
+      } else if (foodIdentified.toLowerCase().includes("chicken") || foodIdentified.toLowerCase().includes("fish")) {
+        caloriesValue = caloriesValue || 300;
+        proteinValue = proteinValue || 30;
+        carbsValue = carbsValue || 5;
+        fatsValue = fatsValue || 15;
+        fiberValue = fiberValue || 1;
+      } else if (foodIdentified.toLowerCase().includes("rice") || foodIdentified.toLowerCase().includes("grain")) {
+        caloriesValue = caloriesValue || 350;
+        proteinValue = proteinValue || 7;
+        carbsValue = carbsValue || 70;
+        fatsValue = fatsValue || 3;
+        fiberValue = fiberValue || 3;
+      } else if (foodIdentified.toLowerCase().includes("fruit") || foodIdentified.toLowerCase().includes("vegetable")) {
+        caloriesValue = caloriesValue || 150;
+        proteinValue = proteinValue || 3;
+        carbsValue = carbsValue || 30;
+        fatsValue = fatsValue || 1;
+        fiberValue = fiberValue || 7;
+      } else {
+        // Default mixed meal values
+        caloriesValue = caloriesValue || 400;
+        proteinValue = proteinValue || 20;
+        carbsValue = carbsValue || 40;
+        fatsValue = fatsValue || 15;
+        fiberValue = fiberValue || 4;
+      }
+    }
+    
+    // Format recommendations with emojis if they don't already have them
+    if (!recommendations.includes("•") && !recommendations.includes("- ") && !/[\u{1F300}-\u{1F6FF}]/u.test(recommendations)) {
+      const bullets = ['🥗', '💪', '🍽️', '👍', '✨'];
+      recommendations = recommendations.split('\n')
+        .filter(line => line.trim().length > 0)
+        .map((line, index) => {
+          const emoji = bullets[index % bullets.length];
+          return `${emoji} ${line}`;
+        })
+        .join('\n');
+    }
     
     return {
-      success: true,
-      analysis,
-      error: null
+      foodIdentified,
+      nutritionInfo: {
+        calories: caloriesValue,
+        protein: proteinValue,
+        carbs: carbsValue,
+        fats: fatsValue,
+        fiber: fiberValue
+      },
+      recommendations,
+      fullAnalysis: analysisResponse
     };
   } catch (error) {
     console.error("Meal recognition API error:", error);
+    
+    // Provide a more helpful fallback response
     return {
-      success: false,
-      analysis: null,
-      error: "Failed to analyze the meal image. Please try again with a clearer image."
+      foodIdentified: "Error analyzing the meal",
+      nutritionInfo: {
+        calories: 0,
+        protein: 0,
+        carbs: 0,
+        fats: 0,
+        fiber: 0
+      },
+      recommendations: "We encountered an error while analyzing this image. Please try again with a different image or try again later. For best results, use well-lit photos of food items without text overlays.",
+      fullAnalysis: error instanceof Error ? error.message : "Unknown error"
     };
   }
 };
 
-// Wellness insights function
-export const getWellnessInsights = async (goals: string[]) => {
+// Wellness journey insights function
+export interface WellnessInsights {
+  recommendations: string[];
+  milestones: string[];
+}
+
+export const getWellnessInsights = async (goals: string[]): Promise<WellnessInsights> => {
   try {
-    const goalsString = goals.join(", ");
-    
     const prompt = `
-      A user has set the following wellness goals: ${goalsString}
+      The user has selected the following wellness goals:
+      ${goals.map(goal => `- ${goal}`).join('\n')}
       
       Based on these goals, provide:
-      1. 4-5 specific, actionable recommendations for achieving these goals
-      2. 3-4 milestones the user can expect to reach if they follow these recommendations
+      1. 5 actionable recommendations to help them achieve these goals
+      2. 5 realistic milestones they can expect to see on their journey
       
-      Format your response in two separate lists:
-      - "RECOMMENDATIONS": (list of recommendations)
-      - "MILESTONES": (list of milestones)
+      Format your response as a JSON object with two arrays:
+      {
+        "recommendations": ["🥗 Recommendation 1", "💪 Recommendation 2", ...],
+        "milestones": ["Week 1-2: 🌱 Milestone 1", "Month 1: 🏆 Milestone 2", ...]
+      }
       
-      Make each point concise, motivational, and based on scientific evidence.
+      Make sure to include emojis at the beginning of each recommendation and milestone.
+      Each item should be very concise (15 words or less).
+      For milestones, include a timeframe (e.g., "Week 1-2:", "Month 3:")
+      
+      IMPORTANT: Respond ONLY with the JSON object, no markdown, no code blocks, no additional text.
     `;
     
-    const response = await callGeminiAPI(prompt);
+    const aiResponse = await callGeminiAPI(prompt);
     
-    // Parse the response to extract recommendations and milestones
-    let recommendations: string[] = [];
-    let milestones: string[] = [];
-    
-    // Simple parsing logic - we expect the AI to format its response with clear sections
-    const recSection = response.indexOf("RECOMMENDATIONS:");
-    const mileSection = response.indexOf("MILESTONES:");
-    
-    if (recSection !== -1 && mileSection !== -1) {
-      const recText = response.substring(recSection + 16, mileSection).trim();
-      const mileText = response.substring(mileSection + 11).trim();
+    try {
+      // Clean up the response to handle potential markdown code blocks
+      let jsonString = aiResponse;
       
-      // Extract bullet points - this is simplified and might need improvement
-      recommendations = recText.split(/\n-|\n•/).filter(item => item.trim().length > 0).map(item => item.trim());
-      milestones = mileText.split(/\n-|\n•/).filter(item => item.trim().length > 0).map(item => item.trim());
-    } else {
-      // Fallback if the AI didn't format as expected
-      const lines = response.split('\n').filter(line => line.trim().length > 0);
+      // Remove markdown code blocks if present
+      if (jsonString.includes('```json')) {
+        jsonString = jsonString.replace(/```json\n|\n```/g, '');
+      } else if (jsonString.includes('```')) {
+        jsonString = jsonString.replace(/```\n|\n```/g, '');
+      }
       
-      // Assume first half are recommendations, second half are milestones
-      const midpoint = Math.floor(lines.length / 2);
-      recommendations = lines.slice(0, midpoint).map(line => line.replace(/^[•-]\s*/, '').trim());
-      milestones = lines.slice(midpoint).map(line => line.replace(/^[•-]\s*/, '').trim());
+      // Trim any extra whitespace
+      jsonString = jsonString.trim();
+      
+      // Try to parse the cleaned response as JSON
+      const parsedResponse = JSON.parse(jsonString);
+      
+      return {
+        recommendations: Array.isArray(parsedResponse.recommendations) ? parsedResponse.recommendations : [],
+        milestones: Array.isArray(parsedResponse.milestones) ? parsedResponse.milestones : []
+      };
+    } catch (parseError) {
+      console.error("Failed to parse AI response as JSON:", parseError);
+      console.log("Raw AI response:", aiResponse);
+      
+      // Fallback: Try to extract recommendations and milestones from text
+      const recommendationsMatch = aiResponse.match(/recommendations["\s:]+\[(.*?)\]/s);
+      const milestonesMatch = aiResponse.match(/milestones["\s:]+\[(.*?)\]/s);
+      
+      let recommendations: string[] = [];
+      let milestones: string[] = [];
+      
+      if (recommendationsMatch && recommendationsMatch[1]) {
+        recommendations = recommendationsMatch[1]
+          .split(/",\s*"/)
+          .map(item => item.replace(/^["']|["']$/g, '').trim())
+          .filter(item => item.length > 0);
+      }
+      
+      if (milestonesMatch && milestonesMatch[1]) {
+        milestones = milestonesMatch[1]
+          .split(/",\s*"/)
+          .map(item => item.replace(/^["']|["']$/g, '').trim())
+          .filter(item => item.length > 0);
+      }
+      
+      // If still no recommendations/milestones, use the fallback data
+      if (recommendations.length === 0 && milestones.length === 0) {
+        return {
+          recommendations: [
+            "🥗 Start with small, achievable daily habits",
+            "📊 Track your progress beyond just the scale",
+            "🍎 Focus on how foods make you feel",
+            "💪 Include strength training alongside cardio",
+            "😴 Prioritize sleep for recovery and reduced cravings"
+          ],
+          milestones: [
+            "Week 1-2: 🌱 Notice improved energy levels",
+            "Week 3-4: 💪 Feel stronger during workouts",
+            "Week 6-8: 👖 Clothes fit differently",
+            "Month 3: 🏆 Significant habit changes established",
+            "Month 6: 🌟 Major progress toward your goals"
+          ]
+        };
+      }
+      
+      return { recommendations, milestones };
     }
-    
-    // Ensure we have at least some content
-    if (recommendations.length === 0) {
-      recommendations = [
-        "Focus on one small change at a time for sustainable progress",
-        "Stay hydrated throughout the day",
-        "Get 7-8 hours of quality sleep each night",
-        "Practice mindfulness for 5-10 minutes daily"
-      ];
-    }
-    
-    if (milestones.length === 0) {
-      milestones = [
-        "Increased energy levels within 1-2 weeks",
-        "Improved mood and reduced stress after 3-4 weeks",
-        "Better sleep quality within a month",
-        "Noticeable progress toward your goals within 6-8 weeks"
-      ];
-    }
-    
-    return {
-      recommendations,
-      milestones
-    };
   } catch (error) {
     console.error("Wellness insights API error:", error);
     
-    // Fallback insights if API fails
+    // Return fallback data if the API call fails
     return {
       recommendations: [
-        "Start with small, achievable changes to build momentum",
-        "Stay consistent with your habits, even on difficult days",
-        "Track your progress to stay motivated",
-        "Get adequate sleep to support your wellness goals"
+        "🥗 Start with small, achievable daily habits",
+        "📊 Track your progress beyond just the scale",
+        "🍎 Focus on how foods make you feel",
+        "💪 Include strength training alongside cardio",
+        "😴 Prioritize sleep for recovery and reduced cravings"
       ],
       milestones: [
-        "Noticeable improvement in energy levels within 2 weeks",
-        "Established new healthy habits after 4 weeks",
-        "Significant progress toward goals at 2 months",
-        "Sustainable lifestyle changes at 3 months"
+        "Week 1-2: 🌱 Notice improved energy levels",
+        "Week 3-4: 💪 Feel stronger during workouts",
+        "Week 6-8: 👖 Clothes fit differently",
+        "Month 3: 🏆 Significant habit changes established",
+        "Month 6: 🌟 Major progress toward your goals"
       ]
     };
   }

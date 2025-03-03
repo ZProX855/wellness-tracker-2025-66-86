@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Dumbbell, Coffee, Heart, Leaf, Apple } from 'lucide-react';
 import { getChatResponse } from '../services/api';
@@ -37,8 +36,7 @@ const AIChat: React.FC = () => {
     
     try {
       const response = await getChatResponse(userMessage);
-      // Fix the error property check
-      if (response && typeof response === 'object' && 'error' in response && response.error) {
+      if (response.error) {
         console.error("Chat API error:", response.error);
         setMessages(prev => [...prev, { 
           text: "🙁 Sorry, I couldn't process that right now. Could you try again?", 
