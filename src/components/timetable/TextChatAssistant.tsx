@@ -24,6 +24,8 @@ const TextChatAssistant: React.FC<TextChatAssistantProps> = ({
   const [currentMessage, setCurrentMessage] = useState('');
   const [isWaitingForResponse, setIsWaitingForResponse] = useState(false);
   const [conversationHistory, setConversationHistory] = useState<{ role: 'user' | 'assistant', content: string }[]>([]);
+  const [conversationStage, setConversationStage] = useState<'intro' | 'gathering' | 'refining' | 'finalizing'>('intro');
+  const [gatheringCount, setGatheringCount] = useState(0);
   const messageEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -36,63 +38,62 @@ const TextChatAssistant: React.FC<TextChatAssistantProps> = ({
   }, [conversationHistory]);
 
   const startTextChat = async () => {
-    // Call the parent component's setIsTextChatActive to hide the timetable
     setIsTextChatActive(true);
     
-    // First message from the assistant - more friendly and concise with emoji
-    const initialPrompt = "👋 Hi there! I'll help create your daily schedule. Could you tell me when you usually wake up and go to sleep?";
+    // More conversational opening message
+    const initialPrompt = "👋 Hey there! I'm excited to help create a schedule that actually works for you. What's your day typically like?";
     
     setConversationHistory([
       { role: 'assistant', content: initialPrompt }
     ]);
     
-    // Add to responses for the main component
     onResponses(initialPrompt, '');
     
     toast({
       title: "Chat Started",
-      description: "You can now chat with the AI assistant to create your timetable.",
+      description: "Let's have a conversation to build your perfect daily schedule.",
     });
   };
 
   const endTextChat = () => {
     setIsTextChatActive(false);
-    onConversationComplete();
     
-    toast({
-      title: "✨ Conversation Ended",
-      description: "Creating your personalized timetable now...",
-    });
+    // Add a friendly closing message
+    const closingMessage = "Great conversation! I've got a good sense of your schedule now. Let me put something together for you. ✨";
+    setConversationHistory(prev => [...prev, { role: 'assistant', content: closingMessage }]);
+    onResponses(closingMessage, '');
+    
+    setTimeout(() => {
+      onConversationComplete();
+      
+      toast({
+        title: "✨ Creating Your Schedule",
+        description: "Crafting your personalized timetable based on our chat...",
+      });
+    }, 1500);
   };
 
-  const sendMessage = async () => {
-    if (!currentMessage.trim() || isWaitingForResponse) return;
+  const advanceConversationStage = (userMessageCount: number) => {
+    if (conversationStage === 'intro' && userMessageCount >= 2) {
+      setConversationStage('gathering');
+    } else if (conversationStage === 'gathering' && userMessageCount >= 6) {
+      setConversationStage('refining');
+      // Add a summary message to confirm information
+      provideSummary();
+    } else if (conversationStage === 'refining' && userMessageCount >= 9) {
+      setConversationStage('finalizing');
+    }
     
-    const userMessage = currentMessage.trim();
-    setCurrentMessage('');
-    
-    // Add user message to conversation
-    setConversationHistory(prev => [...prev, { role: 'user', content: userMessage }]);
-    
-    // Add to responses for the main component
-    onResponses('', userMessage);
+    setGatheringCount(prevCount => prevCount + 1);
+  };
+
+  const provideSummary = async () => {
+    // Prepare conversational summary
+    const fullConversation = conversationHistory.map(msg => `${msg.role}: ${msg.content}`).join('\n');
     
     setIsWaitingForResponse(true);
     
     try {
-      // Format conversation history for Gemini
-      const formattedHistory = conversationHistory.map(msg => ({
-        role: msg.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: msg.content }]
-      }));
-      
-      // Add the new user message
-      formattedHistory.push({
-        role: 'user',
-        parts: [{ text: userMessage }]
-      });
-      
-      // Enhanced prompt for Gemini API to generate more concise, friendly responses with emojis
       const response = await fetch(GEMINI_ENDPOINT, {
         method: 'POST',
         headers: {
@@ -104,23 +105,120 @@ const TextChatAssistant: React.FC<TextChatAssistantProps> = ({
               role: "user",
               parts: [
                 {
-                  text: `You are a friendly AI assistant helping create a daily timetable. 
-The user has said: "${userMessage}"
+                  text: `Based on our conversation so far, provide a friendly summary of what you understand about my schedule preferences and daily routine. Format it as a casual check-in, asking if you've understood correctly. Make it conversational, not a bullet list.
 
-Please respond in a very concise, friendly way (max 2-3 sentences). 
-Include 1-2 relevant emojis.
-Ask just ONE clear question at a time about their routine or preferences.
-Focus on collecting practical information for their timetable.
-
-Previous conversation: ${JSON.stringify(formattedHistory)}`
+Previous conversation: ${fullConversation}`
                 }
               ]
             }
           ],
           generationConfig: {
             temperature: 0.7,
-            maxOutputTokens: 150,
+            maxOutputTokens: 250,
             topP: 0.8,
+            topK: 40
+          }
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Gemini API error: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      if (!data || !data.candidates || !data.candidates[0] || 
+          !data.candidates[0].content || !data.candidates[0].content.parts || 
+          !data.candidates[0].content.parts[0]) {
+        throw new Error("Invalid response format from Gemini API");
+      }
+      
+      const summaryMessage = data.candidates[0].content.parts[0].text;
+      
+      // Add the summary to the conversation
+      setConversationHistory(prev => [...prev, { role: 'assistant', content: summaryMessage }]);
+      onResponses(summaryMessage, '');
+      
+    } catch (error) {
+      console.error("Error generating summary:", error);
+    } finally {
+      setIsWaitingForResponse(false);
+    }
+  };
+
+  const getSuggestionPrompt = (stage: string, history: string) => {
+    switch(stage) {
+      case 'intro':
+        return `You're having a friendly conversation to help create a daily schedule. The chat just started.
+                Ask a natural follow-up question about their general routine or preferences. Keep it casual and conversational.`;
+      case 'gathering':
+        return `Based on what they've shared about their routine, ask about a different aspect of their day 
+                (meals, work, exercise, hobbies, etc.) that hasn't been discussed yet. Make your question sound like
+                it naturally flows from the conversation, not like you're going through a checklist.`;
+      case 'refining':
+        return `Now that you have a general understanding of their day, ask about specific timing preferences, 
+                priorities, or challenges they face with their current schedule. Position it as helping them improve
+                their daily flow, not just collecting data.`;
+      case 'finalizing':
+        return `We're wrapping up the conversation. Ask if there's anything specific they'd like to focus on or 
+                prioritize in their schedule, or if they have any special requirements for certain days.
+                Make them feel like they have final input on their schedule.`;
+      default:
+        return `Continue the conversation naturally. Ask a follow-up question based on their previous response.`;
+    }
+  };
+
+  const sendMessage = async () => {
+    if (!currentMessage.trim() || isWaitingForResponse) return;
+    
+    const userMessage = currentMessage.trim();
+    setCurrentMessage('');
+    
+    // Add user message to conversation
+    setConversationHistory(prev => [...prev, { role: 'user', content: userMessage }]);
+    onResponses('', userMessage);
+    
+    setIsWaitingForResponse(true);
+    
+    try {
+      // Format conversation history for context
+      const formattedHistory = conversationHistory.map(msg => 
+        `${msg.role === 'assistant' ? 'AI' : 'User'}: ${msg.content}`
+      ).join('\n');
+      
+      // Determine appropriate prompt based on conversation stage
+      const stagePrompt = getSuggestionPrompt(conversationStage, formattedHistory);
+      
+      // Dynamic, conversational prompt for Gemini
+      const response = await fetch(GEMINI_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: "user",
+              parts: [
+                {
+                  text: `You're an AI assistant helping create a personalized daily schedule through conversation. 
+The user said: "${userMessage}"
+
+${stagePrompt}
+
+Keep your response friendly, casual and concise (max 2-3 sentences).
+Include an emoji or two to feel more personal.
+Avoid sounding like you're going through a survey or questionnaire.
+Previous conversation:
+${formattedHistory}`
+                }
+              ]
+            }
+          ],
+          generationConfig: {
+            temperature: 0.8,
+            maxOutputTokens: 200,
+            topP: 0.95,
             topK: 40
           },
           safetySettings: [
@@ -148,18 +246,21 @@ Previous conversation: ${JSON.stringify(formattedHistory)}`
       
       // Add assistant message to conversation
       setConversationHistory(prev => [...prev, { role: 'assistant', content: assistantMessage }]);
-      
-      // Add to responses for the main component
       onResponses(assistantMessage, '');
       
-      // Check if we've asked enough questions (at least 5 exchanges)
-      if (conversationHistory.length >= 10) { // 5 questions + 5 answers
-        // Ask if the user wants to continue or generate the timetable
-        const followupMessage = "✅ Thanks for all this info! Ready to create your timetable? Or is there anything else you'd like to add?";
-        
-        setConversationHistory(prev => [...prev, { role: 'assistant', content: followupMessage }]);
-        onResponses(followupMessage, '');
+      // Determine if we should move to the next stage
+      advanceConversationStage(conversationHistory.filter(msg => msg.role === 'user').length);
+      
+      // If we've reached the end of the conversation flow
+      if (conversationStage === 'finalizing' && gatheringCount > 4) {
+        // Add final wrap-up message
+        setTimeout(() => {
+          const finalMessage = "I think I have all I need to create a great schedule for you! Should we go ahead and build your timetable now? 🎯";
+          setConversationHistory(prev => [...prev, { role: 'assistant', content: finalMessage }]);
+          onResponses(finalMessage, '');
+        }, 1500);
       }
+      
     } catch (error) {
       console.error("Error sending message:", error);
       
