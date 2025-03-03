@@ -1,12 +1,9 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Dumbbell, Coffee, Heart, Leaf, Apple } from 'lucide-react';
 import { getChatResponse } from '../services/api';
 import { toast } from 'sonner';
 
-// Enhanced helper function to format AI responses with bullet points and styling
 const formatAIResponse = (text: string) => {
-  // First, detect if the text has a greeting/intro and separate it
   const hasGreeting = text.match(/^(Hi|Hello|Hey|Greetings).*?!/i);
   let greeting = '';
   let mainContent = text;
@@ -19,39 +16,13 @@ const formatAIResponse = (text: string) => {
     }
   }
 
-  // Format the main content with enhanced styling
   const formattedContent = mainContent
-    // Convert markdown-style bullet points to HTML with emoji
-    .replace(/\*\s(.*?)(?=\n\*|\n\n|$)/g, '<li class="bullet-point">$1</li>')
-    // Convert markdown bold to strong tags
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    // Convert regular bold format
-    .replace(/\*(.*?)\*/g, '<strong>$1</strong>')
-    // Convert section headers (lines ending with colon)
-    .replace(/(^|\n)([^:\n]+):(\s*)(\n|$)/g, '$1<div class="section-header">$2:</div>$4')
-    // Convert numbered lists (1. 2. 3. etc)
-    .replace(/(\d+)\.\s(.*?)(?=\n\d+\.|\n\n|$)/g, '<li class="numbered">$1. $2</li>')
-    // Handle specific formatting for protein recommendations (based on image example)
-    .replace(/([\d\.]+)\s*grams\s*(per|of)\s*(protein|kilogram)(?:\s*of\s*body\s*weight)?/gi, 
-             '<span class="highlight">$1 grams $2 $3</span>')
-    // Wrap any standalone emojis at start of lines with emphasis
-    .replace(/(^|\n)([\p{Emoji}]+)(\s)/gu, '$1<span class="emoji">$2</span>$3');
+    .replace(/\*\*(.*?)\*\*/g, '<em>$1</em>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/(\*|\d+\.)\s(.*?)(?=\n\*|\n\d+\.|\n\n|$)/g, '<p>$2</p>')
+    .replace(/(^|\n)([^:\n]+):(\s*)(\n|$)/g, '$1<div class="section-title">$2:</div>$4');
 
-  // Wrap bullet points in a ul if there are any
-  let finalContent = formattedContent;
-  if (formattedContent.includes('<li class="bullet-point">')) {
-    finalContent = formattedContent
-      .replace(/(<li class="bullet-point">.*?<\/li>)+/g, '<ul class="response-list">$&</ul>');
-  }
-
-  // Wrap numbered lists in an ol if there are any
-  if (finalContent.includes('<li class="numbered">')) {
-    finalContent = finalContent
-      .replace(/(<li class="numbered">.*?<\/li>)+/g, '<ol class="numbered-list">$&</ol>');
-  }
-
-  // Combine greeting (if any) with formatted content
-  return greeting ? `<div class="greeting">${greeting}</div>${finalContent}` : finalContent;
+  return greeting ? `<div class="greeting">${greeting}</div>${formattedContent}` : formattedContent;
 };
 
 const AIChat: React.FC = () => {
@@ -90,7 +61,6 @@ const AIChat: React.FC = () => {
     
     try {
       const response = await getChatResponse(userMessage);
-      // Fix the error property check
       if (response && typeof response === 'object' && 'error' in response && response.error) {
         console.error("Chat API error:", response.error);
         setMessages(prev => [...prev, { 

@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -143,51 +142,24 @@
     @apply rounded-full flex items-center justify-center bg-white shadow-sm border border-wellness-softGreen hover:border-wellness-mediumGreen transition-all duration-500 ease-bounce-out hover:shadow-md hover:scale-105;
   }
   
-  /* Enhanced Chat Message Formatting */
+  /* Simplified Chat Message Formatting */
   .chat-formatted-text {
-    @apply text-sm sm:text-base leading-snug;
+    @apply text-sm sm:text-base leading-relaxed;
   }
   
   .chat-formatted-text .greeting {
-    @apply font-medium mb-2 text-wellness-darkGreen;
+    @apply font-medium mb-3 text-wellness-darkGreen;
   }
   
-  .chat-formatted-text ul.response-list,
-  .chat-formatted-text ol.numbered-list {
-    @apply my-2 space-y-2;
-  }
-  
-  .chat-formatted-text li.bullet-point {
-    @apply flex items-start pl-5 relative mb-1 leading-tight;
-  }
-  
-  .chat-formatted-text li.bullet-point::before {
-    content: "•";
-    @apply absolute left-0 text-wellness-darkGreen font-bold;
-  }
-  
-  .chat-formatted-text li.numbered {
-    @apply pl-0 relative mb-1 leading-tight;
-  }
-  
-  .chat-formatted-text .section-header {
-    @apply font-medium text-wellness-darkGreen mt-3 mb-1.5;
-  }
-  
-  .chat-formatted-text strong {
-    @apply font-medium text-wellness-darkGreen;
-  }
-  
-  .chat-formatted-text .emoji {
-    @apply text-lg mr-1 inline-block;
-  }
-  
-  .chat-formatted-text .highlight {
-    @apply font-medium text-wellness-darkGreen;
-  }
-  
-  /* Make sure paragraphs have proper spacing */
   .chat-formatted-text p {
-    @apply mb-2 text-sm sm:text-base leading-snug;
+    @apply my-2 leading-relaxed;
+  }
+  
+  .chat-formatted-text em {
+    @apply font-medium text-wellness-darkGreen not-italic;
+  }
+  
+  .chat-formatted-text .section-title {
+    @apply font-medium text-wellness-darkGreen mt-4 mb-2;
   }
 }
