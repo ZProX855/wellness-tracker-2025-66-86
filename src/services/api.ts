@@ -472,33 +472,99 @@ export const getWellnessInsights = async (goals: string[]): Promise<{ recommenda
   };
 };
 
-// Add meal recognition functionality
+// Updated meal recognition functionality with structured response
 export const recognizeMeal = async (imageData: string) => {
   try {
     const prompt = `
-      Analyze this food image and provide:
-      1. What foods you can identify in the image
-      2. Approximate calorie content of the meal
-      3. Protein, carbs, and fat breakdown
-      4. How balanced this meal is nutritionally
-      5. Any suggestions to improve the nutritional value
+      You are a professional nutritionist analyzing a food image. Please provide:
       
-      Format your response with clear sections and bullet points. If you cannot clearly identify the food, make your best educated guess but mention that it's an approximation.
+      1. MEAL DESCRIPTION: In exactly 2 lines, describe what this meal is, including:
+         - What the food/dish appears to be
+         - Approximate portion size
+         - Brief comment on healthiness (healthy, moderately healthy, or indulgent)
+      
+      2. FOOD IDENTIFIED: The specific name of the dish/meal
+      
+      3. NUTRITION INFORMATION:
+         - Approximate calories (kcal)
+         - Protein (g)
+         - Carbs (g)
+         - Fats (g)
+         - Fiber (g)
+      
+      4. RECOMMENDATIONS: 3-4 bullet points on how this meal fits into a healthy diet
+      
+      5. FULL ANALYSIS: More detailed description of nutritional value and health implications
+      
+      Format your response as a structured JSON with these exact fields:
+      {
+        "mealDescription": "2-line description here",
+        "foodIdentified": "Specific name of the dish",
+        "nutritionInfo": {
+          "calories": number,
+          "protein": number,
+          "carbs": number,
+          "fats": number,
+          "fiber": number
+        },
+        "recommendations": "Bullet points with recommendations",
+        "fullAnalysis": "Detailed analysis"
+      }
+      
+      If you cannot clearly identify the food, make your best guess but indicate uncertainty in the description. If you really cannot identify the food at all, respond with:
+      {
+        "mealDescription": "This image doesn't contain clearly identifiable food. Please upload a clearer image of your meal.",
+        "foodIdentified": "Could not identify the meal",
+        "nutritionInfo": { "calories": 0, "protein": 0, "carbs": 0, "fats": 0, "fiber": 0 },
+        "recommendations": "Please upload a clearer image with proper lighting to get accurate nutritional information.",
+        "fullAnalysis": "Could not analyze"
+      }
+      
+      IMPORTANT: Your response MUST be valid JSON. Don't include any text outside the JSON object.
     `;
     
-    const analysis = await callGeminiAPI(prompt, 0.7, true, imageData);
+    const aiResponse = await callGeminiAPI(prompt, 0.7, true, imageData);
     
-    return {
-      success: true,
-      analysis,
-      error: null
-    };
+    try {
+      // Parse the JSON response
+      const mealData = JSON.parse(aiResponse.trim());
+      
+      return mealData;
+    } catch (parseError) {
+      console.error("Error parsing AI response as JSON:", parseError);
+      console.log("Raw response:", aiResponse);
+      
+      // If we couldn't parse the JSON, return a fallback structured response
+      return {
+        mealDescription: "We detected food in your image but couldn't analyze it completely. Try a clearer, well-lit photo of your meal.",
+        foodIdentified: "Partial meal detection",
+        nutritionInfo: {
+          calories: 0,
+          protein: 0,
+          carbs: 0,
+          fats: 0,
+          fiber: 0
+        },
+        recommendations: "Please upload a clearer image to get accurate nutritional information.",
+        fullAnalysis: "Could not analyze completely"
+      };
+    }
   } catch (error) {
     console.error("Meal recognition API error:", error);
+    
+    // Return a structured error response
     return {
-      success: false,
-      analysis: null,
-      error: "Failed to analyze the meal image. Please try again with a clearer image."
+      mealDescription: "Sorry, we couldn't analyze your meal image. Our AI service is currently having issues.",
+      foodIdentified: "Error analyzing the meal",
+      nutritionInfo: {
+        calories: 0,
+        protein: 0,
+        carbs: 0,
+        fats: 0,
+        fiber: 0
+      },
+      recommendations: "Please try again later or upload a different image.",
+      fullAnalysis: error instanceof Error ? error.message : "Unknown error"
     };
   }
 };
