@@ -30,6 +30,12 @@ const GoalSelector: React.FC<GoalSelectorProps> = ({
   getSelectedGoals,
   handleContinue: externalHandleContinue
 }) => {
+  // Debounced toggle handler to prevent multiple rapid toggles
+  const handleToggleGoal = (id: number) => {
+    if (loading) return; // Prevent toggling during loading state
+    toggleGoal(id);
+  };
+
   const handleContinue = async () => {
     const selectedGoals = getSelectedGoals();
     
@@ -63,19 +69,30 @@ const GoalSelector: React.FC<GoalSelectorProps> = ({
         {goals.map((goal, index) => (
           <div 
             key={goal.id}
-            className={`p-4 rounded-xl border transition-all duration-300 cursor-pointer shadow-sm hover:shadow-md opacity-0 animate-fade-in ${ 
+            className={`p-4 rounded-xl border transition-all duration-300 ${
+              loading ? 'pointer-events-none' : 'cursor-pointer'
+            } shadow-sm hover:shadow-md opacity-0 animate-fade-in ${
               goal.selected 
                 ? 'bg-wellness-darkGreen border-wellness-darkGreen text-white' 
                 : 'bg-white bg-opacity-70 backdrop-blur-sm border-wellness-softGreen hover:border-wellness-mediumGreen'
             }`}
             style={{ animationDelay: `${index * 100}ms` }}
-            onClick={() => toggleGoal(goal.id)}
+            onClick={() => handleToggleGoal(goal.id)}
+            role="checkbox"
+            aria-checked={goal.selected}
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleToggleGoal(goal.id);
+              }
+            }}
           >
             <div className="flex items-center">
               {goal.selected ? (
-                <CheckCircle2 className="h-5 w-5 mr-2" />
+                <CheckCircle2 className="h-5 w-5 mr-2 flex-shrink-0" />
               ) : (
-                <div className="h-5 w-5 border border-wellness-mediumGreen rounded-full mr-2"></div>
+                <div className="h-5 w-5 border border-wellness-mediumGreen rounded-full mr-2 flex-shrink-0"></div>
               )}
               <span className={goal.selected ? 'font-medium' : ''}>{goal.text}</span>
             </div>
@@ -88,8 +105,9 @@ const GoalSelector: React.FC<GoalSelectorProps> = ({
           onClick={handleContinue}
           disabled={getSelectedGoals().length === 0 || loading}
           className={`btn-primary rounded-full px-6 py-3 shadow-sm hover:shadow-md flex items-center gap-2 transition-all duration-300 ${
-            getSelectedGoals().length === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:translate-y-[-2px]'
+            getSelectedGoals().length === 0 || loading ? 'opacity-50 cursor-not-allowed' : 'hover:translate-y-[-2px]'
           }`}
+          aria-busy={loading}
         >
           {loading ? (
             <>
