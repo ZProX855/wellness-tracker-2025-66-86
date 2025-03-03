@@ -4,27 +4,54 @@ import { Send, Dumbbell, Coffee, Heart, Leaf, Apple } from 'lucide-react';
 import { getChatResponse } from '../services/api';
 import { toast } from 'sonner';
 
-// Helper function to format AI responses with bullet points and styling
+// Enhanced helper function to format AI responses with bullet points and styling
 const formatAIResponse = (text: string) => {
-  // Replace asterisks with proper bullet points and formatting
-  const formattedText = text
+  // First, detect if the text has a greeting/intro and separate it
+  const hasGreeting = text.match(/^(Hi|Hello|Hey|Greetings).*?!/i);
+  let greeting = '';
+  let mainContent = text;
+  
+  if (hasGreeting) {
+    const greetingEndIndex = text.indexOf('\n', hasGreeting[0].length);
+    if (greetingEndIndex !== -1) {
+      greeting = text.substring(0, greetingEndIndex);
+      mainContent = text.substring(greetingEndIndex);
+    }
+  }
+
+  // Format the main content with enhanced styling
+  const formattedContent = mainContent
     // Convert markdown-style bullet points to HTML with emoji
-    .replace(/\*\s(.*?)(?=\n\*|\n\n|$)/g, '<li>$1</li>')
+    .replace(/\*\s(.*?)(?=\n\*|\n\n|$)/g, '<li class="bullet-point">$1</li>')
     // Convert markdown bold to strong tags
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    // Convert numbered lists
-    .replace(/(\d+)\.\s(.*?)(?=\n\d+\.|\n\n|$)/g, '<li class="numbered">$1. $2</li>')
+    // Convert regular bold format
+    .replace(/\*(.*?)\*/g, '<strong>$1</strong>')
     // Convert section headers (lines ending with colon)
-    .replace(/(^|\n)([^:\n]+):(\s*)\n/g, '$1<div class="section-header">$2:</div>');
+    .replace(/(^|\n)([^:\n]+):(\s*)(\n|$)/g, '$1<div class="section-header">$2:</div>$4')
+    // Convert numbered lists (1. 2. 3. etc)
+    .replace(/(\d+)\.\s(.*?)(?=\n\d+\.|\n\n|$)/g, '<li class="numbered">$1. $2</li>')
+    // Handle specific formatting for protein recommendations (based on image example)
+    .replace(/([\d\.]+)\s*grams\s*(per|of)\s*(protein|kilogram)(?:\s*of\s*body\s*weight)?/gi, 
+             '<span class="highlight">$1 grams $2 $3</span>')
+    // Wrap any standalone emojis at start of lines with emphasis
+    .replace(/(^|\n)([\p{Emoji}]+)(\s)/gu, '$1<span class="emoji">$2</span>$3');
 
   // Wrap bullet points in a ul if there are any
-  if (formattedText.includes('<li>')) {
-    return formattedText
-      .replace(/<li>/g, '<li class="bullet-point">')
+  let finalContent = formattedContent;
+  if (formattedContent.includes('<li class="bullet-point">')) {
+    finalContent = formattedContent
       .replace(/(<li class="bullet-point">.*?<\/li>)+/g, '<ul class="response-list">$&</ul>');
   }
 
-  return formattedText;
+  // Wrap numbered lists in an ol if there are any
+  if (finalContent.includes('<li class="numbered">')) {
+    finalContent = finalContent
+      .replace(/(<li class="numbered">.*?<\/li>)+/g, '<ol class="numbered-list">$&</ol>');
+  }
+
+  // Combine greeting (if any) with formatted content
+  return greeting ? `<div class="greeting">${greeting}</div>${finalContent}` : finalContent;
 };
 
 const AIChat: React.FC = () => {
@@ -103,7 +130,9 @@ const AIChat: React.FC = () => {
   return (
     <div className="w-full max-w-2xl mx-auto bg-white bg-opacity-80 backdrop-blur-sm shadow-sm rounded-2xl border border-wellness-softGreen/30 overflow-hidden flex flex-col h-[600px]">
       <div className="p-4 bg-wellness-softGreen border-b border-wellness-softGreen/30">
-        <h2 className="text-xl font-medium text-wellness-darkGreen">🍎 AI Nutrition Assistant</h2>
+        <h2 className="text-xl font-medium text-wellness-darkGreen flex items-center gap-2">
+          <span className="text-red-500">🍎</span> AI Nutrition Assistant
+        </h2>
         <p className="text-sm text-wellness-charcoal">Powered by Gemini 2.0 Flash</p>
       </div>
       
@@ -115,7 +144,7 @@ const AIChat: React.FC = () => {
             style={{ animationDelay: `${index * 100}ms` }}
           >
             <div 
-              className={`max-w-[80%] p-3 rounded-2xl ${
+              className={`max-w-[85%] p-3 rounded-2xl ${
                 message.isUser 
                   ? 'bg-wellness-darkGreen text-white rounded-tr-none' 
                   : 'bg-wellness-softGreen/50 text-wellness-charcoal rounded-tl-none'
@@ -123,7 +152,7 @@ const AIChat: React.FC = () => {
             >
               {message.isFormatted ? (
                 <div 
-                  className="whitespace-pre-line chat-formatted-text" 
+                  className="chat-formatted-text" 
                   dangerouslySetInnerHTML={{ __html: formatAIResponse(message.text) }}
                 />
               ) : (
@@ -134,7 +163,7 @@ const AIChat: React.FC = () => {
         ))}
         {isLoading && (
           <div className="flex justify-start animate-slide-up">
-            <div className="max-w-[80%] p-3 rounded-2xl bg-wellness-softGreen/50 text-wellness-charcoal rounded-tl-none">
+            <div className="max-w-[85%] p-3 rounded-2xl bg-wellness-softGreen/50 text-wellness-charcoal rounded-tl-none">
               <div className="flex space-x-2">
                 <div className="w-2 h-2 bg-wellness-darkGreen rounded-full animate-pulse" style={{ animationDelay: '0ms' }}></div>
                 <div className="w-2 h-2 bg-wellness-darkGreen rounded-full animate-pulse" style={{ animationDelay: '300ms' }}></div>
