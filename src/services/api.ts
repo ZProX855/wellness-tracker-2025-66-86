@@ -1,4 +1,3 @@
-
 // API service with Gemini 2.0 Flash integration
 
 // Use this API key for the Gemini AI model
@@ -386,67 +385,91 @@ export const compareFoods = async (food1: string, food2: string) => {
 };
 
 // BMI calculator and advice
-export const calculateBMI = async (height: number, weight: number) => {
-  // Calculate BMI
-  const bmi = weight / ((height/100) * (height/100));
-  const bmiValue = bmi.toFixed(1);
+export const calculateBMI = async (height: number, weight: number): Promise<{ bmi: string; category: string; advice: string }> => {
+  // Simulate API call
+  await new Promise(resolve => setTimeout(resolve, 1000));
   
-  let category = '';
+  // Convert height from cm to meters
+  const heightInMeters = height / 100;
+  
+  // Calculate BMI: weight (kg) / height^2 (m)
+  const bmi = weight / (heightInMeters * heightInMeters);
+  const bmiRounded = bmi.toFixed(1);
+  
+  // Determine BMI category
+  let category;
+  let advice;
   
   if (bmi < 18.5) {
     category = 'Underweight';
+    advice = "👋 You're underweight. Try to eat more nutrient-rich foods! Add healthy fats like avocados, nuts, and olive oil to your meals. 💪 Consider strength training to build muscle.";
   } else if (bmi >= 18.5 && bmi < 25) {
     category = 'Normal weight';
+    advice = "✅ Your weight is in the healthy range! 🥗 Keep eating balanced meals and stay active. Mix up your workouts to keep things fun and challenging.";
   } else if (bmi >= 25 && bmi < 30) {
     category = 'Overweight';
+    advice = "💡 You could benefit from some small changes. Focus on portion sizes and add more movement to your day. 🚶‍♀️ Even 30 minutes of walking daily can make a big difference!";
   } else {
     category = 'Obese';
+    advice = "❤️ Your health deserves attention. Start with small, sustainable changes to your diet and activity level. 🌱 Add more vegetables and water, and find movement you enjoy. Check with your doctor before starting any intensive plan.";
   }
   
-  try {
-    // Get AI-generated advice based on BMI
-    const prompt = `
-      A user has a BMI of ${bmiValue}, which puts them in the ${category} category.
-      
-      Provide personalized advice with 4-5 bullet points with emojis covering:
-      1. A friendly assessment of their current BMI
-      2. 2-3 specific, actionable nutrition recommendations
-      3. 1-2 physical activity suggestions
-      4. A brief timeline for healthy changes if needed
-      
-      Make each bullet point concise, friendly, and focused on overall health rather than just weight.
-      Format your response with emojis at the beginning of each bullet point.
-    `;
-    
-    const advice = await callGeminiAPI(prompt);
-    
-    return {
-      bmi: bmiValue,
-      category,
-      advice
-    };
-  } catch (error) {
-    console.error("BMI advice API error:", error);
-    
-    // Fallback advice if API fails
-    let fallbackAdvice = '';
-    
-    if (bmi < 18.5) {
-      fallbackAdvice = "🥗 Focus on nutrient-dense foods to help you gain weight in a healthy way. Include healthy fats like avocados, nuts, and olive oil. Strength training can help build muscle mass. Consider smaller, more frequent meals throughout the day.";
-    } else if (bmi >= 18.5 && bmi < 25) {
-      fallbackAdvice = "✅ Your BMI is in a healthy range! Continue to maintain a balanced diet with plenty of fruits, vegetables, lean proteins, and whole grains. Regular physical activity is important for maintaining your weight and overall health.";
-    } else if (bmi >= 25 && bmi < 30) {
-      fallbackAdvice = "🏃‍♂️ Consider incorporating more physical activity into your routine, aiming for at least 150 minutes of moderate exercise per week. Focus on portion control and increasing your intake of fiber-rich foods, which help you feel fuller longer.";
-    } else {
-      fallbackAdvice = "❗ Consider consulting with a healthcare provider to develop a personalized plan. Focus on making small, sustainable changes to your diet and activity levels rather than drastic changes. Increase water intake and reduce processed foods.";
-    }
-    
-    return {
-      bmi: bmiValue, 
-      category,
-      advice: fallbackAdvice
-    };
+  return {
+    bmi: bmiRounded,
+    category,
+    advice
+  };
+};
+
+// Mock function to get AI-generated wellness insights
+export const getWellnessInsights = async (goals: string[]): Promise<{ recommendations: string[]; milestones: string[] }> => {
+  // Simulate API call
+  await new Promise(resolve => setTimeout(resolve, 1500));
+  
+  // Generate recommendations based on goals
+  const recommendations: string[] = [];
+  const milestones: string[] = [];
+  
+  if (goals.includes('Eat healthier meals')) {
+    recommendations.push("Plan your meals ahead for the week. Fill half your plate with colorful veggies, quarter with lean protein, and quarter with whole grains.");
+    recommendations.push("Replace sugary drinks with water or herbal tea. Keep a water bottle with you throughout the day.");
+    milestones.push("After 2 weeks, you'll notice improved energy levels and fewer cravings for processed foods.");
   }
+  
+  if (goals.includes('Improve fitness level')) {
+    recommendations.push("Start with 10-minute workouts and gradually increase duration. Mix cardio, strength, and flexibility exercises.");
+    recommendations.push("Find activities you enjoy - dancing, hiking, swimming - so exercise feels fun, not like a chore.");
+    milestones.push("Within 3-4 weeks, you'll notice improved stamina and ability to do daily activities with less effort.");
+  }
+  
+  if (goals.includes('Lose weight')) {
+    recommendations.push("Create a small calorie deficit (300-500 calories/day) through diet and exercise for sustainable weight loss.");
+    recommendations.push("Focus on nutrient-dense, whole foods rather than just counting calories.");
+    milestones.push("You may notice clothes fitting better within 2-3 weeks, even before seeing significant scale changes.");
+  }
+  
+  if (goals.includes('Gain muscle')) {
+    recommendations.push("Prioritize protein intake before and after workouts. Aim for strength training 3-4 times per week.");
+    recommendations.push("Ensure you're eating enough calories to support muscle growth - slightly above maintenance levels.");
+    milestones.push("Within 4-6 weeks, you'll notice increased strength in everyday activities.");
+  }
+  
+  if (goals.includes('Get better sleep')) {
+    recommendations.push("Create a consistent sleep schedule - go to bed and wake up at the same time, even on weekends.");
+    recommendations.push("Establish a calming bedtime routine and avoid screens 1 hour before sleep.");
+    milestones.push("Within 1-2 weeks of consistent sleep habits, you'll notice improved focus and energy during the day.");
+  }
+  
+  if (goals.includes('Reduce stress')) {
+    recommendations.push("Practice deep breathing or meditation for just 5 minutes daily, gradually increasing the time.");
+    recommendations.push("Schedule regular breaks throughout your day - even short ones help reset your mind.");
+    milestones.push("Within 10 days of regular stress management, you'll notice improved mood and more mental clarity.");
+  }
+  
+  return {
+    recommendations,
+    milestones
+  };
 };
 
 // Add meal recognition functionality
@@ -476,96 +499,6 @@ export const recognizeMeal = async (imageData: string) => {
       success: false,
       analysis: null,
       error: "Failed to analyze the meal image. Please try again with a clearer image."
-    };
-  }
-};
-
-// Wellness insights function
-export const getWellnessInsights = async (goals: string[]) => {
-  try {
-    const goalsString = goals.join(", ");
-    
-    const prompt = `
-      A user has set the following wellness goals: ${goalsString}
-      
-      Based on these goals, provide:
-      1. 4-5 specific, actionable recommendations for achieving these goals
-      2. 3-4 milestones the user can expect to reach if they follow these recommendations
-      
-      Format your response in two separate lists:
-      - "RECOMMENDATIONS": (list of recommendations)
-      - "MILESTONES": (list of milestones)
-      
-      Make each point concise, motivational, and based on scientific evidence.
-    `;
-    
-    const response = await callGeminiAPI(prompt);
-    
-    // Parse the response to extract recommendations and milestones
-    let recommendations: string[] = [];
-    let milestones: string[] = [];
-    
-    // Simple parsing logic - we expect the AI to format its response with clear sections
-    const recSection = response.indexOf("RECOMMENDATIONS:");
-    const mileSection = response.indexOf("MILESTONES:");
-    
-    if (recSection !== -1 && mileSection !== -1) {
-      const recText = response.substring(recSection + 16, mileSection).trim();
-      const mileText = response.substring(mileSection + 11).trim();
-      
-      // Extract bullet points - this is simplified and might need improvement
-      recommendations = recText.split(/\n-|\n•/).filter(item => item.trim().length > 0).map(item => item.trim());
-      milestones = mileText.split(/\n-|\n•/).filter(item => item.trim().length > 0).map(item => item.trim());
-    } else {
-      // Fallback if the AI didn't format as expected
-      const lines = response.split('\n').filter(line => line.trim().length > 0);
-      
-      // Assume first half are recommendations, second half are milestones
-      const midpoint = Math.floor(lines.length / 2);
-      recommendations = lines.slice(0, midpoint).map(line => line.replace(/^[•-]\s*/, '').trim());
-      milestones = lines.slice(midpoint).map(line => line.replace(/^[•-]\s*/, '').trim());
-    }
-    
-    // Ensure we have at least some content
-    if (recommendations.length === 0) {
-      recommendations = [
-        "Focus on one small change at a time for sustainable progress",
-        "Stay hydrated throughout the day",
-        "Get 7-8 hours of quality sleep each night",
-        "Practice mindfulness for 5-10 minutes daily"
-      ];
-    }
-    
-    if (milestones.length === 0) {
-      milestones = [
-        "Increased energy levels within 1-2 weeks",
-        "Improved mood and reduced stress after 3-4 weeks",
-        "Better sleep quality within a month",
-        "Noticeable progress toward your goals within 6-8 weeks"
-      ];
-    }
-    
-    return {
-      recommendations,
-      milestones
-    };
-  } catch (error) {
-    console.error("Wellness insights API error:", error);
-    
-    // Fallback insights if API fails
-    return {
-      recommendations: [
-        "Start with small, achievable changes to build momentum",
-        "Stay consistent with your habits, even on difficult days",
-        "Track your progress to stay motivated",
-        "Get adequate sleep to support your wellness goals"
-      ],
-      milestones: [
-        "Noticeable improvement in energy levels within 2 weeks",
-        "Established new healthy habits after 4 weeks",
-        "Significant progress toward goals at 2 months",
-        "Sustainable lifestyle changes at 3 months"
-      ]
     };
   }
 };

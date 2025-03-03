@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { getWellnessInsights, calculateBMI } from '../services/api';
 import { Target, Activity, Leaf, ChevronRight, ChevronDown, CheckCircle2, Droplets, Dumbbell, Apple, ArrowRight } from 'lucide-react';
@@ -54,6 +53,73 @@ const dietaryPreferences = [
   { value: 'gluten_free', label: 'Gluten-free' },
   { value: 'dairy_free', label: 'Dairy-free' }
 ];
+
+// Emoji mapping for recommendations and milestones
+const getEmojiForRecommendation = (text: string): string => {
+  const lowerText = text.toLowerCase();
+  
+  if (lowerText.includes('meal') || lowerText.includes('eat') || lowerText.includes('food') || lowerText.includes('plate')) {
+    return '🍽️';
+  } else if (lowerText.includes('sleep') || lowerText.includes('bed') || lowerText.includes('rest')) {
+    return '😴';
+  } else if (lowerText.includes('water') || lowerText.includes('hydrat')) {
+    return '💧';
+  } else if (lowerText.includes('exercise') || lowerText.includes('workout') || lowerText.includes('active')) {
+    return '🏃‍♀️';
+  } else if (lowerText.includes('stress') || lowerText.includes('relax') || lowerText.includes('meditat')) {
+    return '🧘‍♀️';
+  } else if (lowerText.includes('habit') || lowerText.includes('routine')) {
+    return '📆';
+  } else if (lowerText.includes('snack')) {
+    return '🥕';
+  } else {
+    return '✨';
+  }
+};
+
+const getEmojiForMilestone = (text: string): string => {
+  const lowerText = text.toLowerCase();
+  
+  if (lowerText.includes('energy')) {
+    return '⚡';
+  } else if (lowerText.includes('sleep')) {
+    return '💤';
+  } else if (lowerText.includes('craving')) {
+    return '🍫';
+  } else if (lowerText.includes('weight')) {
+    return '⚖️';
+  } else if (lowerText.includes('mood') || lowerText.includes('stress')) {
+    return '😊';
+  } else if (lowerText.includes('fitness') || lowerText.includes('strength')) {
+    return '💪';
+  } else {
+    return '🎯';
+  }
+};
+
+// Function to format text with emojis and bullet points
+const formatTextWithEmojis = (text: string, type: 'recommendation' | 'milestone'): string => {
+  // Get appropriate emoji based on content
+  const emoji = type === 'recommendation' 
+    ? getEmojiForRecommendation(text) 
+    : getEmojiForMilestone(text);
+    
+  // Format text to be more concise and friendly
+  // Simplify academic language and remove unnecessarily complex sentences
+  let formattedText = text
+    .replace(/studies show that|research indicates that|according to research/gi, '')
+    .replace(/it is recommended to|it is advised to/gi, 'try to')
+    .replace(/in order to/gi, 'to')
+    .replace(/individuals should/gi, 'try to')
+    .replace(/significantly/gi, '')
+    .replace(/furthermore|moreover|additionally/gi, 'Also,')
+    .trim();
+  
+  // Capitalize first letter
+  formattedText = formattedText.charAt(0).toUpperCase() + formattedText.slice(1);
+  
+  return `${emoji} ${formattedText}`;
+};
 
 const WellnessJourney: React.FC = () => {
   const [state, setState] = useState<WellnessState>({
@@ -133,9 +199,19 @@ const WellnessJourney: React.FC = () => {
         // Call the API to get BMI calculation and AI-generated advice
         const bmiResult = await calculateBMI(height, weight);
         
+        // Format the BMI advice to be more friendly and concise
+        const formattedBMIData = {
+          ...bmiResult,
+          advice: bmiResult.advice
+            .replace(/it is recommended that you|it is advised that you/gi, 'Try to')
+            .replace(/individuals in your BMI category/gi, 'you')
+            .replace(/should consider/gi, 'consider')
+            .trim()
+        };
+        
         setState(prevState => ({
           ...prevState,
-          bmiData: bmiResult,
+          bmiData: formattedBMIData,
           loading: false
         }));
         
@@ -169,6 +245,15 @@ const WellnessJourney: React.FC = () => {
       if (insights.recommendations.length === 0 && insights.milestones.length === 0) {
         throw new Error('Failed to generate wellness plan');
       }
+      
+      // Format the recommendations and milestones to be more friendly
+      const formattedRecommendations = insights.recommendations.map(rec => 
+        formatTextWithEmojis(rec, 'recommendation')
+      );
+      
+      const formattedMilestones = insights.milestones.map(milestone => 
+        formatTextWithEmojis(milestone, 'milestone')
+      );
       
       // Calculate hydration goal based on weight and activity level
       let hydrationGoal = "";
@@ -210,8 +295,8 @@ const WellnessJourney: React.FC = () => {
       
       setState({
         ...state,
-        recommendations: insights.recommendations,
-        milestones: insights.milestones,
+        recommendations: formattedRecommendations,
+        milestones: formattedMilestones,
         hydrationGoal,
         personalizedPlan,
         loading: false
@@ -235,62 +320,62 @@ const WellnessJourney: React.FC = () => {
     // Diet recommendations based on BMI and dietary preference
     let dietRecs: string[] = [];
     
-    // Base diet recommendations by BMI category
+    // Base diet recommendations by BMI category with emojis
     if (bmiCategory === 'Underweight') {
       dietRecs = [
-        "Focus on nutrient-dense, calorie-rich foods like nuts, avocados, and whole grains",
-        "Aim for 3 main meals plus 2-3 healthy snacks throughout the day",
-        "Include protein with every meal (eggs, lean meats, or plant-based alternatives)",
-        "Add healthy fats like olive oil, nut butters, and full-fat dairy to meals"
+        "🥑 Focus on nutrient-rich foods like nuts, avocados, and whole grains",
+        "🕒 Eat 3 main meals plus 2-3 snacks daily",
+        "🥚 Include protein with every meal (eggs, lean meats, or plant-based options)",
+        "🧀 Add healthy fats like olive oil, nut butters, and dairy to your meals"
       ];
     } else if (bmiCategory === 'Normal weight') {
       dietRecs = [
-        "Focus on whole foods with a balanced mix of proteins, complex carbs, and healthy fats",
-        "Aim for 5+ servings of vegetables and fruits daily",
-        "Choose whole grains over refined carbohydrates",
-        "Practice mindful eating and pay attention to hunger/fullness cues"
+        "🥗 Balance your meals with proteins, complex carbs, and healthy fats",
+        "🍎 Aim for 5+ servings of fruits and veggies daily",
+        "🌾 Choose whole grains instead of refined carbs",
+        "👀 Practice mindful eating - pay attention to hunger cues"
       ];
     } else if (bmiCategory === 'Overweight') {
       dietRecs = [
-        "Create a moderate calorie deficit of 300-500 calories daily",
-        "Focus on high-volume, low-calorie foods like vegetables and lean proteins",
-        "Limit added sugars and highly processed foods",
-        "Practice portion control with measuring cups or a food scale initially"
+        "📉 Create a small calorie deficit (300-500 calories daily)",
+        "🥦 Fill up on veggies and lean proteins",
+        "🚫 Cut back on added sugars and processed foods",
+        "🥄 Use measuring cups to control portions at first"
       ];
     } else { // Obese
       dietRecs = [
-        "Work with a healthcare provider to create a sustainable eating plan",
-        "Focus on whole, unprocessed foods with plenty of vegetables and lean proteins",
-        "Limit added sugars, refined carbs, and highly processed foods",
-        "Consider intermittent fasting approaches (after consulting with a doctor)"
+        "👨‍⚕️ Check with your doctor about a sustainable eating plan",
+        "🥒 Focus on whole foods with lots of veggies and lean proteins",
+        "🍭 Skip added sugars, refined carbs, and processed foods",
+        "⏱️ Consider trying intermittent fasting (ask your doctor first)"
       ];
     }
     
     // Adjust based on dietary preference
     if (dietaryPreference === 'vegetarian') {
-      dietRecs.push("Include plant-based proteins like lentils, beans, tofu, and tempeh");
-      dietRecs.push("Consider supplementing with vitamin B12 or fortified foods");
+      dietRecs.push("🌱 Include plant proteins like lentils, beans, tofu, and tempeh");
+      dietRecs.push("💊 Consider taking vitamin B12 supplements");
     } else if (dietaryPreference === 'vegan') {
-      dietRecs.push("Focus on complete protein combinations like beans with rice or quinoa");
-      dietRecs.push("Include vitamin B12, D, and omega-3 supplements or fortified foods");
-      dietRecs.push("Ensure adequate calcium intake through fortified plant milks and leafy greens");
+      dietRecs.push("🌱 Mix proteins like beans with rice or quinoa for complete nutrition");
+      dietRecs.push("💊 Take vitamin B12, D, and omega-3 supplements");
+      dietRecs.push("🥛 Get calcium from fortified plant milks and leafy greens");
     } else if (dietaryPreference === 'keto') {
-      dietRecs.push("Keep carbohydrates under 50g daily, focusing on non-starchy vegetables");
-      dietRecs.push("Include plenty of healthy fats from avocados, olive oil, nuts, and seeds");
-      dietRecs.push("Maintain adequate protein intake based on your activity level");
+      dietRecs.push("🥦 Keep carbs under 50g daily - focus on non-starchy veggies");
+      dietRecs.push("🥑 Eat plenty of healthy fats from avocados, olive oil, nuts, and seeds");
+      dietRecs.push("🍗 Keep protein intake adequate for your activity level");
     } else if (dietaryPreference === 'paleo') {
-      dietRecs.push("Focus on grass-fed meats, wild-caught fish, and free-range eggs");
-      dietRecs.push("Include plenty of vegetables, fruits, nuts, and seeds");
-      dietRecs.push("Avoid grains, legumes, dairy, and processed foods");
+      dietRecs.push("🥩 Choose grass-fed meats, wild-caught fish, and eggs");
+      dietRecs.push("🥗 Load up on veggies, fruits, nuts, and seeds");
+      dietRecs.push("🚫 Skip grains, legumes, dairy, and processed foods");
     }
     
-    // Hydration recommendations
+    // Hydration recommendations with emojis
     const hydrationRecs = [
-      "Start your day with a glass of water before breakfast",
-      "Keep a water bottle with you throughout the day",
-      "Set reminders to drink water every 1-2 hours",
-      "Increase intake during and after physical activity",
-      "Consider adding natural flavors with cucumber, lemon, or mint",
+      "🌅 Drink a glass of water first thing in the morning",
+      "🧴 Keep a water bottle with you all day",
+      "⏰ Set drinking reminders every 1-2 hours",
+      "💦 Drink more during and after exercise",
+      "🍋 Add flavor with cucumber, lemon, or mint if plain water is boring",
     ];
     
     // Workout recommendations based on goals and activity level
@@ -298,38 +383,38 @@ const WellnessJourney: React.FC = () => {
     
     // Base workout frequency recommendation based on activity level
     if (activityLevel === 'sedentary' || activityLevel === 'light') {
-      workoutRecs.push("Start with 2-3 days of structured exercise per week");
-      workoutRecs.push("Begin with 15-20 minute sessions and gradually increase duration");
+      workoutRecs.push("🏁 Start with 2-3 workout days per week");
+      workoutRecs.push("⏱️ Begin with short 15-20 minute sessions and build up");
     } else if (activityLevel === 'moderate') {
-      workoutRecs.push("Aim for 3-4 days of structured exercise per week");
-      workoutRecs.push("Target 30-45 minute workout sessions");
+      workoutRecs.push("🏁 Aim for 3-4 workout days per week");
+      workoutRecs.push("⏱️ Try for 30-45 minute sessions");
     } else {
-      workoutRecs.push("Maintain 4-6 days of varied exercise per week");
-      workoutRecs.push("Include adequate recovery days to prevent overtraining");
+      workoutRecs.push("🏁 Keep up 4-6 varied workout days weekly");
+      workoutRecs.push("🛌 Include rest days to prevent burnout");
     }
     
     // Add specific workout recommendations based on goals
     if (goals.includes('Lose weight')) {
-      workoutRecs.push("Combine cardio and strength training for optimal fat loss");
-      workoutRecs.push("Consider HIIT (High-Intensity Interval Training) for efficient calorie burning");
+      workoutRecs.push("🔄 Mix cardio and strength training for best fat loss");
+      workoutRecs.push("⚡ Try HIIT workouts for efficient calorie burning");
     }
     
     if (goals.includes('Gain muscle')) {
-      workoutRecs.push("Focus on progressive resistance training 3-4 times per week");
-      workoutRecs.push("Prioritize protein intake around your workouts");
-      workoutRecs.push("Target major muscle groups with compound exercises");
+      workoutRecs.push("🏋️ Do resistance training 3-4 times weekly");
+      workoutRecs.push("🥩 Eat protein before and after your workouts");
+      workoutRecs.push("💪 Focus on compound exercises for major muscle groups");
     }
     
     if (goals.includes('Improve fitness level')) {
-      workoutRecs.push("Include a mix of cardio, strength, and mobility work");
-      workoutRecs.push("Gradually increase intensity using the 10% rule to avoid plateaus");
-      workoutRecs.push("Track your progress with fitness tests every 4-6 weeks");
+      workoutRecs.push("🔄 Include cardio, strength, and mobility exercises");
+      workoutRecs.push("📈 Gradually increase intensity by about 10% weekly");
+      workoutRecs.push("📊 Track your progress with fitness tests every 4-6 weeks");
     }
     
     if (goals.includes('Reduce stress')) {
-      workoutRecs.push("Add yoga, tai chi, or meditation to your weekly routine");
-      workoutRecs.push("Consider low-intensity activities like walking in nature");
-      workoutRecs.push("Schedule relaxation time as a non-negotiable part of your wellness plan");
+      workoutRecs.push("🧘 Add yoga or meditation to your weekly routine");
+      workoutRecs.push("🌳 Try walking in nature for stress relief");
+      workoutRecs.push("📝 Schedule relaxation time - it's as important as exercise");
     }
     
     return {
@@ -677,7 +762,7 @@ const WellnessJourney: React.FC = () => {
                   className="flex items-start gap-2 opacity-0 animate-fade-in"
                   style={{ animationDelay: `${index * 150}ms` }}
                 >
-                  <ChevronRight className="h-5 w-5 text-wellness-darkGreen mt-0.5 flex-shrink-0" />
+                  <span className="text-wellness-darkGreen mt-0.5 flex-shrink-0 font-bold">•</span>
                   <p className="text-wellness-charcoal">{item}</p>
                 </li>
               ))}
@@ -700,7 +785,7 @@ const WellnessJourney: React.FC = () => {
                   className="flex items-start gap-2 opacity-0 animate-fade-in"
                   style={{ animationDelay: `${index * 150}ms` }}
                 >
-                  <ChevronRight className="h-5 w-5 text-wellness-darkGreen mt-0.5 flex-shrink-0" />
+                  <span className="text-wellness-darkGreen mt-0.5 flex-shrink-0 font-bold">•</span>
                   <p className="text-wellness-charcoal">{item}</p>
                 </li>
               ))}
@@ -723,7 +808,7 @@ const WellnessJourney: React.FC = () => {
                   className="flex items-start gap-2 opacity-0 animate-fade-in"
                   style={{ animationDelay: `${index * 150}ms` }}
                 >
-                  <ChevronRight className="h-5 w-5 text-wellness-darkGreen mt-0.5 flex-shrink-0" />
+                  <span className="text-wellness-darkGreen mt-0.5 flex-shrink-0 font-bold">•</span>
                   <p className="text-wellness-charcoal">{item}</p>
                 </li>
               ))}
@@ -746,7 +831,7 @@ const WellnessJourney: React.FC = () => {
                   className="flex items-start gap-2 opacity-0 animate-fade-in"
                   style={{ animationDelay: `${index * 150}ms` }}
                 >
-                  <ChevronRight className="h-5 w-5 text-wellness-darkGreen mt-0.5 flex-shrink-0" />
+                  <span className="text-wellness-darkGreen mt-0.5 flex-shrink-0 font-bold">•</span>
                   <p className="text-wellness-charcoal">{recommendation}</p>
                 </li>
               ))}
@@ -769,7 +854,7 @@ const WellnessJourney: React.FC = () => {
                   className="flex items-start gap-2 opacity-0 animate-fade-in"
                   style={{ animationDelay: `${(index + state.recommendations.length) * 150}ms` }}
                 >
-                  <ChevronRight className="h-5 w-5 text-wellness-darkGreen mt-0.5 flex-shrink-0" />
+                  <span className="text-wellness-darkGreen mt-0.5 flex-shrink-0 font-bold">•</span>
                   <p className="text-wellness-charcoal">{milestone}</p>
                 </li>
               ))}
