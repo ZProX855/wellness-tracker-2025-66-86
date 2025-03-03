@@ -1,10 +1,13 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { getWellnessInsights, calculateBMI } from '../services/api';
 import { Target, Activity, Leaf, ChevronRight, ChevronDown, CheckCircle2, Droplets, Dumbbell, Apple, ArrowRight, Calendar, Salad, AlarmClock, Brain, Heart, Scale, Sun, Award, Utensils, Zap } from 'lucide-react';
 import { toast } from 'sonner';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import useLocalStorage from '../hooks/useLocalStorage';
+import BMICalculator from './wellness/BMICalculator';
+import GoalSelector from './wellness/GoalSelector';
+import PreferencesForm from './wellness/PreferencesForm';
+import WellnessPlan from './wellness/WellnessPlan';
 
 interface WellnessState {
   goals: { id: number; text: string; selected: boolean }[];
@@ -31,32 +34,12 @@ interface BMIResult {
   advice: string;
 }
 
-// Define an interface for the API response
 interface WellnessInsights {
   recommendations: string[];
   milestones: string[];
 }
 
-// Define the journey step type
 type JourneyStep = 'goals' | 'bmi' | 'preferences' | 'plan';
-
-const dietOptions = [
-  { value: 'balanced', label: 'Balanced Diet 🍽️', description: 'Even distribution of macronutrients with moderate carbs, protein, and healthy fats' },
-  { value: 'low-carb', label: 'Low Carb 🥩', description: 'Reduced carbohydrate intake with focus on proteins and healthy fats' },
-  { value: 'high-protein', label: 'High Protein 🥚', description: 'Emphasis on protein sources to support muscle growth and recovery' },
-  { value: 'vegetarian', label: 'Vegetarian 🥗', description: 'Plant-based diet that includes dairy and eggs but excludes meat' },
-  { value: 'vegan', label: 'Vegan 🌱', description: '100% plant-based diet excluding all animal products' },
-  { value: 'mediterranean', label: 'Mediterranean 🫒', description: 'Rich in vegetables, fruits, whole grains, olive oil, and moderate fish' }
-];
-
-const trainingOptions = [
-  { value: 'cardio', label: 'Cardio Focus 🏃‍♀️', description: 'Emphasizes heart rate-elevating activities like running, cycling, or swimming' },
-  { value: 'strength', label: 'Strength Training 🏋️‍♂️', description: 'Focuses on resistance exercises to build muscle and increase strength' },
-  { value: 'flexibility', label: 'Flexibility & Yoga 🧘‍♀️', description: 'Prioritizes stretching, mobility work, and mind-body practices' },
-  { value: 'mixed', label: 'Mixed Workouts 🤸‍♂️', description: 'Balanced approach combining cardio, strength, and flexibility elements' },
-  { value: 'hiit', label: 'HIIT Workouts ⚡', description: 'High-intensity interval training for maximum efficiency in shorter timeframes' },
-  { value: 'lowImpact', label: 'Low Impact 🚶‍♀️', description: 'Gentler exercises that minimize stress on joints while providing benefits' }
-];
 
 const WellnessJourney: React.FC = () => {
   const [savedState, setSavedState] = useLocalStorage<Partial<WellnessState>>("wellness-journey-state", {});
@@ -90,14 +73,18 @@ const WellnessJourney: React.FC = () => {
   
   useEffect(() => {
     if (Object.keys(savedState).length > 0) {
-      setState(prevState => ({
-        ...prevState,
-        ...savedState,
-        goals: prevState.goals.map(goal => ({
+      setState(prevState => {
+        const updatedGoals = prevState.goals.map(goal => ({
           ...goal,
           selected: savedState.goals?.find(g => g.id === goal.id)?.selected || false
-        }))
-      }));
+        }));
+        
+        return {
+          ...prevState,
+          ...savedState,
+          goals: updatedGoals
+        };
+      });
       
       if (savedState.finalPlan) {
         setActiveStep('plan');
@@ -109,7 +96,7 @@ const WellnessJourney: React.FC = () => {
     }
   }, [savedState]);
   
-  useEffect(() => {
+  const saveState = useCallback(() => {
     const stateToSave = {
       goals: state.goals,
       recommendations: state.recommendations,
@@ -127,13 +114,17 @@ const WellnessJourney: React.FC = () => {
     setSavedState(stateToSave);
   }, [state, setSavedState]);
   
+  useEffect(() => {
+    saveState();
+  }, [saveState]);
+  
   const toggleGoal = (id: number) => {
-    setState({
-      ...state,
-      goals: state.goals.map(goal => 
+    setState(prevState => ({
+      ...prevState,
+      goals: prevState.goals.map(goal => 
         goal.id === id ? { ...goal, selected: !goal.selected } : goal
       )
-    });
+    }));
   };
   
   const getSelectedGoals = () => {
@@ -148,7 +139,7 @@ const WellnessJourney: React.FC = () => {
       return;
     }
     
-    setState({ ...state, loading: true });
+    setState(prevState => ({ ...prevState, loading: true }));
     
     try {
       const insights = await getWellnessInsights(selectedGoals) as WellnessInsights;
@@ -157,18 +148,18 @@ const WellnessJourney: React.FC = () => {
         throw new Error('Failed to generate wellness plan');
       }
       
-      setState({
-        ...state,
+      setState(prevState => ({
+        ...prevState,
         recommendations: insights.recommendations,
         milestones: insights.milestones,
         loading: false
-      });
+      }));
       
       setActiveStep('bmi');
       toast.success('Your initial wellness insights are ready!');
     } catch (error) {
       console.error('Error generating wellness plan:', error);
-      setState({ ...state, loading: false });
+      setState(prevState => ({ ...prevState, loading: false }));
       toast.error('Failed to generate wellness plan. Please try again.');
     }
   };
@@ -185,29 +176,29 @@ const WellnessJourney: React.FC = () => {
         return;
       }
       
-      setState({ ...state, loading: true });
+      setState(prevState => ({ ...prevState, loading: true }));
       
       try {
         const bmiResult = await calculateBMI(state.height, state.weight);
         
-        setState({
-          ...state,
+        setState(prevState => ({
+          ...prevState,
           bmiResult: bmiResult,
           loading: false
-        });
+        }));
         
         setActiveStep('preferences');
         toast.success('BMI calculated successfully!');
       } catch (error) {
         console.error("BMI calculation error:", error);
-        setState({ ...state, loading: false });
+        setState(prevState => ({ ...prevState, loading: false }));
         toast.error("Failed to calculate BMI. Please try again.");
       }
     }
   };
 
   const generateFinalPlan = () => {
-    setState({ ...state, loading: true });
+    setState(prevState => ({ ...prevState, loading: true }));
     
     setTimeout(() => {
       const selectedGoals = getSelectedGoals();
@@ -217,15 +208,15 @@ const WellnessJourney: React.FC = () => {
       const waterPlan = generateWaterPlan(state.waterIntake, state.weight);
       const trainingPlan = generateTrainingPlan(state.trainingPreference, state.trainingDays, bmiCategory);
       
-      setState({
-        ...state,
+      setState(prevState => ({
+        ...prevState,
         finalPlan: {
           diet: dietPlan,
           water: waterPlan,
           training: trainingPlan
         },
         loading: false
-      });
+      }));
       
       setActiveStep('plan');
       toast.success('Your complete wellness plan is ready!');
@@ -386,517 +377,132 @@ const WellnessJourney: React.FC = () => {
     }
   };
 
-  const renderGoalsSection = () => {
-    return (
-      <div className={`transition-opacity duration-500 ${activeStep === 'goals' ? 'opacity-100' : 'opacity-0 hidden'}`}>
-        <div className="mb-8 text-center">
-          <h3 className="text-2xl text-wellness-darkGreen font-medium mb-3">Set Your Wellness Goals</h3>
-          <p className="text-wellness-charcoal">Select all the goals that apply to you to create your personalized wellness journey.</p>
-        </div>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-8">
-          {state.goals.map((goal, index) => (
-            <div 
-              key={goal.id}
-              className={`p-4 rounded-xl border transition-all duration-300 cursor-pointer opacity-0 animate-fade-in ${ 
-                goal.selected 
-                  ? 'bg-wellness-darkGreen border-wellness-darkGreen text-white' 
-                  : 'bg-white bg-opacity-60 border-wellness-softGreen hover:border-wellness-mediumGreen'
-              }`}
-              style={{ animationDelay: `${index * 100}ms` }}
-              onClick={() => toggleGoal(goal.id)}
-            >
-              <div className="flex items-center">
-                {goal.selected ? (
-                  <CheckCircle2 className="h-5 w-5 mr-2" />
-                ) : (
-                  <div className="h-5 w-5 border border-wellness-mediumGreen rounded-full mr-2"></div>
-                )}
-                <span className={goal.selected ? 'font-medium' : ''}>{goal.text}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-        
-        <div className="flex justify-center">
-          <button
-            onClick={handleContinue}
-            disabled={getSelectedGoals().length === 0 || state.loading}
-            className={`btn-primary rounded-lg flex items-center gap-2 ${
-              getSelectedGoals().length === 0 ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
-          >
-            {state.loading ? (
-              <>
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                Getting Initial Insights...
-              </>
-            ) : (
-              <>
-                <Target className="h-5 w-5" />
-                Continue to Next Step
-              </>
-            )}
-          </button>
-        </div>
-      </div>
-    );
-  };
-
-  const renderBMISection = () => {
-    return (
-      <div className={`transition-opacity duration-500 ${activeStep === 'bmi' ? 'opacity-100' : 'opacity-0 hidden'}`}>
-        <div className="mb-6 text-center">
-          <h3 className="text-2xl text-wellness-darkGreen font-medium mb-3">Calculate Your BMI</h3>
-          <p className="text-wellness-charcoal">To personalize your plan further, we need to calculate your Body Mass Index (BMI).</p>
-          <button 
-            onClick={() => setShowBmiInfo(true)}
-            className="text-sm text-wellness-mediumGreen underline mt-1 inline-flex items-center gap-1"
-          >
-            <Scale className="h-3 w-3" />
-            <span>What is BMI?</span>
-          </button>
-        </div>
-        
-        <div className="flex flex-col md:flex-row gap-6 mb-6">
-          <div className="flex-1">
-            <label className="block text-wellness-darkGreen font-medium mb-2 flex items-center gap-1">
-              <Scale className="h-4 w-4" />
-              Height (cm)
-            </label>
-            <input
-              type="number"
-              value={state.height}
-              onChange={(e) => setState({...state, height: e.target.value === '' ? '' : Number(e.target.value)})}
-              placeholder="Enter height in cm"
-              className="input-field w-full"
-              min="0"
-              disabled={state.loading}
-            />
-          </div>
-          <div className="flex-1">
-            <label className="block text-wellness-darkGreen font-medium mb-2 flex items-center gap-1">
-              <Scale className="h-4 w-4" />
-              Weight (kg)
-            </label>
-            <input
-              type="number"
-              value={state.weight}
-              onChange={(e) => setState({...state, weight: e.target.value === '' ? '' : Number(e.target.value)})}
-              placeholder="Enter weight in kg"
-              className="input-field w-full"
-              min="0"
-              disabled={state.loading}
-            />
-          </div>
-        </div>
-
-        <div className="mt-6 p-4 bg-white bg-opacity-80 rounded-xl border border-wellness-softGreen/40 mb-6">
-          <h3 className="text-wellness-darkGreen font-medium mb-3">BMI Categories</h3>
-          <div className="flex h-8 rounded-full overflow-hidden mb-3">
-            <div className="bg-amber-500 flex-1 flex items-center justify-center text-xs text-white font-medium">Underweight</div>
-            <div className="bg-green-500 flex-1 flex items-center justify-center text-xs text-white font-medium">Normal</div>
-            <div className="bg-amber-600 flex-1 flex items-center justify-center text-xs text-white font-medium">Overweight</div>
-            <div className="bg-red-500 flex-1 flex items-center justify-center text-xs text-white font-medium">Obese</div>
-          </div>
+  return (
+    <>
+      <div className="space-y-8">
+        <div className="mb-8">
           <div className="flex justify-between">
-            <div className="text-xs text-center px-1">
-              <div className="h-3 w-3 bg-amber-500 rounded-full mx-auto mb-1"></div>
-              <div>Underweight</div>
-              <div className="font-medium">{"< 18.5"}</div>
-            </div>
-            <div className="text-xs text-center px-1">
-              <div className="h-3 w-3 bg-green-500 rounded-full mx-auto mb-1"></div>
-              <div>Normal</div>
-              <div className="font-medium">18.5 - 24.9</div>
-            </div>
-            <div className="text-xs text-center px-1">
-              <div className="h-3 w-3 bg-amber-600 rounded-full mx-auto mb-1"></div>
-              <div>Overweight</div>
-              <div className="font-medium">25 - 29.9</div>
-            </div>
-            <div className="text-xs text-center px-1">
-              <div className="h-3 w-3 bg-red-500 rounded-full mx-auto mb-1"></div>
-              <div>Obese</div>
-              <div className="font-medium">≥ 30</div>
-            </div>
-          </div>
-        </div>
-        
-        <div className="flex justify-between">
-          <button
-            onClick={() => setActiveStep('goals')}
-            className="btn-secondary rounded-lg flex items-center gap-2"
-          >
-            <ChevronDown className="h-5 w-5" />
-            Back to Goals
-          </button>
-          
-          <button
-            onClick={calculateUserBMI}
-            disabled={state.height === '' || state.weight === '' || state.loading}
-            className={`btn-primary rounded-lg flex items-center gap-2 ${
-              state.height === '' || state.weight === '' ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
-          >
-            {state.loading ? (
-              <>
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                Calculating...
-              </>
-            ) : (
-              <>
-                <ArrowRight className="h-5 w-5" />
-                Continue
-              </>
-            )}
-          </button>
-        </div>
-      </div>
-    );
-  };
-  
-  const renderPreferencesSection = () => {
-    return (
-      <div className={`transition-opacity duration-500 ${activeStep === 'preferences' ? 'opacity-100' : 'opacity-0 hidden'}`}>
-        <div className="mb-6 text-center">
-          <h3 className="text-2xl text-wellness-darkGreen font-medium mb-3">Your Preferences</h3>
-          <p className="text-wellness-charcoal">Customize your wellness plan by providing your preferences.</p>
-        </div>
-        
-        {state.bmiResult && (
-          <div className="mb-8 p-5 bg-white bg-opacity-80 rounded-xl border border-wellness-softGreen/40">
-            <div className="text-center mb-2">
-              <div className="text-3xl font-bold text-wellness-darkGreen">{state.bmiResult.bmi}</div>
-              <div className={`text-lg font-medium ${getBMICategoryColor(state.bmiResult.category)}`}>
-                {state.bmiResult.category}
+            {['goals', 'bmi', 'preferences', 'plan'].map((step, index) => (
+              <div 
+                key={step} 
+                className="flex flex-col items-center"
+                onClick={() => {
+                  const stepIndex = ['goals', 'bmi', 'preferences', 'plan'].indexOf(activeStep);
+                  if (index <= stepIndex) {
+                    setActiveStep(step as JourneyStep);
+                  }
+                }}
+              >
+                <div 
+                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-all 
+                    ${activeStep === step 
+                      ? 'bg-wellness-darkGreen text-white' 
+                      : index < ['goals', 'bmi', 'preferences', 'plan'].indexOf(activeStep)
+                        ? 'bg-wellness-mediumGreen text-white' 
+                        : 'bg-wellness-softGreen/50 text-wellness-darkGreen'
+                    } 
+                    ${index <= ['goals', 'bmi', 'preferences', 'plan'].indexOf(activeStep) 
+                      ? 'cursor-pointer hover:shadow-md' 
+                      : 'opacity-60 cursor-not-allowed'
+                    }`}
+                >
+                  {index + 1}
+                </div>
+                <div 
+                  className={`text-xs mt-2 font-medium 
+                    ${activeStep === step 
+                      ? 'text-wellness-darkGreen' 
+                      : 'text-wellness-charcoal'
+                    }`}
+                >
+                  {step.charAt(0).toUpperCase() + step.slice(1)}
+                </div>
               </div>
-            </div>
-            <div className={`mt-2 p-3 rounded-lg text-sm ${getBMICategoryBackground(state.bmiResult.category)}`}>
-              <p className="text-wellness-charcoal">
-                {state.bmiResult.advice || "Based on your BMI, we'll tailor recommendations specific to your body composition."}
-              </p>
-            </div>
+            ))}
           </div>
+          <div className="relative mt-5">
+            <div className="absolute top-0 h-1 bg-wellness-softGreen/30 w-full rounded-full"></div>
+            <div 
+              className="absolute top-0 h-1 bg-wellness-mediumGreen rounded-full transition-all duration-500"
+              style={{ 
+                width: `${
+                  activeStep === 'goals' ? '25%' : 
+                  activeStep === 'bmi' ? '50%' : 
+                  activeStep === 'preferences' ? '75%' : '100%'
+                }` 
+              }}
+            ></div>
+          </div>
+        </div>
+        
+        {activeStep === 'goals' && (
+          <GoalSelector
+            goals={state.goals}
+            toggleGoal={toggleGoal}
+            loading={state.loading}
+            getSelectedGoals={getSelectedGoals}
+            handleContinue={handleContinue}
+          />
         )}
         
-        <div className="space-y-6 mb-8">
-          <div>
-            <label className="block text-wellness-darkGreen font-medium mb-2">
-              <div className="flex items-center gap-2">
-                <Apple className="h-5 w-5" />
-                Diet Preference
-              </div>
-            </label>
-            <select 
-              value={state.dietPreference}
-              onChange={(e) => setState({...state, dietPreference: e.target.value})}
-              className="input-field w-full"
-              disabled={state.loading}
-            >
-              {dietOptions.map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            <p className="text-xs text-wellness-charcoal mt-1 italic">
-              {dietOptions.find(o => o.value === state.dietPreference)?.description}
-            </p>
-          </div>
-          
-          <div>
-            <label className="block text-wellness-darkGreen font-medium mb-2">
-              <div className="flex items-center gap-2">
-                <Droplets className="h-5 w-5" />
-                Daily Water Intake Goal (glasses)
-              </div>
-            </label>
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-medium">4</span>
-              <input
-                type="range"
-                min="4"
-                max="16"
-                step="1"
-                value={state.waterIntake}
-                onChange={(e) => setState({...state, waterIntake: Number(e.target.value)})}
-                className="flex-1 h-2 bg-wellness-softGreen rounded-lg appearance-none cursor-pointer"
-                disabled={state.loading}
-              />
-              <span className="text-sm font-medium">16</span>
-            </div>
-            <div className="flex justify-between text-sm text-wellness-charcoal mt-1">
-              <span className="flex items-center gap-1">
-                <Droplets className="h-3 w-3" />4 glasses (1L)
-              </span>
-              <span className="font-medium">
-                {state.waterIntake} glasses ({state.waterIntake / 4}L)
-              </span>
-              <span className="flex items-center gap-1">
-                <Droplets className="h-3 w-3" />16 glasses (4L)
-              </span>
-            </div>
-          </div>
-          
-          <div>
-            <label className="block text-wellness-darkGreen font-medium mb-2">
-              <div className="flex items-center gap-2">
-                <Dumbbell className="h-5 w-5" />
-                Training Preference
-              </div>
-            </label>
-            <select 
-              value={state.trainingPreference}
-              onChange={(e) => setState({...state, trainingPreference: e.target.value})}
-              className="input-field w-full"
-              disabled={state.loading}
-            >
-              {trainingOptions.map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            <p className="text-xs text-wellness-charcoal mt-1 italic">
-              {trainingOptions.find(o => o.value === state.trainingPreference)?.description}
-            </p>
-          </div>
-          
-          <div>
-            <label className="block text-wellness-darkGreen font-medium mb-2">
-              <div className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
-                Training Days Per Week
-              </div>
-            </label>
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-medium">1</span>
-              <input
-                type="range"
-                min="1"
-                max="6"
-                step="1"
-                value={state.trainingDays}
-                onChange={(e) => setState({...state, trainingDays: Number(e.target.value)})}
-                className="flex-1 h-2 bg-wellness-softGreen rounded-lg appearance-none cursor-pointer"
-                disabled={state.loading}
-              />
-              <span className="text-sm font-medium">6</span>
-            </div>
-            <div className="flex justify-between text-sm text-wellness-charcoal mt-1">
-              <span>1 day</span>
-              <span className="font-medium flex items-center gap-1">
-                <Calendar className="h-3 w-3" />
-                {state.trainingDays} days
-              </span>
-              <span>6 days</span>
-            </div>
-          </div>
-        </div>
+        {activeStep === 'bmi' && (
+          <BMICalculator
+            height={state.height}
+            weight={state.weight}
+            setHeight={(height) => setState({...state, height})}
+            setWeight={(weight) => setState({...state, weight})}
+            loading={state.loading}
+            calculateBMI={calculateUserBMI}
+            showBmiInfo={showBmiInfo}
+            setShowBmiInfo={setShowBmiInfo}
+            goBack={() => setActiveStep('goals')}
+          />
+        )}
         
-        <div className="flex justify-between">
-          <button
-            onClick={() => setActiveStep('bmi')}
-            className="btn-secondary rounded-lg flex items-center gap-2"
-          >
-            <ChevronDown className="h-5 w-5" />
-            Back to BMI
-          </button>
-          
-          <button
-            onClick={generateFinalPlan}
-            disabled={state.loading}
-            className="btn-primary rounded-lg flex items-center gap-2"
-          >
-            {state.loading ? (
-              <>
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                Generating Plan...
-              </>
-            ) : (
-              <>
-                <Target className="h-5 w-5" />
-                Create My Plan
-              </>
-            )}
-          </button>
-        </div>
+        {activeStep === 'preferences' && (
+          <PreferencesForm
+            state={state}
+            setState={setState}
+            bmiResult={state.bmiResult}
+            loading={state.loading}
+            generateFinalPlan={generateFinalPlan}
+            getBMICategoryColor={getBMICategoryColor}
+            getBMICategoryBackground={getBMICategoryBackground}
+            goBack={() => setActiveStep('bmi')}
+          />
+        )}
+        
+        {activeStep === 'plan' && state.finalPlan && (
+          <WellnessPlan
+            finalPlan={state.finalPlan}
+            recommendations={state.recommendations}
+            milestones={state.milestones}
+            goBack={() => setActiveStep('preferences')}
+          />
+        )}
       </div>
-    );
-  };
-  
-  const renderPlanSection = () => {
-    if (!state.finalPlan) {
-      return null;
-    }
-    
-    return (
-      <div className={`transition-opacity duration-500 ${activeStep === 'plan' ? 'opacity-100' : 'opacity-0 hidden'}`}>
-        <div className="mb-6 text-center">
-          <h3 className="text-2xl text-wellness-darkGreen font-medium mb-2">Your Complete Wellness Plan</h3>
-          <p className="text-wellness-charcoal flex items-center justify-center gap-1">
-            <Award className="h-4 w-4 text-wellness-darkGreen" />
-            <span>Based on your goals, BMI, and preferences</span>
-          </p>
-        </div>
-        
-        <div className="space-y-6 mb-8">
-          <div className="bg-white bg-opacity-80 rounded-xl p-5 shadow-sm border border-wellness-softGreen/40 transition-all duration-300 hover:shadow-md">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="h-12 w-12 rounded-full bg-wellness-softGreen flex items-center justify-center">
-                <Utensils className="h-6 w-6 text-wellness-darkGreen" />
-              </div>
-              <div>
-                <h4 className="text-xl font-medium text-wellness-darkGreen">Nutrition Plan</h4>
-                <p className="text-wellness-charcoal text-sm">Personalized dietary recommendations</p>
-              </div>
-            </div>
-            <ul className="space-y-3">
-              {state.finalPlan.diet.map((item, index) => (
-                <li key={index} className="flex items-start gap-2 text-wellness-charcoal">
-                  <div className="flex-shrink-0 w-6 text-center">
-                    {item.substring(0, 2)}
-                  </div>
-                  <div className="flex-1">
-                    {item.substring(2)}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-          
-          <div className="bg-white bg-opacity-80 rounded-xl p-5 shadow-sm border border-wellness-softGreen/40 transition-all duration-300 hover:shadow-md">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="h-12 w-12 rounded-full bg-wellness-softGreen flex items-center justify-center">
-                <Droplets className="h-6 w-6 text-wellness-darkGreen" />
-              </div>
-              <div>
-                <h4 className="text-xl font-medium text-wellness-darkGreen">Hydration Plan</h4>
-                <p className="text-wellness-charcoal text-sm">Water intake recommendations</p>
-              </div>
-            </div>
-            <div className="p-3 bg-blue-50 rounded-lg border border-blue-100 text-wellness-charcoal">
-              {state.finalPlan.water}
-            </div>
-          </div>
-          
-          <div className="bg-white bg-opacity-80 rounded-xl p-5 shadow-sm border border-wellness-softGreen/40 transition-all duration-300 hover:shadow-md">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="h-12 w-12 rounded-full bg-wellness-softGreen flex items-center justify-center">
-                <Dumbbell className="h-6 w-6 text-wellness-darkGreen" />
-              </div>
-              <div>
-                <h4 className="text-xl font-medium text-wellness-darkGreen">Training Plan</h4>
-                <p className="text-wellness-charcoal text-sm">{state.trainingDays} days per week, {trainingOptions.find(o => o.value === state.trainingPreference)?.label}</p>
-              </div>
-            </div>
-            <ul className="space-y-3">
-              {state.finalPlan.training.map((item, index) => (
-                <li key={index} className="flex items-start gap-2 text-wellness-charcoal">
-                  <div className="flex-shrink-0 w-6 text-center">
-                    {item.substring(0, 2)}
-                  </div>
-                  <div className="flex-1">
-                    {item.substring(2)}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-          
-          <div className="bg-white bg-opacity-80 rounded-xl p-5 shadow-sm border border-wellness-softGreen/40 transition-all duration-300 hover:shadow-md">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="h-12 w-12 rounded-full bg-wellness-softGreen flex items-center justify-center">
-                <ArrowRight className="h-6 w-6 text-wellness-darkGreen" />
-              </div>
-              <div>
-                <h4 className="text-xl font-medium text-wellness-darkGreen">Next Steps</h4>
-                <p className="text-wellness-charcoal text-sm">How to implement your plan</p>
-              </div>
-            </div>
-            <ul className="space-y-3">
-              <li className="flex items-start gap-2 text-wellness-charcoal">
-                <div className="flex-shrink-0 w-6 text-center">
-                  1️⃣
-                </div>
-                <div className="flex-1">
-                  Start with small changes and gradually implement the full plan over 2 weeks
-                </div>
-              </li>
-              <li className="flex items-start gap-2 text-wellness-charcoal">
-                <div className="flex-shrink-0 w-6 text-center">
-                  2️⃣
-                </div>
-                <div className="flex-1">
-                  Track your progress with photos, measurements, or journaling to stay motivated
-                </div>
-              </li>
-              <li className="flex items-start gap-2 text-wellness-charcoal">
-                <div className="flex-shrink-0 w-6 text-center">
-                  3️⃣
-                </div>
-                <div className="flex-1">
-                  Reassess in 4-6 weeks and adjust based on your results and how you feel
-                </div>
-              </li>
-              <li className="flex items-start gap-2 text-wellness-charcoal">
-                <div className="flex-shrink-0 w-6 text-center">
-                  4️⃣
-                </div>
-                <div className="flex-1">
-                  Remember that consistency trumps perfection - aim for 80-90% adherence
-                </div>
-              </li>
-            </ul>
-          </div>
-        </div>
-        
-        <div className="flex justify-center">
-          <button
-            onClick={() => setActiveStep('preferences')}
-            className="btn-secondary rounded-lg flex items-center gap-2"
-          >
-            <ChevronDown className="h-5 w-5" />
-            Adjust My Preferences
-          </button>
-        </div>
-      </div>
-    );
-  };
-
-  return (
-    <div className="w-full max-w-3xl mx-auto glass-panel p-6">
-      {renderGoalsSection()}
-      {renderBMISection()}
-      {renderPreferencesSection()}
-      {renderPlanSection()}
       
       <Dialog open={showBmiInfo} onOpenChange={setShowBmiInfo}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="max-w-md bg-white">
           <DialogHeader>
-            <DialogTitle>About BMI (Body Mass Index)</DialogTitle>
+            <DialogTitle className="text-wellness-darkGreen flex items-center gap-2">
+              <Scale className="h-5 w-5" /> What is BMI?
+            </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 text-wellness-charcoal">
-            <p>
-              BMI is a simple calculation using a person's height and weight. The formula is BMI = kg/m² where kg is a person's weight in kilograms and m² is their height in metres squared.
-            </p>
-            <div className="space-y-2">
-              <p className="font-medium">BMI Categories:</p>
-              <ul className="space-y-1 pl-4">
-                <li className="text-amber-600">Underweight = Less than 18.5</li>
-                <li className="text-green-600">Normal weight = 18.5–24.9</li>
-                <li className="text-amber-600">Overweight = 25–29.9</li>
-                <li className="text-red-600">Obesity = BMI of 30 or greater</li>
-              </ul>
-            </div>
-            <p>
-              <strong>Note:</strong> BMI is a screening tool but not diagnostic of body fatness or health. It doesn't account for muscle mass, bone density, or body composition. Athletes may have a high BMI due to increased muscle mass.
-            </p>
+          <div className="p-4 text-wellness-charcoal">
+            <p className="mb-3">Body Mass Index (BMI) is a numerical value calculated from a person's weight and height. It provides a simple measure to categorize a person's weight status.</p>
+            <h4 className="font-medium text-wellness-darkGreen mb-2">BMI Categories:</h4>
+            <ul className="space-y-2">
+              <li><span className="font-medium text-amber-500">Underweight:</span> BMI less than 18.5</li>
+              <li><span className="font-medium text-green-500">Normal weight:</span> BMI 18.5 to 24.9</li>
+              <li><span className="font-medium text-amber-600">Overweight:</span> BMI 25 to 29.9</li>
+              <li><span className="font-medium text-red-500">Obesity:</span> BMI 30 or greater</li>
+            </ul>
+            <p className="mt-3 text-sm italic">Note: BMI is a general indicator and doesn't account for factors like muscle mass, bone density, or overall body composition.</p>
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 };
 

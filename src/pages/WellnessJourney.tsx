@@ -8,9 +8,9 @@ import { Toaster } from 'sonner';
 
 const WellnessJourney = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-wellness-softBeige to-wellness-softGreen/30">
+    <div className="min-h-screen bg-gradient-to-b from-wellness-softBeige via-wellness-softBeige to-wellness-softGreen/30">
       <Header />
-      <Toaster position="top-center" />
+      <Toaster position="top-center" richColors />
       
       <main className="pt-24 pb-16 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto">
@@ -22,11 +22,13 @@ const WellnessJourney = () => {
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Home
             </Link>
-            <h1 className="text-3xl font-medium text-wellness-darkGreen mt-4 mb-2">Your Wellness Journey</h1>
-            <p className="text-wellness-charcoal">Set your health goals and get a personalized wellness plan with AI-powered insights.</p>
+            <h1 className="text-3xl md:text-4xl font-medium text-wellness-darkGreen mt-4 mb-2 animate-fade-in">Your Wellness Journey</h1>
+            <p className="text-wellness-charcoal max-w-2xl animate-fade-in">Set your health goals and get a personalized wellness plan with AI-powered insights tailored to your body composition and preferences.</p>
           </div>
           
-          <WellnessJourneyComponent />
+          <div className="glass-panel p-6 sm:p-8 animate-scale-in">
+            <WellnessJourneyComponent />
+          </div>
         </div>
       </main>
     </div>
