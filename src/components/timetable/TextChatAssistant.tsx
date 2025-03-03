@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -26,6 +25,8 @@ const TextChatAssistant: React.FC<TextChatAssistantProps> = ({
   const [conversationHistory, setConversationHistory] = useState<{ role: 'user' | 'assistant', content: string }[]>([]);
   const [conversationStage, setConversationStage] = useState<'intro' | 'gathering' | 'refining' | 'finalizing'>('intro');
   const [gatheringCount, setGatheringCount] = useState(0);
+  const [isConversationComplete, setIsConversationComplete] = useState(false);
+  const [sufficientInfoGathered, setSufficientInfoGathered] = useState(false);
   const messageEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -36,6 +37,14 @@ const TextChatAssistant: React.FC<TextChatAssistantProps> = ({
   React.useEffect(() => {
     scrollToBottom();
   }, [conversationHistory]);
+
+  React.useEffect(() => {
+    const userMessageCount = conversationHistory.filter(msg => msg.role === 'user').length;
+    const hasSufficientInfo = userMessageCount >= 5 && 
+      (conversationStage === 'refining' || conversationStage === 'finalizing');
+    
+    setSufficientInfoGathered(hasSufficientInfo);
+  }, [conversationHistory, conversationStage]);
 
   const startTextChat = async () => {
     setIsTextChatActive(true);
@@ -56,7 +65,17 @@ const TextChatAssistant: React.FC<TextChatAssistantProps> = ({
   };
 
   const endTextChat = () => {
+    if (!sufficientInfoGathered) {
+      toast({
+        title: "More Info Needed",
+        description: "Please continue the conversation so I can learn more about your schedule needs.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setIsTextChatActive(false);
+    setIsConversationComplete(true);
     
     // Add a friendly closing message
     const closingMessage = "Great conversation! I've got a good sense of your schedule now. Let me put something together for you. ✨";
@@ -351,9 +370,15 @@ ${formattedHistory}`
           <Button 
             onClick={endTextChat}
             variant="outline"
-            className="ml-2 border-wellness-darkGreen text-wellness-darkGreen"
+            className={`ml-2 border-wellness-darkGreen 
+            ${!sufficientInfoGathered ? 'text-wellness-darkGreen/50 border-wellness-darkGreen/50 hover:cursor-not-allowed' : 'text-wellness-darkGreen hover:bg-wellness-softGreen/20'}`}
+            disabled={!sufficientInfoGathered}
+            title={!sufficientInfoGathered ? "Please continue the conversation to gather more information" : "Generate your personalized timetable"}
           >
             Generate Timetable
+            {!sufficientInfoGathered && (
+              <span className="text-xs ml-1">(more info needed)</span>
+            )}
           </Button>
         </div>
       </div>
