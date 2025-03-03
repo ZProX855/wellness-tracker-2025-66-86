@@ -4,7 +4,6 @@ import { recognizeMeal } from '../services/api';
 import { toast } from 'sonner';
 
 interface MealData {
-  detailedDescription?: string;
   mealDescription: string;
   foodIdentified: string;
   nutritionInfo: {
@@ -371,15 +370,6 @@ const MealRecognition: React.FC = () => {
                       {result.mealDescription}
                     </p>
                   </div>
-                  
-                  {result.detailedDescription && (
-                    <div className="mb-4 p-4 bg-wellness-softGreen/10 rounded-lg border border-wellness-softGreen/20">
-                      <h4 className="font-medium text-wellness-darkGreen mb-2">Detailed Analysis</h4>
-                      <p className="text-wellness-charcoal text-sm whitespace-pre-line">
-                        {result.detailedDescription}
-                      </p>
-                    </div>
-                  )}
                   
                   <div className="flex items-center gap-2 mb-3">
                     <CheckCircle className="h-5 w-5 text-wellness-darkGreen" />
