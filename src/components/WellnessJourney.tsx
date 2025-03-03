@@ -1,50 +1,24 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
-import { Scale } from 'lucide-react';
-import useLocalStorage from '../hooks/useLocalStorage';
-import BMICalculator from './wellness/BMICalculator';
-import GoalSelector from './wellness/GoalSelector';
-import PreferencesForm from './wellness/PreferencesForm';
-import WellnessPlan from './wellness/WellnessPlan';
-import JourneyProgress from './wellness/JourneyProgress';
+import React, { useState, useEffect } from 'react';
+import { getWellnessInsights } from '../services/api';
+import { Target, Activity, Leaf, ChevronRight, ChevronDown, CheckCircle2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface WellnessState {
   goals: { id: number; text: string; selected: boolean }[];
   recommendations: string[];
   milestones: string[];
   loading: boolean;
-  height: number | '';
-  weight: number | '';
-  bmiResult: BMIResult | null;
-  waterIntake: number;
-  dietPreference: string;
-  trainingPreference: string;
-  trainingDays: number;
-  finalPlan: {
-    diet: string[];
-    water: string;
-    training: string[];
-  } | null;
 }
 
-interface BMIResult {
-  bmi: string;
-  category: string;
-  advice: string;
-}
-
+// Define an interface for the API response
 interface WellnessInsights {
   recommendations: string[];
   milestones: string[];
 }
 
-type JourneyStep = 'goals' | 'bmi' | 'preferences' | 'plan';
-
 const WellnessJourney: React.FC = () => {
-  const [savedState, setSavedState] = useLocalStorage<Partial<WellnessState>>("wellness-journey-state", {});
-  
-  const initialState: WellnessState = {
+  const [state, setState] = useState<WellnessState>({
     goals: [
       { id: 1, text: 'Eat healthier meals', selected: false },
       { id: 2, text: 'Improve fitness level', selected: false },
@@ -52,200 +26,194 @@ const WellnessJourney: React.FC = () => {
       { id: 4, text: 'Gain muscle', selected: false },
       { id: 5, text: 'Get better sleep', selected: false },
       { id: 6, text: 'Reduce stress', selected: false },
-      { id: 7, text: 'Increase energy levels', selected: false },
-      { id: 8, text: 'Improve posture', selected: false },
     ],
     recommendations: [],
     milestones: [],
-    loading: false,
-    height: '',
-    weight: '',
-    bmiResult: null,
-    waterIntake: 8,
-    dietPreference: 'balanced',
-    trainingPreference: 'mixed',
-    trainingDays: 3,
-    finalPlan: null
+    loading: false
+  });
+  
+  const [activeSection, setActiveSection] = useState<'goals' | 'plan'>('goals');
+  
+  const toggleGoal = (id: number) => {
+    setState({
+      ...state,
+      goals: state.goals.map(goal => 
+        goal.id === id ? { ...goal, selected: !goal.selected } : goal
+      )
+    });
   };
-  
-  const [state, setState] = useState<WellnessState>(initialState);
-  const [activeStep, setActiveStep] = useState<JourneyStep>('goals');
-  const [showBmiInfo, setShowBmiInfo] = useState(false);
-  
-  // Load saved state on component mount
-  useEffect(() => {
-    if (Object.keys(savedState).length > 0) {
-      setState(prevState => {
-        const updatedGoals = prevState.goals.map(goal => ({
-          ...goal,
-          selected: savedState.goals?.find(g => g.id === goal.id)?.selected || false
-        }));
-        
-        return {
-          ...prevState,
-          ...savedState,
-          goals: updatedGoals
-        };
-      });
-      
-      if (savedState.finalPlan) {
-        setActiveStep('plan');
-      } else if (savedState.bmiResult) {
-        setActiveStep('preferences');
-      } else if (savedState.recommendations && savedState.recommendations.length > 0) {
-        setActiveStep('bmi');
-      }
-    }
-  }, [savedState]);
-  
-  // Save state changes to localStorage
-  // Using useCallback to prevent recreation on each render
-  const saveState = useCallback(() => {
-    const stateToSave = {
-      goals: state.goals,
-      recommendations: state.recommendations,
-      milestones: state.milestones,
-      height: state.height,
-      weight: state.weight,
-      bmiResult: state.bmiResult,
-      waterIntake: state.waterIntake,
-      dietPreference: state.dietPreference,
-      trainingPreference: state.trainingPreference,
-      trainingDays: state.trainingDays,
-      finalPlan: state.finalPlan
-    };
-    
-    setSavedState(stateToSave);
-  }, [state, setSavedState]);
-  
-  // Call saveState when state changes
-  useEffect(() => {
-    saveState();
-  }, [saveState]);
   
   const getSelectedGoals = () => {
     return state.goals.filter(goal => goal.selected).map(goal => goal.text);
   };
   
-  const getBMICategoryColor = (category: string) => {
-    switch (category) {
-      case 'Underweight':
-        return 'text-amber-500';
-      case 'Normal weight':
-        return 'text-green-500';
-      case 'Overweight':
-        return 'text-amber-600';
-      case 'Obese':
-        return 'text-red-500';
-      default:
-        return 'text-wellness-darkGreen';
+  const generatePlan = async () => {
+    const selectedGoals = getSelectedGoals();
+    
+    if (selectedGoals.length === 0) {
+      toast.error('Please select at least one wellness goal');
+      return;
+    }
+    
+    setState({ ...state, loading: true });
+    
+    try {
+      // Explicitly type the result from getWellnessInsights
+      const insights = await getWellnessInsights(selectedGoals) as WellnessInsights;
+      
+      if (insights.recommendations.length === 0 && insights.milestones.length === 0) {
+        throw new Error('Failed to generate wellness plan');
+      }
+      
+      setState({
+        ...state,
+        recommendations: insights.recommendations,
+        milestones: insights.milestones,
+        loading: false
+      });
+      
+      setActiveSection('plan');
+      toast.success('Your wellness plan is ready!');
+    } catch (error) {
+      console.error('Error generating wellness plan:', error);
+      setState({ ...state, loading: false });
+      toast.error('Failed to generate wellness plan. Please try again.');
     }
   };
   
-  const getBMICategoryBackground = (category: string) => {
-    switch (category) {
-      case 'Underweight':
-        return 'bg-amber-50 border-amber-200';
-      case 'Normal weight':
-        return 'bg-green-50 border-green-200';
-      case 'Overweight':
-        return 'bg-amber-50 border-amber-200';
-      case 'Obese':
-        return 'bg-red-50 border-red-200';
-      default:
-        return 'bg-gray-50 border-gray-200';
+  const renderGoalsSection = () => {
+    return (
+      <div className={`transition-opacity duration-500 ${activeSection === 'goals' ? 'opacity-100' : 'opacity-0 hidden'}`}>
+        <div className="mb-8 text-center">
+          <h3 className="text-2xl text-wellness-darkGreen font-medium mb-3">Set Your Wellness Goals</h3>
+          <p className="text-wellness-charcoal">Select all the goals that apply to you to create your personalized wellness journey.</p>
+        </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+          {state.goals.map((goal, index) => (
+            <div 
+              key={goal.id}
+              className={`p-4 rounded-xl border transition-all duration-300 cursor-pointer opacity-0 animate-fade-in ${ 
+                goal.selected 
+                  ? 'bg-wellness-darkGreen border-wellness-darkGreen text-white' 
+                  : 'bg-white bg-opacity-60 border-wellness-softGreen hover:border-wellness-mediumGreen'
+              }`}
+              style={{ animationDelay: `${index * 100}ms` }}
+              onClick={() => toggleGoal(goal.id)}
+            >
+              <div className="flex items-center">
+                {goal.selected ? (
+                  <CheckCircle2 className="h-5 w-5 mr-2" />
+                ) : (
+                  <div className="h-5 w-5 border border-wellness-mediumGreen rounded-full mr-2"></div>
+                )}
+                <span className={goal.selected ? 'font-medium' : ''}>{goal.text}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+        
+        <div className="flex justify-center">
+          <button
+            onClick={generatePlan}
+            disabled={getSelectedGoals().length === 0 || state.loading}
+            className={`btn-primary rounded-lg flex items-center gap-2 ${
+              getSelectedGoals().length === 0 ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+          >
+            {state.loading ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                Generating Your Plan...
+              </>
+            ) : (
+              <>
+                <Target className="h-5 w-5" />
+                Generate My Wellness Plan
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    );
+  };
+  
+  const renderPlanSection = () => {
+    if (state.recommendations.length === 0 && state.milestones.length === 0) {
+      return null;
     }
+    
+    return (
+      <div className={`transition-opacity duration-500 ${activeSection === 'plan' ? 'opacity-100' : 'opacity-0 hidden'}`}>
+        <div className="mb-6 text-center">
+          <h3 className="text-2xl text-wellness-darkGreen font-medium mb-3">Your Personalized Wellness Journey</h3>
+          <p className="text-wellness-charcoal">Based on your goals: {getSelectedGoals().join(', ')}</p>
+        </div>
+        
+        <div className="mb-8">
+          <div className="bg-white bg-opacity-70 rounded-xl p-5 shadow-sm border border-wellness-softGreen/30 mb-6">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="h-10 w-10 rounded-full bg-wellness-softGreen flex items-center justify-center">
+                <Leaf className="h-5 w-5 text-wellness-darkGreen" />
+              </div>
+              <h4 className="text-xl font-medium text-wellness-darkGreen">Recommendations</h4>
+            </div>
+            
+            <ul className="space-y-3">
+              {state.recommendations.map((recommendation, index) => (
+                <li 
+                  key={index}
+                  className="flex items-start gap-2 opacity-0 animate-fade-in"
+                  style={{ animationDelay: `${index * 150}ms` }}
+                >
+                  <ChevronRight className="h-5 w-5 text-wellness-darkGreen mt-0.5 flex-shrink-0" />
+                  <p className="text-wellness-charcoal">{recommendation}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+          
+          <div className="bg-white bg-opacity-70 rounded-xl p-5 shadow-sm border border-wellness-softGreen/30">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="h-10 w-10 rounded-full bg-wellness-softGreen flex items-center justify-center">
+                <Activity className="h-5 w-5 text-wellness-darkGreen" />
+              </div>
+              <h4 className="text-xl font-medium text-wellness-darkGreen">Milestones to Expect</h4>
+            </div>
+            
+            <ul className="space-y-3">
+              {state.milestones.map((milestone, index) => (
+                <li 
+                  key={index}
+                  className="flex items-start gap-2 opacity-0 animate-fade-in"
+                  style={{ animationDelay: `${(index + state.recommendations.length) * 150}ms` }}
+                >
+                  <ChevronRight className="h-5 w-5 text-wellness-darkGreen mt-0.5 flex-shrink-0" />
+                  <p className="text-wellness-charcoal">{milestone}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+        
+        <div className="flex justify-center">
+          <button
+            onClick={() => setActiveSection('goals')}
+            className="btn-secondary rounded-lg flex items-center gap-2"
+          >
+            <ChevronDown className="h-5 w-5" />
+            Adjust My Goals
+          </button>
+        </div>
+      </div>
+    );
   };
 
   return (
-    <>
-      <div className="space-y-8">
-        <JourneyProgress 
-          activeStep={activeStep} 
-          setActiveStep={setActiveStep} 
-        />
-        
-        {activeStep === 'goals' && (
-          <GoalSelector
-            goals={state.goals}
-            toggleGoal={(id) => {
-              setState(prevState => ({
-                ...prevState,
-                goals: prevState.goals.map(goal => 
-                  goal.id === id ? { ...goal, selected: !goal.selected } : goal
-                )
-              }));
-            }}
-            loading={state.loading}
-            getSelectedGoals={getSelectedGoals}
-            handleContinue={async () => {
-              // Logic moved to GoalSelector component
-            }}
-          />
-        )}
-        
-        {activeStep === 'bmi' && (
-          <BMICalculator
-            height={state.height}
-            weight={state.weight}
-            setHeight={(height) => setState(prevState => ({...prevState, height}))}
-            setWeight={(weight) => setState(prevState => ({...prevState, weight}))}
-            loading={state.loading}
-            calculateBMI={async () => {
-              // Logic moved to BMICalculator component
-            }}
-            showBmiInfo={showBmiInfo}
-            setShowBmiInfo={setShowBmiInfo}
-            goBack={() => setActiveStep('goals')}
-          />
-        )}
-        
-        {activeStep === 'preferences' && (
-          <PreferencesForm
-            state={state}
-            setState={setState}
-            bmiResult={state.bmiResult}
-            loading={state.loading}
-            generateFinalPlan={() => {
-              // Logic moved to PreferencesForm component
-            }}
-            getBMICategoryColor={getBMICategoryColor}
-            getBMICategoryBackground={getBMICategoryBackground}
-            goBack={() => setActiveStep('bmi')}
-          />
-        )}
-        
-        {activeStep === 'plan' && state.finalPlan && (
-          <WellnessPlan
-            finalPlan={state.finalPlan}
-            recommendations={state.recommendations}
-            milestones={state.milestones}
-            goBack={() => setActiveStep('preferences')}
-          />
-        )}
-      </div>
-      
-      <Dialog open={showBmiInfo} onOpenChange={setShowBmiInfo}>
-        <DialogContent className="max-w-md bg-white">
-          <DialogHeader>
-            <DialogTitle className="text-wellness-darkGreen flex items-center gap-2">
-              <Scale className="h-5 w-5" /> What is BMI?
-            </DialogTitle>
-          </DialogHeader>
-          <div className="p-4 text-wellness-charcoal">
-            <p className="mb-3">Body Mass Index (BMI) is a numerical value calculated from a person's weight and height. It provides a simple measure to categorize a person's weight status.</p>
-            <h4 className="font-medium text-wellness-darkGreen mb-2">BMI Categories:</h4>
-            <ul className="space-y-2">
-              <li><span className="font-medium text-amber-500">Underweight:</span> BMI less than 18.5</li>
-              <li><span className="font-medium text-green-500">Normal weight:</span> BMI 18.5 to 24.9</li>
-              <li><span className="font-medium text-amber-600">Overweight:</span> BMI 25 to 29.9</li>
-              <li><span className="font-medium text-red-500">Obesity:</span> BMI 30 or greater</li>
-            </ul>
-            <p className="mt-3 text-sm italic">Note: BMI is a general indicator and doesn't account for factors like muscle mass, bone density, or overall body composition.</p>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </>
+    <div className="w-full max-w-3xl mx-auto glass-panel p-6">
+      {renderGoalsSection()}
+      {renderPlanSection()}
+    </div>
   );
 };
 

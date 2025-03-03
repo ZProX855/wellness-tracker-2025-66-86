@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { compareFoods, foodDatabase, getAllFoods } from '../services/api';
+import { compareFoods, foodDatabase } from '../services/api';
 import { toast } from 'sonner';
 import { Apple, Carrot, Banana, ChevronDown, X, Info, CheckCircle } from 'lucide-react';
 
@@ -50,7 +49,7 @@ const FoodComparison: React.FC = () => {
     
     setIsLoading(true);
     try {
-      const response: any = await compareFoods(food1, food2, quantity1, quantity2);
+      const response: any = await compareFoods(food1, food2);
       if (response.error) {
         toast.error(response.error);
       } else {
@@ -89,14 +88,11 @@ const FoodComparison: React.FC = () => {
   const getFoodsInCategory = (categoryName: string | null): FoodData[] => {
     if (!categoryName) return [];
     
-    // Convert "Proteins" to "proteins" for object key lookup
     const categoryKey = categoryName.toLowerCase().replace(' ', '_');
-    
-    // Access foods in the selected category
-    return foodDatabase[categoryKey as keyof typeof foodDatabase] || [];
+    const foods = foodDatabase[categoryKey as keyof typeof foodDatabase] || [];
+    return foods as FoodData[];
   };
 
-  // Highlight the higher/lower value
   const getComparisonClass = (value1: number, value2: number, higherIsBetter = false) => {
     if (value1 === value2) return '';
     
@@ -125,7 +121,6 @@ const FoodComparison: React.FC = () => {
     }
   };
 
-  // Render a nutrition card for a single food
   const renderNutritionCard = (food: FoodData, quantity: number) => {
     return (
       <div className="bg-white rounded-xl p-4 shadow-sm border border-wellness-softGreen/20">
@@ -158,7 +153,6 @@ const FoodComparison: React.FC = () => {
 
   return (
     <div className="w-full max-w-4xl mx-auto">
-      {/* Comparison Tool */}
       <div className="glass-panel p-6">
         <div className="flex flex-col md:flex-row gap-6 mb-6">
           <div className="flex-1 relative">
@@ -243,7 +237,6 @@ const FoodComparison: React.FC = () => {
               </div>
             )}
             
-            {/* Individual food nutrition card */}
             {food1 && result && (
               <div className="mt-4">
                 {renderNutritionCard(result.food1, quantity1)}
@@ -333,7 +326,6 @@ const FoodComparison: React.FC = () => {
               </div>
             )}
             
-            {/* Individual food nutrition card */}
             {food2 && result && (
               <div className="mt-4">
                 {renderNutritionCard(result.food2, quantity2)}
@@ -420,7 +412,6 @@ const FoodComparison: React.FC = () => {
                   AI Insights
                 </h4>
                 <div className="text-wellness-charcoal text-sm whitespace-pre-line">
-                  {/* Replace the insights with a bulleted version */}
                   <ul className="space-y-2 list-none">
                     <li className="flex items-start">
                       <span className="text-wellness-darkGreen mr-2">🥗</span>
@@ -435,7 +426,7 @@ const FoodComparison: React.FC = () => {
                       <span><strong>Dietary Goals:</strong> For weight loss, favor {result.food1.calories < result.food2.calories ? result.food1.name : result.food2.name}. For muscle building, {result.food1.protein > result.food2.protein ? result.food1.name : result.food2.name} is preferable.</span>
                     </li>
                     <li className="flex items-start">
-                      <span className="text-wellness-darkGreen mr-2">📊</span>
+                      <span className="text-wellness-darkGreen mr-2">����</span>
                       <span><strong>Fiber Content:</strong> {result.food1.fiber > result.food2.fiber ? result.food1.name : result.food2.name} offers more fiber, supporting digestive health and sustained energy.</span>
                     </li>
                     <li className="flex items-start">
