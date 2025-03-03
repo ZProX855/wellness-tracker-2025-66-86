@@ -1,4 +1,4 @@
-<lov-code>
+
 import React, { useState, useEffect } from 'react';
 import { getWellnessInsights, calculateBMI } from '../services/api';
 import { Target, Activity, Leaf, ChevronRight, ChevronDown, CheckCircle2, Droplets, Dumbbell, Apple, ArrowRight, Calendar, Salad, AlarmClock, Brain, Heart, Scale, Sun, Award, Utensils, Zap } from 'lucide-react';
@@ -759,3 +759,169 @@ const WellnessJourney: React.FC = () => {
                     {item.substring(0, 2)}
                   </div>
                   <div className="flex-1">
+                    {item.substring(2)}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+          
+          <div className="bg-white bg-opacity-80 rounded-xl p-5 shadow-sm border border-wellness-softGreen/40 transition-all duration-300 hover:shadow-md">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="h-12 w-12 rounded-full bg-wellness-softGreen flex items-center justify-center">
+                <Droplets className="h-6 w-6 text-wellness-darkGreen" />
+              </div>
+              <div>
+                <h4 className="text-xl font-medium text-wellness-darkGreen">Hydration Plan</h4>
+                <p className="text-wellness-charcoal text-sm">Personalized water intake recommendation</p>
+              </div>
+            </div>
+            <p className="text-wellness-charcoal">
+              {state.finalPlan.water}
+            </p>
+          </div>
+          
+          <div className="bg-white bg-opacity-80 rounded-xl p-5 shadow-sm border border-wellness-softGreen/40 transition-all duration-300 hover:shadow-md">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="h-12 w-12 rounded-full bg-wellness-softGreen flex items-center justify-center">
+                <Dumbbell className="h-6 w-6 text-wellness-darkGreen" />
+              </div>
+              <div>
+                <h4 className="text-xl font-medium text-wellness-darkGreen">Training Plan</h4>
+                <p className="text-wellness-charcoal text-sm">Personalized exercise recommendations</p>
+              </div>
+            </div>
+            <ul className="space-y-3">
+              {state.finalPlan.training.map((item, index) => (
+                <li key={index} className="flex items-start gap-2 text-wellness-charcoal">
+                  <div className="flex-shrink-0 w-6 text-center">
+                    {item.substring(0, 2)}
+                  </div>
+                  <div className="flex-1">
+                    {item.substring(2)}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+          
+          <div className="bg-white bg-opacity-80 rounded-xl p-5 shadow-sm border border-wellness-softGreen/40 transition-all duration-300 hover:shadow-md">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="h-12 w-12 rounded-full bg-wellness-softGreen flex items-center justify-center">
+                <Calendar className="h-6 w-6 text-wellness-darkGreen" />
+              </div>
+              <div>
+                <h4 className="text-xl font-medium text-wellness-darkGreen">Next Steps</h4>
+                <p className="text-wellness-charcoal text-sm">Wellness journey milestones</p>
+              </div>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <h5 className="font-medium text-wellness-darkGreen mb-2 flex items-center gap-1">
+                  <Target className="h-4 w-4" />
+                  <span>Your Action Items</span>
+                </h5>
+                <ul className="list-disc pl-5 space-y-2 text-wellness-charcoal">
+                  <li>Start implementing your nutrition plan gradually, one meal at a time</li>
+                  <li>Set up water intake reminders on your phone</li>
+                  <li>Schedule your first week of training sessions on your calendar</li>
+                  <li>Track your progress and adjust as needed</li>
+                </ul>
+              </div>
+              
+              <div>
+                <h5 className="font-medium text-wellness-darkGreen mb-2 flex items-center gap-1">
+                  <Award className="h-4 w-4" />
+                  <span>Milestones to Celebrate</span>
+                </h5>
+                <ul className="list-disc pl-5 space-y-2 text-wellness-charcoal">
+                  {state.milestones.map((milestone, index) => (
+                    <li key={index}>{milestone}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="flex justify-between">
+          <button
+            onClick={() => setActiveStep('preferences')}
+            className="btn-secondary rounded-lg flex items-center gap-2"
+          >
+            <ChevronDown className="h-5 w-5" />
+            Back to Preferences
+          </button>
+          
+          <button
+            onClick={() => {
+              // Reset the form to create a new plan
+              setState({
+                ...state,
+                goals: state.goals.map(goal => ({ ...goal, selected: false })),
+                recommendations: [],
+                milestones: [],
+                height: '',
+                weight: '',
+                bmiResult: null,
+                waterIntake: 8,
+                dietPreference: 'balanced',
+                trainingPreference: 'mixed',
+                trainingDays: 3,
+                finalPlan: null
+              });
+              setActiveStep('goals');
+            }}
+            className="btn-primary rounded-lg flex items-center gap-2"
+          >
+            <Activity className="h-5 w-5" />
+            Create New Plan
+          </button>
+        </div>
+      </div>
+    );
+  };
+  
+  return (
+    <div className="relative">
+      {renderGoalsSection()}
+      {renderBMISection()}
+      {renderPreferencesSection()}
+      {renderPlanSection()}
+      
+      <Dialog open={showBmiInfo} onOpenChange={setShowBmiInfo}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Scale className="h-5 w-5" />
+              <span>About Body Mass Index (BMI)</span>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 text-wellness-charcoal">
+            <p>
+              BMI is a measurement that uses your height and weight to estimate how much body fat you have. It's a screening tool that can indicate whether you're underweight, normal weight, overweight, or obese.
+            </p>
+            <p>
+              <strong>How BMI is calculated:</strong><br />
+              BMI = weight(kg) / height(m)²
+            </p>
+            <p>
+              <strong>BMI Categories:</strong>
+            </p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li><span className="text-amber-500 font-medium">Underweight:</span> BMI less than 18.5</li>
+              <li><span className="text-green-500 font-medium">Normal weight:</span> BMI 18.5 to 24.9</li>
+              <li><span className="text-amber-600 font-medium">Overweight:</span> BMI 25 to 29.9</li>
+              <li><span className="text-red-500 font-medium">Obese:</span> BMI 30 or greater</li>
+            </ul>
+            <p className="text-sm italic">
+              Note: BMI doesn't account for factors like muscle mass, bone density, overall body composition, and ethnicity. It is just one of many tools to evaluate health.
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default WellnessJourney;
