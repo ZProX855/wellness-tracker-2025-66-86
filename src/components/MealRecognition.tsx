@@ -138,7 +138,11 @@ const MealRecognition: React.FC = () => {
       
       if (mealData.foodIdentified === "Could not identify the meal" || 
           mealData.foodIdentified === "Error analyzing the meal") {
-        setAnalyzeError(mealData.recommendations || "Could not identify the food in this image. Please try a clearer image of food.");
+        if (Array.isArray(mealData.recommendations)) {
+          setAnalyzeError(mealData.recommendations.join('\n'));
+        } else {
+          setAnalyzeError(mealData.recommendations);
+        }
         setResult(null);
       } else {
         setResult(mealData);

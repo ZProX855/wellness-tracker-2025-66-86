@@ -475,6 +475,8 @@ export const getWellnessInsights = async (goals: string[]): Promise<{ recommenda
 // Updated meal recognition functionality with structured response
 export const recognizeMeal = async (imageData: string) => {
   try {
+    const base64Data = imageData.replace(/^data:image\/\w+;base64,/, "");
+    
     const prompt = `
       You are a professional nutritionist analyzing a food image. Please follow these steps in order:
       
@@ -485,22 +487,24 @@ export const recognizeMeal = async (imageData: string) => {
          - Approximate portion size
          - Brief comment on healthiness (healthy, moderately healthy, or indulgent)
       
-      3. FOOD IDENTIFIED: The specific name of the dish/meal
+      3. FOOD IDENTIFICATION: Identify the main food items in the image
       
-      4. NUTRITION INFORMATION: Based on your description and food identification, provide:
-         - Approximate calories (kcal)
+      4. NUTRITION ESTIMATION: Based on the identified food, estimate:
+         - Calories (kcal)
          - Protein (g)
-         - Carbs (g)
+         - Carbohydrates (g)
          - Fats (g)
          - Fiber (g)
       
-      5. RECOMMENDATIONS: 3-4 bullet points on how this meal fits into a healthy diet
+      5. RECOMMENDATIONS: Provide 3-4 nutrition-focused recommendations for this meal
       
-      Format your response as a structured JSON with these exact fields:
+      6. FULL ANALYSIS: Provide a detailed nutritional analysis of the meal
+      
+      Format your response as a valid JSON object with the following structure:
       {
-        "detailedDescription": "Your detailed description here",
-        "mealDescription": "2-line description here",
-        "foodIdentified": "Specific name of the dish",
+        "detailedDescription": "Detailed visual description of the food",
+        "mealDescription": "Brief 2-line description of meal (what, portion, healthiness)",
+        "foodIdentified": "Name of identified food",
         "nutritionInfo": {
           "calories": number,
           "protein": number,
@@ -512,9 +516,9 @@ export const recognizeMeal = async (imageData: string) => {
         "fullAnalysis": "Detailed nutritional analysis"
       }
       
-      If you cannot clearly identify the food, make your best guess but indicate uncertainty in the description. If you really cannot identify the food at all, respond with:
+      If you cannot identify the food in the image, respond with:
       {
-        "detailedDescription": "This image doesn't contain clearly identifiable food items that I can analyze.",
+        "detailedDescription": "I cannot clearly identify what's in this image.",
         "mealDescription": "This image doesn't contain clearly identifiable food. Please upload a clearer image of your meal.",
         "foodIdentified": "Could not identify the meal",
         "nutritionInfo": { "calories": 0, "protein": 0, "carbs": 0, "fats": 0, "fiber": 0 },
@@ -522,32 +526,76 @@ export const recognizeMeal = async (imageData: string) => {
         "fullAnalysis": "Could not analyze"
       }
       
-      IMPORTANT: Return VALID JSON without any markdown formatting or code blocks. Don't include any text outside the JSON object.
+      Ensure your response is ONLY the JSON object, with NO additional text, and properly formatted (valid JSON).
     `;
     
-    const aiResponse = await callGeminiAPI(prompt, 0.7, true, imageData);
+    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=AIzaSyDK9wQVPGrTEiHi6gKGBIUH2p0qRGUMtxA', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              { text: prompt },
+              {
+                inline_data: {
+                  mime_type: "image/jpeg",
+                  data: base64Data
+                }
+              }
+            ]
+          }
+        ],
+        generation_config: {
+          temperature: 0.4,
+          top_p: 0.95,
+          top_k: 0,
+          max_output_tokens: 4096,
+        },
+        safety_settings: [
+          {
+            category: "HARM_CATEGORY_HARASSMENT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          },
+          {
+            category: "HARM_CATEGORY_HATE_SPEECH",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          },
+          {
+            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          },
+          {
+            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          }
+        ]
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    
+    // Extract JSON from the response
+    const jsonStart = text.indexOf('{');
+    const jsonEnd = text.lastIndexOf('}') + 1;
+    const jsonString = text.slice(jsonStart, jsonEnd);
     
     try {
-      // Clean the response to ensure it's valid JSON
-      let cleanedResponse = aiResponse.trim();
-      // Remove markdown code blocks if present
-      if (cleanedResponse.startsWith("```") && cleanedResponse.endsWith("```")) {
-        cleanedResponse = cleanedResponse.replace(/```json\n|\n```|```/g, "");
-      }
-      
-      // Parse the JSON response
-      const mealData = JSON.parse(cleanedResponse);
-      
-      return mealData;
+      const parsedData = JSON.parse(jsonString);
+      return parsedData;
     } catch (parseError) {
-      console.error("Error parsing AI response as JSON:", parseError);
-      console.log("Raw response:", aiResponse);
-      
-      // If we couldn't parse the JSON, return a fallback structured response
+      console.error("Failed to parse JSON response:", parseError);
       return {
-        detailedDescription: "We detected food in your image but couldn't analyze it completely due to a technical issue.",
-        mealDescription: "We detected food in your image but couldn't analyze it completely. Try a clearer, well-lit photo of your meal.",
-        foodIdentified: "Partial meal detection",
+        detailedDescription: "Error processing the image analysis.",
+        mealDescription: "We experienced an issue analyzing this meal. The AI response couldn't be properly processed.",
+        foodIdentified: "Error analyzing the meal",
         nutritionInfo: {
           calories: 0,
           protein: 0,
@@ -560,12 +608,10 @@ export const recognizeMeal = async (imageData: string) => {
       };
     }
   } catch (error) {
-    console.error("Meal recognition API error:", error);
-    
-    // Return a structured error response
+    console.error("Error in meal recognition:", error);
     return {
-      detailedDescription: "Sorry, we couldn't analyze your meal image due to a technical issue.",
-      mealDescription: "Sorry, we couldn't analyze your meal image. Our AI service is currently having issues.",
+      detailedDescription: "Error during image analysis.",
+      mealDescription: "We couldn't analyze this image. Please try again with a different photo.",
       foodIdentified: "Error analyzing the meal",
       nutritionInfo: {
         calories: 0,
