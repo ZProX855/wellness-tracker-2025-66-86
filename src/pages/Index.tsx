@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
-import { MessageSquare, Apple, ActivitySquare, Camera, Target, Moon, Clock, UtensilsCrossed } from 'lucide-react';
+import { MessageSquare, Apple, ActivitySquare, Camera, Target, Moon, Clock, UtensilsCrossed, HeartPulse } from 'lucide-react';
 
-// Define categories and their tools
 interface ToolCategory {
   name: string;
   icon: React.ElementType;
@@ -25,14 +24,12 @@ const Index = () => {
   const [isVisible, setIsVisible] = useState(false);
   
   useEffect(() => {
-    // Add a small delay for a smoother entrance animation
     const timer = setTimeout(() => {
       setIsVisible(true);
     }, 100);
     return () => clearTimeout(timer);
   }, []);
   
-  // Define all tools
   const allTools: Tool[] = [
     {
       title: 'AI Nutrition Assistant',
@@ -84,7 +81,6 @@ const Index = () => {
     }
   ];
   
-  // Organize tools into categories
   const categories: ToolCategory[] = [
     {
       name: "Diet & Nutrition",
@@ -109,7 +105,6 @@ const Index = () => {
       <Header />
       
       <main className="pt-24 pb-16 px-4 sm:px-6">
-        {/* Hero Section */}
         <section className={`max-w-5xl mx-auto text-center transition-opacity duration-1000 ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
           <div className="mb-6">
             <img src="/lovable-uploads/0f3b37c0-5eca-43f3-9f19-60f760335d8d.png" alt="Wellness Tracker Logo" className="h-28 w-auto mx-auto animate-scale-in-out" />
@@ -121,7 +116,6 @@ const Index = () => {
             Track your nutrition, monitor your health, and achieve your wellness goals with our smart, AI-powered tools.
           </p>
           
-          {/* Categories Section */}
           <div className="mb-16">
             {categories.map((category, categoryIndex) => (
               <div key={categoryIndex} className="mb-12">
@@ -156,7 +150,6 @@ const Index = () => {
           </div>
         </section>
         
-        {/* Key Benefits Section */}
         <section className="max-w-6xl mx-auto mt-16">
           <h2 className="text-3xl font-medium text-wellness-darkGreen text-center mb-12">Why Choose Wellness Tracker?</h2>
           
@@ -188,7 +181,6 @@ const Index = () => {
           </div>
         </section>
         
-        {/* Call to Action */}
         <section className="max-w-3xl mx-auto mt-20 text-center opacity-0 animate-fade-in" style={{
         animationDelay: '600ms'
       }}>
@@ -206,7 +198,6 @@ const Index = () => {
         </section>
       </main>
       
-      {/* Footer */}
       <footer className="bg-white bg-opacity-60 backdrop-blur-sm border-t border-wellness-softGreen/30 py-8">
         <div className="container mx-auto px-4 text-center">
           <img src="/lovable-uploads/0f3b37c0-5eca-43f3-9f19-60f760335d8d.png" alt="Wellness Tracker Logo" className="h-10 w-auto mx-auto mb-4" />
