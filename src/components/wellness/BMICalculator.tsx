@@ -1,6 +1,8 @@
 
 import React from 'react';
 import { Scale, ArrowRight, ChevronDown } from 'lucide-react';
+import { toast } from 'sonner';
+import { calculateBMI as calculateBMIApi } from '../../services/api';
 
 interface BMICalculatorProps {
   height: number | '';
@@ -20,11 +22,33 @@ const BMICalculator: React.FC<BMICalculatorProps> = ({
   setHeight,
   setWeight,
   loading,
-  calculateBMI,
+  calculateBMI: externalCalculateBMI,
   showBmiInfo,
   setShowBmiInfo,
   goBack
 }) => {
+  const calculateBMI = async () => {
+    if (height === '' || weight === '') {
+      toast.error('Please enter both height and weight');
+      return;
+    }
+    
+    if (typeof height === 'number' && typeof weight === 'number') {
+      if (height <= 0 || weight <= 0) {
+        toast.error('Height and weight must be positive values');
+        return;
+      }
+      
+      try {
+        await calculateBMIApi(height, weight);
+        await externalCalculateBMI();
+      } catch (error) {
+        console.error("BMI calculation error:", error);
+        toast.error("Failed to calculate BMI. Please try again.");
+      }
+    }
+  };
+
   return (
     <div className="transition-all duration-500 animate-fade-in">
       <div className="mb-6 text-center">

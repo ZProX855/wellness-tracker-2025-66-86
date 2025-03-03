@@ -1,11 +1,18 @@
 
 import React from 'react';
 import { Target, CheckCircle2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { getWellnessInsights } from '../../services/api';
 
 interface Goal {
   id: number;
   text: string;
   selected: boolean;
+}
+
+interface WellnessInsights {
+  recommendations: string[];
+  milestones: string[];
 }
 
 interface GoalSelectorProps {
@@ -21,8 +28,30 @@ const GoalSelector: React.FC<GoalSelectorProps> = ({
   toggleGoal,
   loading,
   getSelectedGoals,
-  handleContinue
+  handleContinue: externalHandleContinue
 }) => {
+  const handleContinue = async () => {
+    const selectedGoals = getSelectedGoals();
+    
+    if (selectedGoals.length === 0) {
+      toast.error('Please select at least one wellness goal');
+      return;
+    }
+    
+    try {
+      const insights = await getWellnessInsights(selectedGoals) as WellnessInsights;
+      
+      if (insights.recommendations.length === 0 && insights.milestones.length === 0) {
+        throw new Error('Failed to generate wellness plan');
+      }
+      
+      await externalHandleContinue();
+    } catch (error) {
+      console.error('Error generating wellness plan:', error);
+      toast.error('Failed to generate wellness plan. Please try again.');
+    }
+  };
+
   return (
     <div className="transition-all duration-500 animate-fade-in">
       <div className="mb-8 text-center">

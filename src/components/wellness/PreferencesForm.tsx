@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { ChevronDown, Target, Apple, Droplets, Dumbbell, Calendar, Scale } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface BMIResult {
   bmi: string;
@@ -42,11 +43,26 @@ const PreferencesForm: React.FC<PreferencesFormProps> = ({
   setState,
   bmiResult,
   loading,
-  generateFinalPlan,
+  generateFinalPlan: externalGenerateFinalPlan,
   getBMICategoryColor,
   getBMICategoryBackground,
   goBack
 }) => {
+  const generateFinalPlan = () => {
+    setState(prevState => ({ ...prevState, loading: true }));
+    
+    setTimeout(() => {
+      try {
+        externalGenerateFinalPlan();
+        toast.success('Your complete wellness plan is ready!');
+      } catch (error) {
+        console.error('Error generating final plan:', error);
+        toast.error('Failed to generate your wellness plan. Please try again.');
+        setState(prevState => ({ ...prevState, loading: false }));
+      }
+    }, 1500);
+  };
+
   return (
     <div className="transition-all duration-500 animate-fade-in">
       <div className="mb-6 text-center">
@@ -80,7 +96,7 @@ const PreferencesForm: React.FC<PreferencesFormProps> = ({
           </label>
           <select 
             value={state.dietPreference}
-            onChange={(e) => setState({...state, dietPreference: e.target.value})}
+            onChange={(e) => setState(prevState => ({...prevState, dietPreference: e.target.value}))}
             className="input-field w-full focus:ring-wellness-mediumGreen"
             disabled={loading}
           >
@@ -110,7 +126,7 @@ const PreferencesForm: React.FC<PreferencesFormProps> = ({
               max="16"
               step="1"
               value={state.waterIntake}
-              onChange={(e) => setState({...state, waterIntake: Number(e.target.value)})}
+              onChange={(e) => setState(prevState => ({...prevState, waterIntake: Number(e.target.value)}))}
               className="flex-1 h-2 bg-wellness-softGreen rounded-lg appearance-none cursor-pointer accent-wellness-darkGreen"
               disabled={loading}
             />
@@ -138,7 +154,7 @@ const PreferencesForm: React.FC<PreferencesFormProps> = ({
           </label>
           <select 
             value={state.trainingPreference}
-            onChange={(e) => setState({...state, trainingPreference: e.target.value})}
+            onChange={(e) => setState(prevState => ({...prevState, trainingPreference: e.target.value}))}
             className="input-field w-full focus:ring-wellness-mediumGreen"
             disabled={loading}
           >
@@ -168,7 +184,7 @@ const PreferencesForm: React.FC<PreferencesFormProps> = ({
               max="6"
               step="1"
               value={state.trainingDays}
-              onChange={(e) => setState({...state, trainingDays: Number(e.target.value)})}
+              onChange={(e) => setState(prevState => ({...prevState, trainingDays: Number(e.target.value)}))}
               className="flex-1 h-2 bg-wellness-softGreen rounded-lg appearance-none cursor-pointer accent-wellness-darkGreen"
               disabled={loading}
             />
