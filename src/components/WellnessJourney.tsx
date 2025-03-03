@@ -30,14 +30,6 @@ interface BMIResult {
   advice: string;
 }
 
-// Define an interface for the API response
-interface WellnessInsights {
-  recommendations: string[];
-  milestones: string[];
-}
-
-type JourneyStep = 'goals' | 'bmi' | 'preferences' | 'plan';
-
 const dietOptions = [
   { value: 'balanced', label: 'Balanced Diet 🍽️', description: 'Even distribution of macronutrients with moderate carbs, protein, and healthy fats' },
   { value: 'low-carb', label: 'Low Carb 🥩', description: 'Reduced carbohydrate intake with focus on proteins and healthy fats' },
@@ -57,7 +49,6 @@ const trainingOptions = [
 ];
 
 const WellnessJourney: React.FC = () => {
-  // Use local storage to save progress
   const [savedState, setSavedState] = useLocalStorage<Partial<WellnessState>>("wellness-journey-state", {});
   
   const [state, setState] = useState<WellnessState>({
@@ -87,7 +78,6 @@ const WellnessJourney: React.FC = () => {
   const [activeStep, setActiveStep] = useState<JourneyStep>('goals');
   const [showBmiInfo, setShowBmiInfo] = useState(false);
   
-  // Load saved state on component mount
   useEffect(() => {
     if (Object.keys(savedState).length > 0) {
       setState(prevState => ({
@@ -99,7 +89,6 @@ const WellnessJourney: React.FC = () => {
         }))
       }));
       
-      // Set active step based on progress
       if (savedState.finalPlan) {
         setActiveStep('plan');
       } else if (savedState.bmiResult) {
@@ -110,7 +99,6 @@ const WellnessJourney: React.FC = () => {
     }
   }, []);
   
-  // Save state when it changes
   useEffect(() => {
     const stateToSave = {
       goals: state.goals,
@@ -153,7 +141,6 @@ const WellnessJourney: React.FC = () => {
     setState({ ...state, loading: true });
     
     try {
-      // Explicitly type the result from getWellnessInsights
       const insights = await getWellnessInsights(selectedGoals) as WellnessInsights;
       
       if (insights.recommendations.length === 0 && insights.milestones.length === 0) {
@@ -191,7 +178,6 @@ const WellnessJourney: React.FC = () => {
       setState({ ...state, loading: true });
       
       try {
-        // Call the API to get BMI calculation and AI-generated advice
         const bmiResult = await calculateBMI(state.height, state.weight);
         
         setState({
@@ -213,12 +199,10 @@ const WellnessJourney: React.FC = () => {
   const generateFinalPlan = () => {
     setState({ ...state, loading: true });
     
-    // Simulate API call with timeout
     setTimeout(() => {
       const selectedGoals = getSelectedGoals();
       const bmiCategory = state.bmiResult?.category || 'Normal weight';
       
-      // Generate personalized plan based on goals, BMI and preferences
       const dietPlan = generateDietPlan(state.dietPreference, bmiCategory);
       const waterPlan = generateWaterPlan(state.waterIntake, state.weight);
       const trainingPlan = generateTrainingPlan(state.trainingPreference, state.trainingDays, bmiCategory);
@@ -279,7 +263,6 @@ const WellnessJourney: React.FC = () => {
       ]
     };
     
-    // Add BMI-specific recommendations
     let bmiRecommendations: string[] = [];
     
     if (bmiCategory === 'Underweight') {
@@ -302,9 +285,8 @@ const WellnessJourney: React.FC = () => {
   const generateWaterPlan = (baseIntake: number, weight: number | ''): string => {
     if (typeof weight !== 'number') return `🚰 Aim to drink ${baseIntake} glasses (2L) of water daily. Set reminders on your phone to stay consistent.`;
     
-    // Calculate based on weight (30ml per kg)
     const weightBasedLiters = Math.round((weight * 30) / 1000 * 10) / 10;
-    const glasses = Math.round(weightBasedLiters * 4); // Assuming 250ml glass
+    const glasses = Math.round(weightBasedLiters * 4);
     
     return `🚰 Based on your weight, aim to drink ${glasses} glasses (${weightBasedLiters}L) of water daily. 💧 Increase intake during exercise or hot weather. 📱 Consider using a water tracking app or set reminders every 2 hours during waking hours.`;
   };
@@ -345,7 +327,6 @@ const WellnessJourney: React.FC = () => {
       ]
     };
     
-    // Add BMI-specific recommendations
     let bmiRecommendations: string[] = [];
     
     if (bmiCategory === 'Underweight') {
@@ -751,7 +732,6 @@ const WellnessJourney: React.FC = () => {
         </div>
         
         <div className="space-y-6 mb-8">
-          {/* Nutrition plan card */}
           <div className="bg-white bg-opacity-80 rounded-xl p-5 shadow-sm border border-wellness-softGreen/40 transition-all duration-300 hover:shadow-md">
             <div className="flex items-center gap-2 mb-4">
               <div className="h-12 w-12 rounded-full bg-wellness-softGreen flex items-center justify-center">
@@ -759,4 +739,129 @@ const WellnessJourney: React.FC = () => {
               </div>
               <div>
                 <h4 className="text-xl font-medium text-wellness-darkGreen">Nutrition Plan</h4>
-                <p className="text-
+                <p className="text-wellness-charcoal text-sm">Personalized dietary recommendations</p>
+              </div>
+            </div>
+            <ul className="space-y-3">
+              {state.finalPlan.diet.map((item, index) => (
+                <li key={index} className="flex items-start gap-2 text-wellness-charcoal">
+                  <div className="flex-shrink-0 w-6 text-center">
+                    {item.substring(0, 2)}
+                  </div>
+                  <div className="flex-1">
+                    {item.substring(2)}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+          
+          <div className="bg-white bg-opacity-80 rounded-xl p-5 shadow-sm border border-wellness-softGreen/40 transition-all duration-300 hover:shadow-md">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="h-12 w-12 rounded-full bg-wellness-softGreen flex items-center justify-center">
+                <Droplets className="h-6 w-6 text-wellness-darkGreen" />
+              </div>
+              <div>
+                <h4 className="text-xl font-medium text-wellness-darkGreen">Water Intake</h4>
+                <p className="text-wellness-charcoal text-sm">Daily hydration recommendations</p>
+              </div>
+            </div>
+            <p className="text-wellness-charcoal">
+              {state.finalPlan.water}
+            </p>
+          </div>
+          
+          <div className="bg-white bg-opacity-80 rounded-xl p-5 shadow-sm border border-wellness-softGreen/40 transition-all duration-300 hover:shadow-md">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="h-12 w-12 rounded-full bg-wellness-softGreen flex items-center justify-center">
+                <Dumbbell className="h-6 w-6 text-wellness-darkGreen" />
+              </div>
+              <div>
+                <h4 className="text-xl font-medium text-wellness-darkGreen">Training Plan</h4>
+                <p className="text-wellness-charcoal text-sm">Customized exercise recommendations</p>
+              </div>
+            </div>
+            <ul className="space-y-3">
+              {state.finalPlan.training.map((item, index) => (
+                <li key={index} className="flex items-start gap-2 text-wellness-charcoal">
+                  <div className="flex-shrink-0 w-6 text-center">
+                    {item.substring(0, 2)}
+                  </div>
+                  <div className="flex-1">
+                    {item.substring(2)}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+        
+        <div className="flex justify-between">
+          <button
+            onClick={() => setActiveStep('preferences')}
+            className="btn-secondary rounded-lg flex items-center gap-2"
+          >
+            <ChevronDown className="h-5 w-5" />
+            Back to Preferences
+          </button>
+          
+          <button
+            onClick={() => {
+              toast.success('Plan saved to your account!');
+            }}
+            className="btn-primary rounded-lg flex items-center gap-2"
+          >
+            <CheckCircle2 className="h-5 w-5" />
+            Save My Plan
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderBMIInfoDialog = () => {
+    return (
+      <Dialog open={showBmiInfo} onOpenChange={setShowBmiInfo}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-wellness-darkGreen">About BMI</DialogTitle>
+          </DialogHeader>
+          <div className="text-wellness-charcoal space-y-3">
+            <p>
+              Body Mass Index (BMI) is a numerical value derived from your weight and height. It provides a simple way to 
+              assess if you have a healthy body weight for your height.
+            </p>
+            <p>
+              <strong>Formula:</strong> BMI = weight(kg) / [height(m)]²
+            </p>
+            <p>
+              While BMI is useful as a screening tool, it does have limitations. It doesn't account for factors like 
+              muscle mass, bone density, or overall body composition.
+            </p>
+            <div className="bg-wellness-softGreen/30 p-3 rounded-lg text-sm mt-3">
+              <p className="font-medium mb-1">BMI Categories:</p>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>Below 18.5: Underweight</li>
+                <li>18.5 to 24.9: Normal weight</li>
+                <li>25 to 29.9: Overweight</li>
+                <li>30 and above: Obese</li>
+              </ul>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  };
+
+  return (
+    <div className="wellness-journey mb-10">
+      {renderGoalsSection()}
+      {renderBMISection()}
+      {renderPreferencesSection()}
+      {renderPlanSection()}
+      {renderBMIInfoDialog()}
+    </div>
+  );
+};
+
+export default WellnessJourney;
