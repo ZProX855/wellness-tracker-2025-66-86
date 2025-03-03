@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, User } from 'lucide-react';
@@ -25,17 +24,9 @@ const Header: React.FC = () => {
       path: '/food-compare'
     }, 
     {
-      name: 'BMI Calculator',
-      path: '/bmi-calculator'
-    }, 
-    {
       name: 'Meal Recognition',
       path: '/meal-recognition'
     }, 
-    {
-      name: 'Wellness Journey',
-      path: '/wellness-journey'
-    },
     {
       name: 'Sleep Tracker',
       path: '/sleep-tracker'
@@ -64,7 +55,6 @@ const Header: React.FC = () => {
         <div className="flex items-center justify-between h-16 sm:h-20">
           <Logo />
           
-          {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
             {navItems.map(item => (
               <Link 
@@ -125,7 +115,6 @@ const Header: React.FC = () => {
             )}
           </nav>
           
-          {/* Mobile Menu Button */}
           <div className="flex items-center md:hidden">
             {user && (
               <Link to="/dashboard" className="mr-4">
@@ -150,7 +139,6 @@ const Header: React.FC = () => {
         </div>
       </div>
       
-      {/* Mobile Navigation */}
       {isMenuOpen && (
         <div className="md:hidden h-screen bg-white/95 backdrop-blur-md">
           <div className="container mx-auto px-4 py-4">
