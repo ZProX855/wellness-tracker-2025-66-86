@@ -476,28 +476,29 @@ export const getWellnessInsights = async (goals: string[]): Promise<{ recommenda
 export const recognizeMeal = async (imageData: string) => {
   try {
     const prompt = `
-      You are a professional nutritionist analyzing a food image. Please provide:
+      You are a professional nutritionist analyzing a food image. Please follow these steps in order:
       
-      1. MEAL DESCRIPTION: In exactly 2 lines, describe what this meal is, including:
+      1. DETAILED DESCRIPTION: First, describe in detail what you see in this food image (ingredients, preparation style, presentation, etc.)
+      
+      2. MEAL DESCRIPTION: Then provide a 2-line summary of what this meal is, including:
          - What the food/dish appears to be
          - Approximate portion size
          - Brief comment on healthiness (healthy, moderately healthy, or indulgent)
       
-      2. FOOD IDENTIFIED: The specific name of the dish/meal
+      3. FOOD IDENTIFIED: The specific name of the dish/meal
       
-      3. NUTRITION INFORMATION:
+      4. NUTRITION INFORMATION: Based on your description and food identification, provide:
          - Approximate calories (kcal)
          - Protein (g)
          - Carbs (g)
          - Fats (g)
          - Fiber (g)
       
-      4. RECOMMENDATIONS: 3-4 bullet points on how this meal fits into a healthy diet
-      
-      5. FULL ANALYSIS: More detailed description of nutritional value and health implications
+      5. RECOMMENDATIONS: 3-4 bullet points on how this meal fits into a healthy diet
       
       Format your response as a structured JSON with these exact fields:
       {
+        "detailedDescription": "Your detailed description here",
         "mealDescription": "2-line description here",
         "foodIdentified": "Specific name of the dish",
         "nutritionInfo": {
@@ -508,11 +509,12 @@ export const recognizeMeal = async (imageData: string) => {
           "fiber": number
         },
         "recommendations": "Bullet points with recommendations",
-        "fullAnalysis": "Detailed analysis"
+        "fullAnalysis": "Detailed nutritional analysis"
       }
       
       If you cannot clearly identify the food, make your best guess but indicate uncertainty in the description. If you really cannot identify the food at all, respond with:
       {
+        "detailedDescription": "This image doesn't contain clearly identifiable food items that I can analyze.",
         "mealDescription": "This image doesn't contain clearly identifiable food. Please upload a clearer image of your meal.",
         "foodIdentified": "Could not identify the meal",
         "nutritionInfo": { "calories": 0, "protein": 0, "carbs": 0, "fats": 0, "fiber": 0 },
@@ -520,14 +522,21 @@ export const recognizeMeal = async (imageData: string) => {
         "fullAnalysis": "Could not analyze"
       }
       
-      IMPORTANT: Your response MUST be valid JSON. Don't include any text outside the JSON object.
+      IMPORTANT: Return VALID JSON without any markdown formatting or code blocks. Don't include any text outside the JSON object.
     `;
     
     const aiResponse = await callGeminiAPI(prompt, 0.7, true, imageData);
     
     try {
+      // Clean the response to ensure it's valid JSON
+      let cleanedResponse = aiResponse.trim();
+      // Remove markdown code blocks if present
+      if (cleanedResponse.startsWith("```") && cleanedResponse.endsWith("```")) {
+        cleanedResponse = cleanedResponse.replace(/```json\n|\n```|```/g, "");
+      }
+      
       // Parse the JSON response
-      const mealData = JSON.parse(aiResponse.trim());
+      const mealData = JSON.parse(cleanedResponse);
       
       return mealData;
     } catch (parseError) {
@@ -536,6 +545,7 @@ export const recognizeMeal = async (imageData: string) => {
       
       // If we couldn't parse the JSON, return a fallback structured response
       return {
+        detailedDescription: "We detected food in your image but couldn't analyze it completely due to a technical issue.",
         mealDescription: "We detected food in your image but couldn't analyze it completely. Try a clearer, well-lit photo of your meal.",
         foodIdentified: "Partial meal detection",
         nutritionInfo: {
@@ -554,6 +564,7 @@ export const recognizeMeal = async (imageData: string) => {
     
     // Return a structured error response
     return {
+      detailedDescription: "Sorry, we couldn't analyze your meal image due to a technical issue.",
       mealDescription: "Sorry, we couldn't analyze your meal image. Our AI service is currently having issues.",
       foodIdentified: "Error analyzing the meal",
       nutritionInfo: {

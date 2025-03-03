@@ -1,11 +1,10 @@
-
 import React, { useState, useRef } from 'react';
 import { Upload, Camera, Image as ImageIcon, X, CheckCircle, EggIcon, Loader, AlertCircle, InfoIcon } from 'lucide-react';
-// Make sure recognizeMeal is properly imported
 import { recognizeMeal } from '../services/api';
 import { toast } from 'sonner';
 
 interface MealData {
+  detailedDescription?: string;
   mealDescription: string;
   foodIdentified: string;
   nutritionInfo: {
@@ -29,12 +28,9 @@ const MealRecognition: React.FC = () => {
   const [retryCount, setRetryCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // Function to resize image if it's too large
   const resizeImage = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
-      // First check if we need to resize
       if (file.size <= 1024 * 1024) {
-        // Less than 1MB, just read as is
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result as string);
         reader.onerror = reject;
@@ -42,14 +38,12 @@ const MealRecognition: React.FC = () => {
         return;
       }
       
-      // Create image for resizing
       const img = document.createElement('img');
       img.onload = () => {
         const canvas = document.createElement('canvas');
         let width = img.width;
         let height = img.height;
         
-        // Determine new dimensions (max 1200px on longest side)
         const MAX_SIZE = 1200;
         if (width > height) {
           if (width > MAX_SIZE) {
@@ -66,7 +60,6 @@ const MealRecognition: React.FC = () => {
         canvas.width = width;
         canvas.height = height;
         
-        // Draw resized image to canvas
         const ctx = canvas.getContext('2d');
         if (!ctx) {
           reject(new Error('Could not get canvas context'));
@@ -75,7 +68,6 @@ const MealRecognition: React.FC = () => {
         
         ctx.drawImage(img, 0, 0, width, height);
         
-        // Get data URL (JPEG at 85% quality)
         const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
         resolve(dataUrl);
       };
@@ -94,14 +86,12 @@ const MealRecognition: React.FC = () => {
     const file = e.target.files?.[0];
     
     if (file) {
-      // Check if the file is an image
       if (!file.type.match('image.*')) {
         toast.error('Please select an image file');
         setIsUploading(false);
         return;
       }
       
-      // Check file size (max 10MB)
       if (file.size > 10 * 1024 * 1024) {
         toast.error('Image size should be less than 10MB');
         setIsUploading(false);
@@ -109,13 +99,11 @@ const MealRecognition: React.FC = () => {
       }
       
       try {
-        // Resize image if needed
         const resizedImage = await resizeImage(file);
         setSelectedImage(resizedImage);
-        setResult(null); // Clear previous results
+        setResult(null);
         setIsUploading(false);
         
-        // Auto-analyze the image after upload
         analyzeImage(resizedImage);
       } catch (error) {
         console.error("Error processing image:", error);
@@ -137,14 +125,12 @@ const MealRecognition: React.FC = () => {
     setAnalyzeError(null);
     
     try {
-      // Analyze with a timeout to handle long-running requests
       const timeoutPromise = new Promise<MealData>((_, reject) => 
         setTimeout(() => reject(new Error('Analysis timeout')), 45000)
       );
       
       const analysisPromise = recognizeMeal(imageData);
       
-      // Race between the analysis and the timeout
       const mealData = await Promise.race([
         analysisPromise,
         timeoutPromise
@@ -157,7 +143,6 @@ const MealRecognition: React.FC = () => {
       } else {
         setResult(mealData);
         
-        // Validate if nutrition values are suspiciously high
         const { calories, protein, carbs, fats } = mealData.nutritionInfo;
         
         if (calories > 1500 || protein > 80 || carbs > 120 || fats > 70) {
@@ -205,16 +190,13 @@ const MealRecognition: React.FC = () => {
     }
   };
 
-  // Format recommendations with emojis and bullet points if they don't already have them
   const formatRecommendations = (text: string) => {
     if (!text) return '';
     
-    // Check if the text already has bullet points or emojis
     if (text.includes('•') || text.includes('- ') || /[\u{1F300}-\u{1F6FF}]/u.test(text)) {
       return text;
     }
     
-    // Split by lines and add emoji bullets
     const bullets = ['🥗', '💪', '🍽️', '👍', '✨'];
     return text.split('\n')
       .filter(line => line.trim().length > 0)
@@ -225,14 +207,13 @@ const MealRecognition: React.FC = () => {
       .join('\n');
   };
 
-  // Calculate macronutrient percentages for the pie chart-like display
   const calculateMacroPercentages = () => {
     if (!result) return { protein: 0, carbs: 0, fats: 0 };
     
     const { protein, carbs, fats } = result.nutritionInfo;
     const total = protein + carbs + fats;
     
-    if (total === 0) return { protein: 33, carbs: 33, fats: 34 }; // Equal if all are zero
+    if (total === 0) return { protein: 33, carbs: 33, fats: 34 };
     
     return {
       protein: Math.round((protein / total) * 100),
@@ -369,12 +350,20 @@ const MealRecognition: React.FC = () => {
             {result && (
               <div className="animate-fade-in">
                 <div className="bg-white bg-opacity-70 rounded-xl p-4 shadow-sm border border-wellness-softGreen/30 mb-4">
-                  {/* Meal Description Panel */}
                   <div className="mb-4 p-4 bg-wellness-softGreen/30 rounded-lg">
                     <p className="text-wellness-darkGreen font-medium whitespace-pre-line">
                       {result.mealDescription}
                     </p>
                   </div>
+                  
+                  {result.detailedDescription && (
+                    <div className="mb-4 p-4 bg-wellness-softGreen/10 rounded-lg border border-wellness-softGreen/20">
+                      <h4 className="font-medium text-wellness-darkGreen mb-2">Detailed Analysis</h4>
+                      <p className="text-wellness-charcoal text-sm whitespace-pre-line">
+                        {result.detailedDescription}
+                      </p>
+                    </div>
+                  )}
                   
                   <div className="flex items-center gap-2 mb-3">
                     <CheckCircle className="h-5 w-5 text-wellness-darkGreen" />
@@ -396,7 +385,6 @@ const MealRecognition: React.FC = () => {
                     </button>
                   </h4>
                   
-                  {/* Nutrition cards */}
                   <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-4">
                     <div className="bg-wellness-softGreen/40 p-2 rounded-lg text-center flex flex-col justify-center">
                       <div className="text-sm text-wellness-charcoal">Calories</div>
@@ -420,7 +408,6 @@ const MealRecognition: React.FC = () => {
                     </div>
                   </div>
                   
-                  {/* Macronutrient distribution bar */}
                   {!showDetails && (
                     <div className="mb-4">
                       <div className="text-xs text-wellness-charcoal mb-1 flex justify-between">
@@ -452,7 +439,6 @@ const MealRecognition: React.FC = () => {
                     </div>
                   )}
                   
-                  {/* Technical details panel */}
                   {showDetails && result.fullAnalysis && (
                     <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200 text-xs font-mono overflow-auto max-h-40">
                       <pre className="whitespace-pre-wrap">{result.fullAnalysis}</pre>
@@ -476,7 +462,6 @@ const MealRecognition: React.FC = () => {
                   </button>
                   <button
                     onClick={() => {
-                      // In a real app, this would save the meal to the user's history
                       toast.success('Meal saved to your history!');
                     }}
                     className="flex-1 py-2 px-4 bg-wellness-darkGreen text-white rounded-lg hover:bg-wellness-darkGreen/90 transition-colors"
