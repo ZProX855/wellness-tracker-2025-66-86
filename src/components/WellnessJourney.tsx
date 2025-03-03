@@ -1,3 +1,4 @@
+<lov-code>
 import React, { useState, useEffect } from 'react';
 import { getWellnessInsights, calculateBMI } from '../services/api';
 import { Target, Activity, Leaf, ChevronRight, ChevronDown, CheckCircle2, Droplets, Dumbbell, Apple, ArrowRight, Calendar, Salad, AlarmClock, Brain, Heart, Scale, Sun, Award, Utensils, Zap } from 'lucide-react';
@@ -29,6 +30,15 @@ interface BMIResult {
   category: string;
   advice: string;
 }
+
+// Define an interface for the API response
+interface WellnessInsights {
+  recommendations: string[];
+  milestones: string[];
+}
+
+// Define the journey step type
+type JourneyStep = 'goals' | 'bmi' | 'preferences' | 'plan';
 
 const dietOptions = [
   { value: 'balanced', label: 'Balanced Diet 🍽️', description: 'Even distribution of macronutrients with moderate carbs, protein, and healthy fats' },
@@ -749,119 +759,3 @@ const WellnessJourney: React.FC = () => {
                     {item.substring(0, 2)}
                   </div>
                   <div className="flex-1">
-                    {item.substring(2)}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-          
-          <div className="bg-white bg-opacity-80 rounded-xl p-5 shadow-sm border border-wellness-softGreen/40 transition-all duration-300 hover:shadow-md">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="h-12 w-12 rounded-full bg-wellness-softGreen flex items-center justify-center">
-                <Droplets className="h-6 w-6 text-wellness-darkGreen" />
-              </div>
-              <div>
-                <h4 className="text-xl font-medium text-wellness-darkGreen">Water Intake</h4>
-                <p className="text-wellness-charcoal text-sm">Daily hydration recommendations</p>
-              </div>
-            </div>
-            <p className="text-wellness-charcoal">
-              {state.finalPlan.water}
-            </p>
-          </div>
-          
-          <div className="bg-white bg-opacity-80 rounded-xl p-5 shadow-sm border border-wellness-softGreen/40 transition-all duration-300 hover:shadow-md">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="h-12 w-12 rounded-full bg-wellness-softGreen flex items-center justify-center">
-                <Dumbbell className="h-6 w-6 text-wellness-darkGreen" />
-              </div>
-              <div>
-                <h4 className="text-xl font-medium text-wellness-darkGreen">Training Plan</h4>
-                <p className="text-wellness-charcoal text-sm">Customized exercise recommendations</p>
-              </div>
-            </div>
-            <ul className="space-y-3">
-              {state.finalPlan.training.map((item, index) => (
-                <li key={index} className="flex items-start gap-2 text-wellness-charcoal">
-                  <div className="flex-shrink-0 w-6 text-center">
-                    {item.substring(0, 2)}
-                  </div>
-                  <div className="flex-1">
-                    {item.substring(2)}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-        
-        <div className="flex justify-between">
-          <button
-            onClick={() => setActiveStep('preferences')}
-            className="btn-secondary rounded-lg flex items-center gap-2"
-          >
-            <ChevronDown className="h-5 w-5" />
-            Back to Preferences
-          </button>
-          
-          <button
-            onClick={() => {
-              toast.success('Plan saved to your account!');
-            }}
-            className="btn-primary rounded-lg flex items-center gap-2"
-          >
-            <CheckCircle2 className="h-5 w-5" />
-            Save My Plan
-          </button>
-        </div>
-      </div>
-    );
-  };
-
-  const renderBMIInfoDialog = () => {
-    return (
-      <Dialog open={showBmiInfo} onOpenChange={setShowBmiInfo}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-wellness-darkGreen">About BMI</DialogTitle>
-          </DialogHeader>
-          <div className="text-wellness-charcoal space-y-3">
-            <p>
-              Body Mass Index (BMI) is a numerical value derived from your weight and height. It provides a simple way to 
-              assess if you have a healthy body weight for your height.
-            </p>
-            <p>
-              <strong>Formula:</strong> BMI = weight(kg) / [height(m)]²
-            </p>
-            <p>
-              While BMI is useful as a screening tool, it does have limitations. It doesn't account for factors like 
-              muscle mass, bone density, or overall body composition.
-            </p>
-            <div className="bg-wellness-softGreen/30 p-3 rounded-lg text-sm mt-3">
-              <p className="font-medium mb-1">BMI Categories:</p>
-              <ul className="list-disc pl-5 space-y-1">
-                <li>Below 18.5: Underweight</li>
-                <li>18.5 to 24.9: Normal weight</li>
-                <li>25 to 29.9: Overweight</li>
-                <li>30 and above: Obese</li>
-              </ul>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  };
-
-  return (
-    <div className="wellness-journey mb-10">
-      {renderGoalsSection()}
-      {renderBMISection()}
-      {renderPreferencesSection()}
-      {renderPlanSection()}
-      {renderBMIInfoDialog()}
-    </div>
-  );
-};
-
-export default WellnessJourney;
