@@ -14,7 +14,7 @@ interface MealData {
     fats: number;
     fiber: number;
   };
-  recommendations: string;
+  recommendations: string | string[];
   fullAnalysis?: string;
 }
 
@@ -190,21 +190,33 @@ const MealRecognition: React.FC = () => {
     }
   };
 
-  const formatRecommendations = (text: string) => {
+  const formatRecommendations = (text: string | string[]): string => {
     if (!text) return '';
     
-    if (text.includes('•') || text.includes('- ') || /[\u{1F300}-\u{1F6FF}]/u.test(text)) {
-      return text;
-    }
-    
-    const bullets = ['🥗', '💪', '🍽️', '👍', '✨'];
-    return text.split('\n')
-      .filter(line => line.trim().length > 0)
-      .map((line, index) => {
+    if (Array.isArray(text)) {
+      const bullets = ['🥗', '💪', '🍽️', '👍', '✨'];
+      return text.map((line, index) => {
         const emoji = bullets[index % bullets.length];
         return `${emoji} ${line}`;
-      })
-      .join('\n');
+      }).join('\n');
+    }
+    
+    if (typeof text === 'string') {
+      if (text.includes('•') || text.includes('- ') || /[\u{1F300}-\u{1F6FF}]/u.test(text)) {
+        return text;
+      }
+      
+      const bullets = ['🥗', '💪', '🍽️', '👍', '✨'];
+      return text.split('\n')
+        .filter(line => line.trim().length > 0)
+        .map((line, index) => {
+          const emoji = bullets[index % bullets.length];
+          return `${emoji} ${line}`;
+        })
+        .join('\n');
+    }
+    
+    return String(text);
   };
 
   const calculateMacroPercentages = () => {

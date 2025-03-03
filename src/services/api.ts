@@ -478,9 +478,9 @@ export const recognizeMeal = async (imageData: string) => {
     const prompt = `
       You are a professional nutritionist analyzing a food image. Please follow these steps in order:
       
-      1. DETAILED DESCRIPTION: First, describe in detail what you see in this food image (ingredients, preparation style, presentation, etc.)
+      1. DETAILED DESCRIPTION: First, describe in detail what you see in this food image (ingredients, preparation style, presentation, appearance, colors, etc.)
       
-      2. MEAL DESCRIPTION: Then provide a 2-line summary of what this meal is, including:
+      2. MEAL DESCRIPTION: Based on your description, provide a 2-line summary of what this meal is, including:
          - What the food/dish appears to be
          - Approximate portion size
          - Brief comment on healthiness (healthy, moderately healthy, or indulgent)
@@ -508,7 +508,7 @@ export const recognizeMeal = async (imageData: string) => {
           "fats": number,
           "fiber": number
         },
-        "recommendations": "Bullet points with recommendations",
+        "recommendations": ["Point 1", "Point 2", "Point 3", "Point 4"],
         "fullAnalysis": "Detailed nutritional analysis"
       }
       
@@ -518,7 +518,7 @@ export const recognizeMeal = async (imageData: string) => {
         "mealDescription": "This image doesn't contain clearly identifiable food. Please upload a clearer image of your meal.",
         "foodIdentified": "Could not identify the meal",
         "nutritionInfo": { "calories": 0, "protein": 0, "carbs": 0, "fats": 0, "fiber": 0 },
-        "recommendations": "Please upload a clearer image with proper lighting to get accurate nutritional information.",
+        "recommendations": ["Please upload a clearer image with proper lighting to get accurate nutritional information."],
         "fullAnalysis": "Could not analyze"
       }
       
@@ -555,7 +555,7 @@ export const recognizeMeal = async (imageData: string) => {
           fats: 0,
           fiber: 0
         },
-        recommendations: "Please upload a clearer image to get accurate nutritional information.",
+        recommendations: ["Please upload a clearer image to get accurate nutritional information."],
         fullAnalysis: "Could not analyze completely"
       };
     }
@@ -574,7 +574,7 @@ export const recognizeMeal = async (imageData: string) => {
         fats: 0,
         fiber: 0
       },
-      recommendations: "Please try again later or upload a different image.",
+      recommendations: ["Please try again later or upload a different image."],
       fullAnalysis: error instanceof Error ? error.message : "Unknown error"
     };
   }
