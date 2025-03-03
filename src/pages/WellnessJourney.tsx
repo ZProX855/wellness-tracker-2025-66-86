@@ -23,7 +23,7 @@ const WellnessJourney = () => {
               Back to Home
             </Link>
             <h1 className="text-3xl font-medium text-wellness-darkGreen mt-4 mb-2">Your Wellness Journey</h1>
-            <p className="text-wellness-charcoal">Set your health goals and get a personalized wellness plan with AI-powered insights.</p>
+            <p className="text-wellness-charcoal">Follow our step-by-step process to get a personalized wellness plan with AI-powered insights tailored to your unique needs.</p>
           </div>
           
           <WellnessJourneyComponent />
