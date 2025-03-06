@@ -16,7 +16,6 @@ import ConversationSummary from '@/components/timetable/ConversationSummary';
 import TimetableGeneratorComponent from '@/components/timetable/TimetableGenerator';
 import ChatModeSelector from '@/components/timetable/ChatModeSelector';
 import TimetableInsights from '@/components/timetable/TimetableInsights';
-
 interface TimetableEntry {
   time: string;
   activity: string;
@@ -25,12 +24,10 @@ interface TimetableEntry {
   completed?: boolean;
   important?: boolean;
 }
-
 interface ConversationResponse {
   question: string;
   answer: string;
 }
-
 const TimetableGenerator = () => {
   const [isConversationActive, setIsConversationActive] = useState(false);
   const [isTextChatActive, setIsTextChatActive] = useState(false);
@@ -57,13 +54,16 @@ const TimetableGenerator = () => {
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [isGeneratingAfterConversation, setIsGeneratingAfterConversation] = useState(false);
   const [transcript, setTranscript] = useState<string[]>([]);
-  const [localConversation, setLocalConversation] = useState<{question: string, answer: string}[]>([]);
+  const [localConversation, setLocalConversation] = useState<{
+    question: string;
+    answer: string;
+  }[]>([]);
   const [chatMode, setChatMode] = useState<'voice' | 'text' | null>(null);
-
   const isDesktop = useMediaQuery("(min-width: 768px)");
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const navigate = useNavigate();
-
   useEffect(() => {
     if (timetable && timetable.length > 0) {
       setShowTimetable(true);
@@ -101,20 +101,23 @@ const TimetableGenerator = () => {
     } catch (error) {
       console.error("Error loading saved transcript:", error);
     }
-
     window.addEventListener('speechTranscript', handleSpeechTranscript as EventListener);
     window.addEventListener('conversationTranscript', handleConversationTranscript as EventListener);
-
     return () => {
       window.removeEventListener('speechTranscript', handleSpeechTranscript as EventListener);
       window.removeEventListener('conversationTranscript', handleConversationTranscript as EventListener);
     };
   }, [transcript]);
-
   const handleAddResponse = (question: string, answer: string) => {
     if (question && !answer) {
-      setResponses(prev => [...prev, { question, answer: '' }]);
-      setLocalConversation(prev => [...prev, { question, answer: '' }]);
+      setResponses(prev => [...prev, {
+        question,
+        answer: ''
+      }]);
+      setLocalConversation(prev => [...prev, {
+        question,
+        answer: ''
+      }]);
     } else if (answer) {
       setResponses(prev => {
         const updated = [...prev];
@@ -123,7 +126,6 @@ const TimetableGenerator = () => {
         }
         return updated;
       });
-      
       setLocalConversation(prev => {
         const updated = [...prev];
         if (updated.length > 0) {
@@ -133,48 +135,47 @@ const TimetableGenerator = () => {
       });
     }
   };
-
   const handleConversationComplete = () => {
     setConversationComplete(true);
     setIsGeneratingAfterConversation(true);
-    
     setTimeout(() => {
       // Skip API calls and just generate from local data
       generateTimetableFromLocalData();
     }, 1000);
   };
-
   const generateTimetableFromLocalData = () => {
     setIsGeneratingAfterConversation(false);
     setShowTimetable(true);
-    
+
     // Timetable generation will happen through the TimetableGenerator component
     // which already has access to the transcript data
   };
-
   const handleEditEntry = (entry: TimetableEntry, index: number) => {
-    setEditEntry({ ...entry });
+    setEditEntry({
+      ...entry
+    });
     setEditIndex(index);
     setIsDrawerOpen(true);
   };
-
   const saveEditedEntry = () => {
     if (editEntry && editIndex !== null) {
       const updatedTimetable = [...timetable];
       updatedTimetable[editIndex] = editEntry;
       setTimetable(updatedTimetable);
       setIsDrawerOpen(false);
-      
       toast({
         title: "Entry Updated",
-        description: "Your timetable has been updated.",
+        description: "Your timetable has been updated."
       });
     }
   };
-
   const addNewEntry = () => {
     if (newEntry.time && newEntry.activity) {
-      setTimetable(prev => [...prev, { ...newEntry, completed: false, important: false }]);
+      setTimetable(prev => [...prev, {
+        ...newEntry,
+        completed: false,
+        important: false
+      }]);
       setIsAddEntryDrawerOpen(false);
       setNewEntry({
         time: '',
@@ -182,10 +183,9 @@ const TimetableGenerator = () => {
         category: 'routine',
         description: ''
       });
-      
       toast({
         title: "Entry Added",
-        description: "New activity has been added to your timetable.",
+        description: "New activity has been added to your timetable."
       });
     } else {
       toast({
@@ -195,57 +195,46 @@ const TimetableGenerator = () => {
       });
     }
   };
-
   const deleteEntry = (entry: TimetableEntry, index: number) => {
     const updatedTimetable = [...timetable];
     updatedTimetable.splice(index, 1);
     setTimetable(updatedTimetable);
-    
     toast({
       title: "Entry Deleted",
-      description: "Activity has been removed from your timetable.",
+      description: "Activity has been removed from your timetable."
     });
   };
-
   const toggleCompleted = (index: number) => {
     const updatedTimetable = [...timetable];
     updatedTimetable[index].completed = !updatedTimetable[index].completed;
     setTimetable(updatedTimetable);
   };
-
   const toggleImportant = (index: number) => {
     const updatedTimetable = [...timetable];
     updatedTimetable[index].important = !updatedTimetable[index].important;
     setTimetable(updatedTimetable);
   };
-
   const shareTimetable = async () => {
     try {
-      const timetableText = timetable.map(entry => 
-        `${entry.time} - ${entry.activity}${entry.description ? ` (${entry.description})` : ''}`
-      ).join('\n');
-      
+      const timetableText = timetable.map(entry => `${entry.time} - ${entry.activity}${entry.description ? ` (${entry.description})` : ''}`).join('\n');
       if (navigator.share) {
         await navigator.share({
           title: 'My Daily Timetable',
-          text: timetableText,
+          text: timetableText
         });
-        
         toast({
           title: "Timetable Shared",
-          description: "Your timetable has been shared successfully.",
+          description: "Your timetable has been shared successfully."
         });
       } else {
         await navigator.clipboard.writeText(timetableText);
-        
         toast({
           title: "Copied to Clipboard",
-          description: "Your timetable has been copied to the clipboard.",
+          description: "Your timetable has been copied to the clipboard."
         });
       }
     } catch (error) {
       console.error("Error sharing timetable:", error);
-      
       toast({
         title: "Sharing Failed",
         description: "There was a problem sharing your timetable.",
@@ -253,13 +242,11 @@ const TimetableGenerator = () => {
       });
     }
   };
-
   const downloadTimetable = () => {
-    const timetableText = timetable.map(entry => 
-      `${entry.time} - ${entry.activity}${entry.description ? ` (${entry.description})` : ''}`
-    ).join('\n');
-    
-    const blob = new Blob([timetableText], { type: 'text/plain' });
+    const timetableText = timetable.map(entry => `${entry.time} - ${entry.activity}${entry.description ? ` (${entry.description})` : ''}`).join('\n');
+    const blob = new Blob([timetableText], {
+      type: 'text/plain'
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -268,34 +255,26 @@ const TimetableGenerator = () => {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    
     toast({
       title: "Timetable Downloaded",
-      description: "Your timetable has been downloaded as a text file.",
+      description: "Your timetable has been downloaded as a text file."
     });
   };
-
   const handleStartVoiceConversation = () => {
     setIsConversationActive(true);
     setShowTimetable(false);
   };
-
   const handleStartTextConversation = () => {
     setIsTextChatActive(true);
     setShowTimetable(false);
   };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-wellness-softBeige to-wellness-softGreen/30">
+  return <div className="min-h-screen bg-gradient-to-b from-wellness-softBeige to-wellness-softGreen/30">
       <Header />
       
       <main className="pt-24 pb-16 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto">
           <div className="mb-8">
-            <Link 
-              to="/" 
-              className="inline-flex items-center text-wellness-darkGreen hover:text-wellness-mediumGreen transition-colors"
-            >
+            <Link to="/" className="inline-flex items-center text-wellness-darkGreen hover:text-wellness-mediumGreen transition-colors">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Home
             </Link>
@@ -313,115 +292,37 @@ const TimetableGenerator = () => {
               AI Assistant
             </h2>
             
-            <ChatModeSelector 
-              chatMode={chatMode}
-              setChatMode={setChatMode}
-              isConversationActive={isConversationActive}
-              isTextChatActive={isTextChatActive}
-            />
+            <ChatModeSelector chatMode={chatMode} setChatMode={setChatMode} isConversationActive={isConversationActive} isTextChatActive={isTextChatActive} />
             
-            {chatMode === 'voice' && (
-              <VoiceAssistant 
-                isConversationActive={isConversationActive}
-                setIsConversationActive={handleStartVoiceConversation}
-                onConversationComplete={handleConversationComplete}
-                onResponses={handleAddResponse}
-                onSetConversationId={setCurrentConversationId}
-              />
-            )}
+            {chatMode === 'voice' && <VoiceAssistant isConversationActive={isConversationActive} setIsConversationActive={handleStartVoiceConversation} onConversationComplete={handleConversationComplete} onResponses={handleAddResponse} onSetConversationId={setCurrentConversationId} />}
             
-            {chatMode === 'text' && (
-              <TextChatAssistant 
-                isTextChatActive={isTextChatActive}
-                setIsTextChatActive={handleStartTextConversation}
-                onConversationComplete={handleConversationComplete}
-                onResponses={handleAddResponse}
-              />
-            )}
+            {chatMode === 'text' && <TextChatAssistant isTextChatActive={isTextChatActive} setIsTextChatActive={handleStartTextConversation} onConversationComplete={handleConversationComplete} onResponses={handleAddResponse} />}
             
-            <ConversationSummary 
-              responses={responses} 
-              showSummary={chatMode === 'voice'} 
-            />
+            <ConversationSummary responses={responses} showSummary={chatMode === 'voice'} />
           </div>
           
-          {(showTimetable && !loadingTimetable && !isGeneratingAfterConversation && timetable.length > 0) && (
-            <TimetableInsights 
-              timetable={timetable}
-              conversationData={conversationData}
-              localConversation={localConversation}
-              responses={responses}
-            />
-          )}
+          {showTimetable && !loadingTimetable && !isGeneratingAfterConversation && timetable.length > 0 && <TimetableInsights timetable={timetable} conversationData={conversationData} localConversation={localConversation} responses={responses} />}
           
-          {(isGeneratingAfterConversation || loadingTimetable) && (
-            <div className="flex flex-col items-center justify-center py-12">
+          {(isGeneratingAfterConversation || loadingTimetable) && <div className="flex flex-col items-center justify-center py-12">
               <div className="rounded-full h-16 w-16 border-b-2 border-t-2 border-wellness-darkGreen animate-spin mb-4"></div>
               <p className="text-wellness-darkGreen font-medium text-lg">Generating your personalized timetable...</p>
               <p className="text-wellness-charcoal text-sm mt-2">Analyzing your preferences and creating the perfect schedule for you</p>
-            </div>
-          )}
+            </div>}
           
-          {(showTimetable && !loadingTimetable && !isGeneratingAfterConversation && timetable.length > 0) && (
-            <TimetableVisualizer 
-              timetable={timetable}
-              onEditEntry={handleEditEntry}
-              onDeleteEntry={deleteEntry}
-              onToggleCompleted={toggleCompleted}
-              onToggleImportant={toggleImportant}
-              onDownload={downloadTimetable}
-              onShare={shareTimetable}
-              onRegenerate={() => {
-                const timetableGenerator = document.getElementById('timetable-generator');
-                if (timetableGenerator) {
-                  timetableGenerator.scrollIntoView({ behavior: 'smooth' });
-                }
-              }}
-              colorTheme={colorTheme}
-            />
-          )}
+          {showTimetable && !loadingTimetable && !isGeneratingAfterConversation && timetable.length > 0 && <TimetableVisualizer timetable={timetable} onEditEntry={handleEditEntry} onDeleteEntry={deleteEntry} onToggleCompleted={toggleCompleted} onToggleImportant={toggleImportant} onDownload={downloadTimetable} onShare={shareTimetable} onRegenerate={() => {
+          const timetableGenerator = document.getElementById('timetable-generator');
+          if (timetableGenerator) {
+            timetableGenerator.scrollIntoView({
+              behavior: 'smooth'
+            });
+          }
+        }} colorTheme={colorTheme} />}
           
           <div id="timetable-generator" className="animate-fade-in">
-            {showTimetable && !loadingTimetable && !isGeneratingAfterConversation && (
-              <TimetableGeneratorComponent 
-                conversationData={conversationData}
-                localConversation={localConversation}
-                responses={responses}
-                transcript={transcript}
-                setTimetable={setTimetable}
-                setShowTimetable={setShowTimetable}
-                timetable={timetable}
-                currentConversationId={currentConversationId}
-              />
-            )}
+            {showTimetable && !loadingTimetable && !isGeneratingAfterConversation && <TimetableGeneratorComponent conversationData={conversationData} localConversation={localConversation} responses={responses} transcript={transcript} setTimetable={setTimetable} setShowTimetable={setShowTimetable} timetable={timetable} currentConversationId={currentConversationId} />}
           </div>
           
-          {!showTimetable && !isConversationActive && !isTextChatActive && !loadingTimetable && !isGeneratingAfterConversation && 
-           timetable.length === 0 && !conversationComplete && !chatMode && (
-            <div className="flex flex-col items-center justify-center py-8 bg-white bg-opacity-70 backdrop-blur-sm rounded-xl p-6 border border-wellness-softGreen/30 shadow-sm hover:shadow-md transition-shadow animate-fade-in">
-              <p className="text-wellness-darkGreen font-medium mb-4 text-center">
-                Start a conversation with the AI assistant to create your personalized timetable
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setChatMode('voice')}
-                  className="border-wellness-darkGreen text-wellness-darkGreen hover:bg-wellness-softGreen/20 hover-scale transition-all"
-                >
-                  <Mic className="h-4 w-4 mr-2" />
-                  Start with Voice Chat
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => setChatMode('text')}
-                  className="border-wellness-darkGreen text-wellness-darkGreen hover:bg-wellness-softGreen/20 hover-scale transition-all"
-                >
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  Start with Text Chat
-                </Button>
-              </div>
-            </div>
-          )}
+          {!showTimetable && !isConversationActive && !isTextChatActive && !loadingTimetable && !isGeneratingAfterConversation && timetable.length === 0 && !conversationComplete && !chatMode}
         </div>
       </main>
       
@@ -433,46 +334,34 @@ const TimetableGenerator = () => {
               Make changes to your timetable entry below.
             </DrawerDescription>
           </DrawerHeader>
-          {editEntry && (
-            <div className="px-4 py-2">
+          {editEntry && <div className="px-4 py-2">
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-4 items-center gap-4">
                   <label htmlFor="edit-time" className="text-right col-span-1">
                     Time
                   </label>
-                  <input 
-                    id="edit-time" 
-                    type="text" 
-                    value={editEntry.time} 
-                    onChange={(e) => setEditEntry({...editEntry, time: e.target.value})}
-                    className="col-span-3 p-2 border rounded w-full"
-                  />
+                  <input id="edit-time" type="text" value={editEntry.time} onChange={e => setEditEntry({
+                ...editEntry,
+                time: e.target.value
+              })} className="col-span-3 p-2 border rounded w-full" />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <label htmlFor="edit-activity" className="text-right col-span-1">
                     Activity
                   </label>
-                  <input 
-                    id="edit-activity" 
-                    type="text" 
-                    value={editEntry.activity} 
-                    onChange={(e) => setEditEntry({...editEntry, activity: e.target.value})}
-                    className="col-span-3 p-2 border rounded w-full"
-                  />
+                  <input id="edit-activity" type="text" value={editEntry.activity} onChange={e => setEditEntry({
+                ...editEntry,
+                activity: e.target.value
+              })} className="col-span-3 p-2 border rounded w-full" />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <label htmlFor="edit-category" className="text-right col-span-1">
                     Category
                   </label>
-                  <select 
-                    id="edit-category" 
-                    value={editEntry.category} 
-                    onChange={(e) => setEditEntry({
-                      ...editEntry, 
-                      category: e.target.value as TimetableEntry['category']
-                    })}
-                    className="col-span-3 p-2 border rounded w-full"
-                  >
+                  <select id="edit-category" value={editEntry.category} onChange={e => setEditEntry({
+                ...editEntry,
+                category: e.target.value as TimetableEntry['category']
+              })} className="col-span-3 p-2 border rounded w-full">
                     <option value="routine">Routine</option>
                     <option value="work">Work</option>
                     <option value="meal">Meal</option>
@@ -486,40 +375,32 @@ const TimetableGenerator = () => {
                   <label htmlFor="edit-description" className="text-right col-span-1">
                     Description
                   </label>
-                  <textarea 
-                    id="edit-description" 
-                    value={editEntry.description || ''} 
-                    onChange={(e) => setEditEntry({...editEntry, description: e.target.value})}
-                    className="col-span-3 p-2 border rounded w-full h-20"
-                    placeholder="Add optional description"
-                  />
+                  <textarea id="edit-description" value={editEntry.description || ''} onChange={e => setEditEntry({
+                ...editEntry,
+                description: e.target.value
+              })} className="col-span-3 p-2 border rounded w-full h-20" placeholder="Add optional description" />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <div className="col-span-1"></div>
                   <div className="col-span-3 flex space-x-4">
                     <label className="flex items-center space-x-2">
-                      <input 
-                        type="checkbox" 
-                        checked={editEntry.completed || false} 
-                        onChange={(e) => setEditEntry({...editEntry, completed: e.target.checked})}
-                        className="rounded border-gray-300 text-wellness-darkGreen"
-                      />
+                      <input type="checkbox" checked={editEntry.completed || false} onChange={e => setEditEntry({
+                    ...editEntry,
+                    completed: e.target.checked
+                  })} className="rounded border-gray-300 text-wellness-darkGreen" />
                       <span>Completed</span>
                     </label>
                     <label className="flex items-center space-x-2">
-                      <input 
-                        type="checkbox" 
-                        checked={editEntry.important || false} 
-                        onChange={(e) => setEditEntry({...editEntry, important: e.target.checked})}
-                        className="rounded border-gray-300 text-wellness-darkGreen"
-                      />
+                      <input type="checkbox" checked={editEntry.important || false} onChange={e => setEditEntry({
+                    ...editEntry,
+                    important: e.target.checked
+                  })} className="rounded border-gray-300 text-wellness-darkGreen" />
                       <span>Important</span>
                     </label>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+            </div>}
           <DrawerFooter>
             <Button onClick={saveEditedEntry} className="bg-wellness-darkGreen hover:bg-wellness-mediumGreen text-white">
               Save Changes
@@ -545,41 +426,28 @@ const TimetableGenerator = () => {
                 <label htmlFor="new-time" className="text-right col-span-1">
                   Time
                 </label>
-                <input 
-                  id="new-time" 
-                  type="text" 
-                  value={newEntry.time} 
-                  onChange={(e) => setNewEntry({...newEntry, time: e.target.value})}
-                  className="col-span-3 p-2 border rounded w-full"
-                  placeholder="e.g. 8:00 AM"
-                />
+                <input id="new-time" type="text" value={newEntry.time} onChange={e => setNewEntry({
+                ...newEntry,
+                time: e.target.value
+              })} className="col-span-3 p-2 border rounded w-full" placeholder="e.g. 8:00 AM" />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <label htmlFor="new-activity" className="text-right col-span-1">
                   Activity
                 </label>
-                <input 
-                  id="new-activity" 
-                  type="text" 
-                  value={newEntry.activity} 
-                  onChange={(e) => setNewEntry({...newEntry, activity: e.target.value})}
-                  className="col-span-3 p-2 border rounded w-full"
-                  placeholder="e.g. Morning Exercise"
-                />
+                <input id="new-activity" type="text" value={newEntry.activity} onChange={e => setNewEntry({
+                ...newEntry,
+                activity: e.target.value
+              })} className="col-span-3 p-2 border rounded w-full" placeholder="e.g. Morning Exercise" />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <label htmlFor="new-category" className="text-right col-span-1">
                   Category
                 </label>
-                <select 
-                  id="new-category" 
-                  value={newEntry.category} 
-                  onChange={(e) => setNewEntry({
-                    ...newEntry, 
-                    category: e.target.value as TimetableEntry['category']
-                  })}
-                  className="col-span-3 p-2 border rounded w-full"
-                >
+                <select id="new-category" value={newEntry.category} onChange={e => setNewEntry({
+                ...newEntry,
+                category: e.target.value as TimetableEntry['category']
+              })} className="col-span-3 p-2 border rounded w-full">
                   <option value="routine">Routine</option>
                   <option value="work">Work</option>
                   <option value="meal">Meal</option>
@@ -593,13 +461,10 @@ const TimetableGenerator = () => {
                 <label htmlFor="new-description" className="text-right col-span-1">
                   Description
                 </label>
-                <textarea 
-                  id="new-description" 
-                  value={newEntry.description} 
-                  onChange={(e) => setNewEntry({...newEntry, description: e.target.value})}
-                  className="col-span-3 p-2 border rounded w-full h-20"
-                  placeholder="Add optional description"
-                />
+                <textarea id="new-description" value={newEntry.description} onChange={e => setNewEntry({
+                ...newEntry,
+                description: e.target.value
+              })} className="col-span-3 p-2 border rounded w-full h-20" placeholder="Add optional description" />
               </div>
             </div>
           </div>
@@ -613,8 +478,6 @@ const TimetableGenerator = () => {
           </DrawerFooter>
         </DrawerContent>
       </Drawer>
-    </div>
-  );
+    </div>;
 };
-
 export default TimetableGenerator;
