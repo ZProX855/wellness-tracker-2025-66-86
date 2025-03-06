@@ -107,6 +107,14 @@ export default {
 				'pulse-soft': {
 					'0%, 100%': { opacity: '1' },
 					'50%': { opacity: '0.8' }
+				},
+				float: {
+					'0%, 100%': { transform: 'translateY(0)' },
+					'50%': { transform: 'translateY(-20px)' }
+				},
+				morph: {
+					'0%, 100%': { borderRadius: '60% 40% 30% 70% / 60% 30% 70% 40%' },
+					'50%': { borderRadius: '30% 60% 70% 40% / 50% 60% 30% 60%' }
 				}
 			},
 			animation: {
@@ -116,7 +124,9 @@ export default {
 				'scale-in': 'scale-in 0.4s ease-out forwards',
 				'scale-in-out': 'scale-in-out 2s ease-in-out infinite',
 				'slide-up': 'slide-up 0.5s ease-out forwards',
-				'pulse-soft': 'pulse-soft 3s ease-in-out infinite'
+				'pulse-soft': 'pulse-soft 3s ease-in-out infinite',
+				'float': 'float 6s ease-in-out infinite',
+				'morph': 'morph 8s ease-in-out infinite'
 			},
 			transitionTimingFunction: {
 				'bounce-out': 'cubic-bezier(0.34, 1.56, 0.64, 1)',

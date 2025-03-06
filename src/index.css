@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -126,6 +127,10 @@
     @apply bg-white bg-opacity-60 backdrop-blur-md rounded-2xl border border-white border-opacity-30 shadow-sm;
   }
   
+  .glass-morphism {
+    @apply backdrop-blur-md bg-opacity-80 border border-white/20 shadow-sm;
+  }
+  
   .btn-primary {
     @apply bg-wellness-darkGreen hover:bg-wellness-darkGreen/90 text-white font-medium px-6 py-3 shadow-sm transition-all duration-300;
   }
@@ -162,4 +167,70 @@
   .chat-formatted-text .section-title {
     @apply font-medium text-wellness-darkGreen mt-4 mb-2;
   }
+  
+  /* Enhanced animations */
+  .animate-morph {
+    animation: morph 8s ease-in-out infinite;
+  }
+  
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+  
+  .hover-lift {
+    @apply transition-all duration-500;
+    transform: translateY(0);
+  }
+  
+  .hover-lift:hover {
+    transform: translateY(-10px);
+  }
+  
+  .hover-glow {
+    @apply transition-all duration-500;
+    box-shadow: 0 0 0 rgba(104, 166, 136, 0);
+  }
+  
+  .hover-glow:hover {
+    box-shadow: 0 0 20px rgba(104, 166, 136, 0.3);
+  }
+}
+
+@keyframes morph {
+  0% {
+    border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+  }
+  50% {
+    border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%;
+  }
+  100% {
+    border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+  }
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+/* Enhanced Apple-inspired text styles */
+.text-gradient {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-wellness-darkGreen to-wellness-mediumGreen;
+}
+
+.ultra-thin {
+  font-weight: 200;
+  letter-spacing: -0.02em;
+}
+
+.super-smooth {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
