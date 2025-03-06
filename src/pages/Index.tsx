@@ -174,19 +174,17 @@ wellness goals with intelligent, AI-powered tools.</p>
                 </button>)}
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-[83px] mx-[171px] py-[19px] my-[18px]">
               {categories[activeCategory].tools.map((tool, idx) => <div key={idx} className="opacity-0 animate-fade-in" style={{
               animationDelay: `${300 + idx * 100}ms`
             }}>
-                  <button onClick={() => navigate(tool.path)} className="w-full h-full glass-panel hover:scale-[1.02] active:scale-[0.98] transition-all duration-500 ease-out-expo p-8 flex flex-col items-center text-center group">
+                  <button onClick={() => navigate(tool.path)} className="w-full h-full glass-panel hover:scale-[1.02] active:scale-[0.98] transition-all duration-500 ease-out-expo p-8 flex flex-col items-center text-center group text-[#f8f4e3]/55 bg-[#f8f4e3]/[0.51] rounded-full mx-0 px-[55px] my-[25px] py-[37px]">
                     <div className={`h-16 w-16 rounded-full bg-gradient-to-r ${tool.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500`}>
                       <tool.icon className="h-8 w-8 text-wellness-darkGreen" />
                     </div>
                     <h3 className="text-xl font-medium text-wellness-darkGreen mb-3">{tool.title}</h3>
                     <p className="text-wellness-charcoal/70 text-sm">{tool.description}</p>
-                    <div className="mt-6 w-12 h-12 rounded-full bg-wellness-softGreen/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform -translate-y-2 group-hover:translate-y-0">
-                      <ArrowRight className="h-5 w-5 text-wellness-darkGreen" />
-                    </div>
+                    
                   </button>
                 </div>)}
             </div>
@@ -226,7 +224,7 @@ wellness goals with intelligent, AI-powered tools.</p>
         </section>
         
         {/* CTA Section */}
-        <section className="px-4 sm:px-6 text-center relative overflow-hidden py-[65px]">
+        <section className="px-4 text-center relative overflow-hidden sm:px-[52px] py-0 my-0">
           <div style={{
           backgroundImage: "url('/lovable-uploads/0f3b37c0-5eca-43f3-9f19-60f760335d8d.png')",
           backgroundSize: "30%",
@@ -234,9 +232,9 @@ wellness goals with intelligent, AI-powered tools.</p>
           filter: "blur(60px)"
         }} className="absolute inset-0 z-0 opacity-20 bg-[#fcfbf4] py-0 my-[69px]"></div>
           
-          <div className="max-w-3xl mx-auto relative z-10 opacity-0 animate-fade-in" style={{
+          <div style={{
           animationDelay: '400ms'
-        }}>
+        }} className="max-w-3xl mx-auto relative z-10 opacity-0 animate-fade-in py-[6px] my-[61px]">
             <h2 className="text-3xl sm:text-4xl font-medium text-wellness-darkGreen mb-6">
               Begin Your Wellness Journey Today
             </h2>
