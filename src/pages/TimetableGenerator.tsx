@@ -120,7 +120,7 @@ const TimetableGenerator = () => {
       const response = await fetch(`https://api.elevenlabs.io/v1/convai/conversation/${currentConversationId}/history`, {
         method: 'GET',
         headers: {
-          'xi-api-key': "sk_36070a7f0b1022f8908a1794fce6a0ce19f6668f365740d0"
+          'xi-api-key': "sk_c12587e6581cef5f4f275b7a6d1e4acd591bee7c5a13465b"
         }
       });
       
