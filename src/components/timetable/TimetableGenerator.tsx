@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Calendar } from 'lucide-react';
@@ -69,7 +70,6 @@ const TimetableGeneratorComponent: React.FC<TimetableGeneratorProps> = ({
     }
     
     setIsGenerating(true);
-    setShowTimetable(true);
     
     // Prioritize using local transcript data
     if (transcript.length > 0) {
@@ -94,6 +94,7 @@ const TimetableGeneratorComponent: React.FC<TimetableGeneratorProps> = ({
         description: "No speech transcript available. Try using the text chat instead.",
         variant: "destructive"
       });
+      setIsGenerating(false);
       return;
     }
     
@@ -175,11 +176,12 @@ const TimetableGeneratorComponent: React.FC<TimetableGeneratorProps> = ({
         description: "Please have a text conversation with the AI assistant first.",
         variant: "destructive"
       });
+      setIsGenerating(false);
       return;
     }
     
     setIsGenerating(true);
-    setShowTimetable(false);
+    setShowTimetable(true);
     
     toast({
       title: "🔍 Processing Text Data",
@@ -243,7 +245,6 @@ const TimetableGeneratorComponent: React.FC<TimetableGeneratorProps> = ({
       }
       
       setTimetable(parsedTimetable);
-      setShowTimetable(true);
       
       toast({
         title: "✅ Timetable Generated",
