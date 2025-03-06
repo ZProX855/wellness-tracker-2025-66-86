@@ -58,20 +58,3 @@
 .content-reveal.active {
   clip-path: inset(0 0 0 0);
 }
-
-/* Smooth section transitions */
-.section-transition {
-  position: relative;
-  z-index: 1;
-}
-
-.gradient-transition {
-  height: 100px;
-  width: 100%;
-  position: relative;
-  z-index: 2;
-  margin-top: -50px;
-  margin-bottom: -50px;
-  pointer-events: none;
-}
-
