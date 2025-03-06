@@ -92,12 +92,21 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
         }
         
         onResponses(formattedQuestion, '');
+        
+        // Save agent question to transcript for local processing
+        setTranscript(prev => [...prev, `Agent: ${formattedQuestion}`]);
       } else if (message.type === 'user_message' && message.content) {
         // Update the response with the user's answer
         onResponses('', message.content);
+        
+        // Save user response to transcript for local processing
+        setTranscript(prev => [...prev, `User: ${message.content}`]);
       } else if (message.type === 'end_of_conversation') {
         // Conversation has ended
         setIsConversationActive(false);
+        
+        // Save final transcript to localStorage for backup
+        localStorage.setItem('lastConversationTranscript', JSON.stringify(transcript));
         
         // Pass the transcript to the parent component before completing
         window.dispatchEvent(new CustomEvent('conversationTranscript', { 
@@ -209,6 +218,9 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
     try {
       await conversation.endSession();
       setIsConversationActive(false);
+      
+      // Save transcript to localStorage before ending
+      localStorage.setItem('lastConversationTranscript', JSON.stringify(transcript));
       
       // Pass the final transcript to the parent component before ending
       window.dispatchEvent(new CustomEvent('conversationTranscript', { 

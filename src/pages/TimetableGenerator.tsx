@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Clock, Mic, MessageSquare } from 'lucide-react';
@@ -74,6 +73,9 @@ const TimetableGenerator = () => {
     const handleSpeechTranscript = (event: CustomEvent) => {
       if (event.detail && event.detail.transcript) {
         setTranscript(prev => [...prev, event.detail.transcript]);
+        // Also save to localStorage for persistence
+        const updatedTranscript = [...transcript, event.detail.transcript];
+        localStorage.setItem('lastConversationTranscript', JSON.stringify(updatedTranscript));
       }
     };
 
@@ -81,8 +83,24 @@ const TimetableGenerator = () => {
     const handleConversationTranscript = (event: CustomEvent) => {
       if (event.detail && event.detail.transcript) {
         setTranscript(event.detail.transcript);
+        // Save to localStorage for persistence
+        localStorage.setItem('lastConversationTranscript', JSON.stringify(event.detail.transcript));
       }
     };
+
+    // Try to load saved transcript on mount
+    try {
+      const savedTranscript = localStorage.getItem('lastConversationTranscript');
+      if (savedTranscript) {
+        const parsed = JSON.parse(savedTranscript);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          console.log("Loading saved transcript on mount:", parsed);
+          setTranscript(parsed);
+        }
+      }
+    } catch (error) {
+      console.error("Error loading saved transcript:", error);
+    }
 
     window.addEventListener('speechTranscript', handleSpeechTranscript as EventListener);
     window.addEventListener('conversationTranscript', handleConversationTranscript as EventListener);
@@ -91,7 +109,7 @@ const TimetableGenerator = () => {
       window.removeEventListener('speechTranscript', handleSpeechTranscript as EventListener);
       window.removeEventListener('conversationTranscript', handleConversationTranscript as EventListener);
     };
-  }, []);
+  }, [transcript]);
 
   const handleAddResponse = (question: string, answer: string) => {
     if (question && !answer) {
@@ -121,59 +139,17 @@ const TimetableGenerator = () => {
     setIsGeneratingAfterConversation(true);
     
     setTimeout(() => {
-      if (chatMode === 'voice') {
-        currentConversationId 
-          ? fetchConversationData() 
-          : generateTimetableFromLocalConversation();
-      } else {
-        generateTimetableFromLocalConversation();
-      }
+      // Skip API calls and just generate from local data
+      generateTimetableFromLocalData();
     }, 1000);
   };
 
-  const fetchConversationData = async () => {
-    if (!currentConversationId) {
-      console.error("No conversation ID available");
-      return;
-    }
-    
-    setLoadingTimetable(true);
-    
-    try {
-      const response = await fetch(`https://api.elevenlabs.io/v1/convai/conversation/${currentConversationId}/history`, {
-        method: 'GET',
-        headers: {
-          'xi-api-key': "sk_c12587e6581cef5f4f275b7a6d1e4acd591bee7c5a13465b"
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch conversation data: ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      console.log("Conversation data from ElevenLabs:", data);
-      setConversationData(data);
-      
-      generateTimetableFromLocalConversation();
-      
-    } catch (error) {
-      console.error("Error fetching conversation data:", error);
-      toast({
-        title: "Data Retrieval Failed",
-        description: "Could not retrieve conversation data. Using local data instead.",
-        variant: "destructive"
-      });
-      
-      generateTimetableFromLocalConversation();
-    } finally {
-      setLoadingTimetable(false);
-    }
-  };
-
-  const generateTimetableFromLocalConversation = () => {
+  const generateTimetableFromLocalData = () => {
     setIsGeneratingAfterConversation(false);
     setShowTimetable(true);
+    
+    // Timetable generation will happen through the TimetableGenerator component
+    // which already has access to the transcript data
   };
 
   const handleEditEntry = (entry: TimetableEntry, index: number) => {
