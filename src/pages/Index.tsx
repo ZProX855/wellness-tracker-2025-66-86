@@ -174,11 +174,11 @@ wellness goals with intelligent, AI-powered tools.</p>
                 </button>)}
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-0 mx-0">
               {categories[activeCategory].tools.map((tool, idx) => <div key={idx} className="opacity-0 animate-fade-in" style={{
               animationDelay: `${300 + idx * 100}ms`
             }}>
-                  <button onClick={() => navigate(tool.path)} className="w-full h-full glass-panel hover:scale-[1.02] active:scale-[0.98] transition-all duration-500 ease-out-expo p-8 flex flex-col items-center text-center group">
+                  <button onClick={() => navigate(tool.path)} className="w-full h-full glass-panel hover:scale-[1.02] active:scale-[0.98] transition-all duration-500 ease-out-expo p-8 flex flex-col items-center text-center group bg-[#f8f4e3]/[0.53] rounded-full px-[45px] mx-0 text-4xl">
                     <div className={`h-16 w-16 rounded-full bg-gradient-to-r ${tool.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500`}>
                       <tool.icon className="h-8 w-8 text-wellness-darkGreen" />
                     </div>
