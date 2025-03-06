@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Mic, MicOff } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -47,6 +46,10 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
         setTranscript(prev => [...prev, latestTranscript]);
         console.log("Local speech recognition transcript:", latestTranscript);
         
+        // Store the transcript in localStorage for persistence
+        const updatedTranscript = [...transcript, latestTranscript];
+        localStorage.setItem('lastConversationTranscript', JSON.stringify(updatedTranscript));
+        
         // Pass the transcript up to the parent component
         window.dispatchEvent(new CustomEvent('speechTranscript', { 
           detail: { transcript: latestTranscript } 
@@ -65,7 +68,7 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
         recognitionRef.current.stop();
       }
     };
-  }, []);
+  }, [transcript]);
 
   // Initialize ElevenLabs conversation hook with modified message handler for friendlier responses
   const conversation = useConversation({
@@ -94,13 +97,21 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
         onResponses(formattedQuestion, '');
         
         // Save agent question to transcript for local processing
-        setTranscript(prev => [...prev, `Agent: ${formattedQuestion}`]);
+        setTranscript(prev => {
+          const updatedTranscript = [...prev, `Agent: ${formattedQuestion}`];
+          localStorage.setItem('lastConversationTranscript', JSON.stringify(updatedTranscript));
+          return updatedTranscript;
+        });
       } else if (message.type === 'user_message' && message.content) {
         // Update the response with the user's answer
         onResponses('', message.content);
         
         // Save user response to transcript for local processing
-        setTranscript(prev => [...prev, `User: ${message.content}`]);
+        setTranscript(prev => {
+          const updatedTranscript = [...prev, `User: ${message.content}`];
+          localStorage.setItem('lastConversationTranscript', JSON.stringify(updatedTranscript));
+          return updatedTranscript;
+        });
       } else if (message.type === 'end_of_conversation') {
         // Conversation has ended
         setIsConversationActive(false);
@@ -183,7 +194,14 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
       setIsConversationActive(true);
       
       // Clear previous transcript
+      const savedTranscript = localStorage.getItem('lastConversationTranscript');
+      if (savedTranscript) {
+        // Keep the saved transcript for reference but start with empty for this session
+        console.log("Found saved transcript, but starting fresh for this session");
+      }
+      
       setTranscript([]);
+      localStorage.setItem('currentSessionTranscript', JSON.stringify([]));
       
       // Start the conversation session with the ElevenLabs agent
       const conversationId = await conversation.startSession({

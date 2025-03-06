@@ -41,6 +41,7 @@ const TimetableGeneratorComponent: React.FC<TimetableGeneratorProps> = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
   const [lastTranscript, setLastTranscript] = useState<string[]>([]);
+  const [hasAttemptedGeneration, setHasAttemptedGeneration] = useState(false);
 
   // Load any saved transcript from localStorage when component mounts
   useEffect(() => {
@@ -59,47 +60,71 @@ const TimetableGeneratorComponent: React.FC<TimetableGeneratorProps> = ({
   }, []);
 
   const generateTimetable = async () => {
-    // Check if we have any conversation data at all
-    if (localConversation.length === 0 && responses.length === 0 && transcript.length === 0 && lastTranscript.length === 0) {
+    // Add a flag to track that we've attempted generation
+    setHasAttemptedGeneration(true);
+    
+    // Check for any conversation data, prioritizing current transcript
+    const hasCurrentTranscript = transcript && transcript.length > 0;
+    const hasSavedTranscript = lastTranscript && lastTranscript.length > 0;
+    const hasTextConversation = localConversation.length > 0 || responses.length > 0;
+    
+    if (!hasCurrentTranscript && !hasSavedTranscript && !hasTextConversation) {
+      console.log("No data sources available: Creating fallback timetable");
+      const fallbackTimetable = createFallbackTimetable();
+      setTimetable(fallbackTimetable);
+      setShowTimetable(true);
+      
       toast({
-        title: "❌ No Conversation Data",
-        description: "Please have a conversation with the AI assistant first.",
-        variant: "destructive"
+        title: "⚠️ Sample Timetable Created",
+        description: "We couldn't find any conversation data. We've created a sample timetable you can customize.",
       });
       return;
     }
     
     setIsGenerating(true);
+    setShowTimetable(true);  // Show the timetable area while generating
     
-    // Prioritize using local transcript data
-    if (transcript.length > 0) {
-      // We have current local speech transcript data
-      await generateTimetableFromLocalTranscript(transcript);
-    } else if (lastTranscript.length > 0) {
-      // We have saved transcript from previous conversation
-      await generateTimetableFromLocalTranscript(lastTranscript);
-    } else if (localConversation.length > 0) {
-      // We have local text conversation data
-      await generateTimetableFromLocalConversation();
-    } else {
-      // Fallback to creating a sample timetable
+    try {
+      // Determine which data source to use, in order of priority
+      if (hasCurrentTranscript) {
+        console.log("Using current transcript for timetable generation");
+        await generateTimetableFromLocalTranscript(transcript);
+      } else if (hasSavedTranscript) {
+        console.log("Using saved transcript from previous session for timetable generation");
+        await generateTimetableFromLocalTranscript(lastTranscript);
+      } else if (hasTextConversation) {
+        console.log("Using text conversation for timetable generation");
+        await generateTimetableFromLocalConversation();
+      } else {
+        // This should never happen due to the check above, but just in case
+        throw new Error("No valid conversation data found");
+      }
+    } catch (error) {
+      console.error("Error in generate timetable flow:", error);
       handleGenerationError();
+    } finally {
+      setIsGenerating(false);
     }
   };
 
   const generateTimetableFromLocalTranscript = async (transcriptData: string[]) => {
     if (!transcriptData || transcriptData.length === 0) {
+      console.error("No speech transcript data available");
       toast({
         title: "❌ No Speech Data",
         description: "No speech transcript available. Try using the text chat instead.",
         variant: "destructive"
       });
+      
+      // Try fallback to text conversation data
+      if (localConversation.length > 0) {
+        return generateTimetableFromLocalConversation();
+      }
+      
       setIsGenerating(false);
+      handleGenerationError();
       return;
     }
-    
-    setIsGenerating(true);
-    setShowTimetable(true);
     
     try {
       // Format the transcript for the AI
@@ -112,7 +137,7 @@ const TimetableGeneratorComponent: React.FC<TimetableGeneratorProps> = ({
       
       Important: Return ONLY a nicely formatted timetable as plain text with the format "hh:mm AM/PM - Activity" on each line, and categorize each activity as one of these: routine, work, meal, exercise, leisure, learning, rest.`;
       
-      console.log("Sending request to Gemini API with prompt from local transcript:", prompt);
+      console.log("Sending request to Gemini API with prompt from local transcript");
       
       // Call Gemini API
       const response = await fetch(GEMINI_ENDPOINT, {
@@ -135,7 +160,7 @@ const TimetableGeneratorComponent: React.FC<TimetableGeneratorProps> = ({
       }
       
       const responseData = await response.json();
-      console.log("Gemini API response:", responseData);
+      console.log("Gemini API response received");
       
       if (!responseData || !responseData.candidates || !responseData.candidates[0] || 
           !responseData.candidates[0].content || !responseData.candidates[0].content.parts || 
@@ -144,7 +169,7 @@ const TimetableGeneratorComponent: React.FC<TimetableGeneratorProps> = ({
       }
       
       const timetableText = responseData.candidates[0].content.parts[0].text;
-      console.log("Timetable text from Gemini:", timetableText);
+      console.log("Timetable text from Gemini:", timetableText.substring(0, 100) + "...");
       
       // Parse the timetable text into structured data
       const parsedTimetable = parseTimetableText(timetableText);
@@ -154,6 +179,7 @@ const TimetableGeneratorComponent: React.FC<TimetableGeneratorProps> = ({
       }
       
       setTimetable(parsedTimetable);
+      setShowTimetable(true);
       
       toast({
         title: "✅ Timetable Generated",
@@ -164,46 +190,43 @@ const TimetableGeneratorComponent: React.FC<TimetableGeneratorProps> = ({
       
       // Create a fallback timetable if generation fails
       handleGenerationError();
-    } finally {
-      setIsGenerating(false);
     }
   };
 
   const generateTimetableFromLocalConversation = async () => {
-    if (localConversation.length === 0) {
+    if (localConversation.length === 0 && responses.length === 0) {
+      console.error("No text conversation data available");
       toast({
         title: "❌ No Text Conversation",
-        description: "Please have a text conversation with the AI assistant first.",
+        description: "No conversation data available to generate a timetable.",
         variant: "destructive"
       });
-      setIsGenerating(false);
+      handleGenerationError();
       return;
     }
     
-    setIsGenerating(true);
-    setShowTimetable(true);
-    
-    toast({
-      title: "🔍 Processing Text Data",
-      description: "Please wait while we generate your timetable from your text conversation...",
-    });
-    
-    // Use only the local text conversation to generate a timetable
-    const conversationText = localConversation.map(r => 
-      `Question: ${r.question}\nAnswer: ${r.answer}`
-    ).join('\n\n');
-    
-    console.log("Generating timetable from text conversation:", conversationText);
+    // Prioritize using localConversation, but fall back to responses if needed
+    const conversationToUse = localConversation.length > 0 ? localConversation : responses;
     
     try {
+      toast({
+        title: "🔍 Processing Text Data",
+        description: "Please wait while we generate your timetable from your text conversation...",
+      });
+      
+      // Use only the local text conversation to generate a timetable
+      const conversationText = conversationToUse.map(r => 
+        `Question: ${r.question}\nAnswer: ${r.answer}`
+      ).join('\n\n');
+      
+      console.log("Generating timetable from text conversation");
+      
       const prompt = `Based on the following conversation, generate a structured and balanced daily timetable. Format it with time slots and activities, ensuring it's well-balanced with work, meals, exercise, leisure, and rest.
       
       Conversation:
       ${conversationText}
       
       Important: Return ONLY a nicely formatted timetable as plain text with the format "hh:mm AM/PM - Activity" on each line, and categorize each activity as one of these: routine, work, meal, exercise, leisure, learning, rest.`;
-      
-      console.log("Sending request to Gemini API with prompt:", prompt);
       
       // Call Gemini API
       const response = await fetch(GEMINI_ENDPOINT, {
@@ -226,7 +249,6 @@ const TimetableGeneratorComponent: React.FC<TimetableGeneratorProps> = ({
       }
       
       const data = await response.json();
-      console.log("Gemini API response:", data);
       
       if (!data || !data.candidates || !data.candidates[0] || 
           !data.candidates[0].content || !data.candidates[0].content.parts || 
@@ -235,7 +257,6 @@ const TimetableGeneratorComponent: React.FC<TimetableGeneratorProps> = ({
       }
       
       const timetableText = data.candidates[0].content.parts[0].text;
-      console.log("Timetable text from Gemini:", timetableText);
       
       // Parse the timetable text into structured data
       const parsedTimetable = parseTimetableText(timetableText);
@@ -245,6 +266,7 @@ const TimetableGeneratorComponent: React.FC<TimetableGeneratorProps> = ({
       }
       
       setTimetable(parsedTimetable);
+      setShowTimetable(true);
       
       toast({
         title: "✅ Timetable Generated",
@@ -253,8 +275,6 @@ const TimetableGeneratorComponent: React.FC<TimetableGeneratorProps> = ({
     } catch (error) {
       console.error("Error generating timetable from text conversation:", error);
       handleGenerationError();
-    } finally {
-      setIsGenerating(false);
     }
   };
 
@@ -294,7 +314,12 @@ const TimetableGeneratorComponent: React.FC<TimetableGeneratorProps> = ({
       if (!timeMatch) continue;
       
       const time = timeMatch[1];
-      let activityText = line.substring(line.indexOf('-') + 1).trim();
+      
+      // Find where the activity starts (after the time and potential dash)
+      const activityStartIndex = line.indexOf('-', line.indexOf(time) + time.length);
+      let activityText = activityStartIndex > -1 
+        ? line.substring(activityStartIndex + 1).trim() 
+        : line.substring(line.indexOf(time) + time.length).trim();
       
       // Try to extract category from the line if it's explicitly mentioned
       let category: TimetableEntry['category'] = 'routine';
@@ -359,9 +384,38 @@ const TimetableGeneratorComponent: React.FC<TimetableGeneratorProps> = ({
     ];
   };
 
+  // Determine what to display based on available data and generation status
+  const shouldShowGenerateButton = () => {
+    // Always show generate button if we have any data source
+    return transcript.length > 0 || lastTranscript.length > 0 || 
+           localConversation.length > 0 || responses.length > 0 || 
+           timetable.length > 0;
+  };
+
+  const getDataSourceDescription = () => {
+    if (transcript.length > 0) return "Using current speech transcript data";
+    if (lastTranscript.length > 0) return "Using saved speech transcript data";
+    if (localConversation.length > 0) return "Using text conversation data";
+    if (responses.length > 0) return "Using conversation responses";
+    return "No conversation data detected, will create sample timetable";
+  };
+
   return (
     <div>
-      {responses.length === 0 && localConversation.length === 0 && timetable.length === 0 ? (
+      {shouldShowGenerateButton() ? (
+        <div className="flex flex-col items-center justify-center py-4">
+          <Button 
+            onClick={generateTimetable}
+            disabled={isGenerating}
+            className="bg-wellness-darkGreen hover:bg-wellness-mediumGreen text-white transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg"
+          >
+            {isGenerating ? '✨ Generating...' : '✨ Generate My Timetable'}
+          </Button>
+          <p className="text-xs text-wellness-charcoal mt-2">
+            {getDataSourceDescription()}
+          </p>
+        </div>
+      ) : (
         <div className="flex flex-col items-center justify-center py-8">
           <p className="text-wellness-darkGreen font-medium mb-4 text-center">
             No conversation data yet. Start a conversation to create a personalized timetable.
@@ -377,22 +431,6 @@ const TimetableGeneratorComponent: React.FC<TimetableGeneratorProps> = ({
             <Calendar className="h-4 w-4 mr-2" />
             Create Sample Timetable
           </Button>
-        </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center py-4">
-          <Button 
-            onClick={generateTimetable}
-            disabled={isGenerating}
-            className="bg-wellness-darkGreen hover:bg-wellness-mediumGreen text-white transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg"
-          >
-            {isGenerating ? '✨ Generating...' : '✨ Generate My Timetable'}
-          </Button>
-          <p className="text-xs text-wellness-charcoal mt-2">
-            {transcript.length > 0 ? "Using current speech transcript data" :
-             lastTranscript.length > 0 ? "Using saved speech transcript data" :
-             localConversation.length > 0 ? "Using text conversation data" :
-             "No conversation data detected"}
-          </p>
         </div>
       )}
       
