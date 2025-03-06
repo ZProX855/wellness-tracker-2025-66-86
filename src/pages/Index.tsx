@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
@@ -203,6 +202,9 @@ const Index = () => {
           </div>
         </section>
         
+        {/* Gradient transition from beige to white */}
+        <div className="h-24 bg-gradient-to-b from-wellness-softBeige to-white"></div>
+        
         {/* Tools Section */}
         <section className="py-20 px-4 sm:px-6 bg-white">
           <div className="max-w-6xl mx-auto">
@@ -258,6 +260,9 @@ const Index = () => {
           </div>
         </section>
         
+        {/* Gradient transition from white to beige */}
+        <div className="h-24 bg-gradient-to-b from-white to-wellness-softBeige"></div>
+        
         {/* Benefits Section */}
         <section className="py-20 px-4 sm:px-6 bg-wellness-softBeige">
           <div className="max-w-6xl mx-auto">
@@ -290,8 +295,11 @@ const Index = () => {
           </div>
         </section>
         
+        {/* Gradient transition from beige to white */}
+        <div className="h-24 bg-gradient-to-b from-wellness-softBeige to-white"></div>
+        
         {/* CTA Section */}
-        <section className="py-28 px-4 sm:px-6 text-center relative overflow-hidden">
+        <section className="py-28 px-4 sm:px-6 text-center relative overflow-hidden bg-white">
           <div 
             className="absolute inset-0 z-0 opacity-20"
             style={{
