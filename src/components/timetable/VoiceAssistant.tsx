@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Mic, MicOff } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -45,6 +46,11 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
         
         setTranscript(prev => [...prev, latestTranscript]);
         console.log("Local speech recognition transcript:", latestTranscript);
+        
+        // Pass the transcript up to the parent component
+        window.dispatchEvent(new CustomEvent('speechTranscript', { 
+          detail: { transcript: latestTranscript } 
+        }));
       };
       
       recognitionRef.current.onerror = (event) => {
@@ -92,6 +98,12 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
       } else if (message.type === 'end_of_conversation') {
         // Conversation has ended
         setIsConversationActive(false);
+        
+        // Pass the transcript to the parent component before completing
+        window.dispatchEvent(new CustomEvent('conversationTranscript', { 
+          detail: { transcript: transcript } 
+        }));
+        
         onConversationComplete();
         
         // Stop local speech recognition if it's active
@@ -161,6 +173,9 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
       // Call the parent component's setIsConversationActive to hide the timetable
       setIsConversationActive(true);
       
+      // Clear previous transcript
+      setTranscript([]);
+      
       // Start the conversation session with the ElevenLabs agent
       const conversationId = await conversation.startSession({
         agentId: ELEVENLABS_AGENT_ID
@@ -194,6 +209,11 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
     try {
       await conversation.endSession();
       setIsConversationActive(false);
+      
+      // Pass the final transcript to the parent component before ending
+      window.dispatchEvent(new CustomEvent('conversationTranscript', { 
+        detail: { transcript: transcript } 
+      }));
       
       // Stop local speech recognition
       if (isLocalSpeechRecognitionActive) {

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Calendar } from 'lucide-react';
@@ -62,7 +63,7 @@ const TimetableGeneratorComponent: React.FC<TimetableGeneratorProps> = ({
       const response = await fetch(`https://api.elevenlabs.io/v1/convai/conversation/${currentConversationId}/history`, {
         method: 'GET',
         headers: {
-          'xi-api-key': "sk_36070a7f0b1022f8908a1794fce6a0ce19f6668f365740d0"
+          'xi-api-key': "sk_c12587e6581cef5f4f275b7a6d1e4acd591bee7c5a13465b"
         }
       });
       
@@ -80,12 +81,98 @@ const TimetableGeneratorComponent: React.FC<TimetableGeneratorProps> = ({
       console.error("Error fetching conversation data:", error);
       toast({
         title: "❌ Voice Data Error",
-        description: "Could not retrieve voice conversation data. Using local recordings instead.",
+        description: "Could not retrieve voice conversation data. Using local speech transcript instead.",
         variant: "destructive"
       });
       
-      // Try to generate with local data as fallback
-      generateTimetable();
+      // Try to generate with local transcript data as fallback
+      if (transcript && transcript.length > 0) {
+        generateTimetableFromLocalTranscript();
+      } else {
+        // If no transcript, try text conversation
+        generateTimetableFromLocalConversation();
+      }
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const generateTimetableFromLocalTranscript = async () => {
+    if (!transcript || transcript.length === 0) {
+      toast({
+        title: "❌ No Speech Data",
+        description: "No speech transcript available. Try using the text chat instead.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsGenerating(true);
+    setShowTimetable(true);
+    
+    try {
+      // Format the transcript for the AI
+      const transcriptText = transcript.join('\n');
+      
+      const prompt = `Based on the following user speech transcript, generate a structured and balanced daily timetable. Format it with time slots and activities, ensuring it's well-balanced with work, meals, exercise, leisure, and rest.
+      
+      User Speech Transcript:
+      ${transcriptText}
+      
+      Important: Return ONLY a nicely formatted timetable as plain text with the format "hh:mm AM/PM - Activity" on each line, and categorize each activity as one of these: routine, work, meal, exercise, leisure, learning, rest.`;
+      
+      console.log("Sending request to Gemini API with prompt from local transcript:", prompt);
+      
+      // Call Gemini API
+      const response = await fetch(GEMINI_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: prompt }]
+            }
+          ]
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Gemini API error: ${response.statusText}`);
+      }
+      
+      const responseData = await response.json();
+      console.log("Gemini API response:", responseData);
+      
+      if (!responseData || !responseData.candidates || !responseData.candidates[0] || 
+          !responseData.candidates[0].content || !responseData.candidates[0].content.parts || 
+          !responseData.candidates[0].content.parts[0]) {
+        throw new Error("Invalid response format from Gemini API");
+      }
+      
+      const timetableText = responseData.candidates[0].content.parts[0].text;
+      console.log("Timetable text from Gemini:", timetableText);
+      
+      // Parse the timetable text into structured data
+      const parsedTimetable = parseTimetableText(timetableText);
+      
+      if (parsedTimetable.length === 0) {
+        throw new Error("Could not parse any timetable entries from the response");
+      }
+      
+      setTimetable(parsedTimetable);
+      
+      toast({
+        title: "✅ Timetable Generated",
+        description: "Your personalized timetable has been created based on your speech transcript!",
+      });
+    } catch (error) {
+      console.error("Error generating timetable from local transcript:", error);
+      
+      // Create a fallback timetable if generation fails
+      handleGenerationError();
     } finally {
       setIsGenerating(false);
     }
@@ -305,7 +392,7 @@ const TimetableGeneratorComponent: React.FC<TimetableGeneratorProps> = ({
 
   const generateTimetable = async () => {
     // Check if we have any conversation data at all
-    if (localConversation.length === 0 && responses.length === 0 && !currentConversationId) {
+    if (localConversation.length === 0 && responses.length === 0 && transcript.length === 0 && !currentConversationId) {
       toast({
         title: "❌ No Conversation Data",
         description: "Please have a conversation with the AI assistant first.",
@@ -316,8 +403,11 @@ const TimetableGeneratorComponent: React.FC<TimetableGeneratorProps> = ({
     
     // Determine which data source to use based on available data
     if (currentConversationId) {
-      // We have a voice conversation ID, use ElevenLabs data
+      // We have a voice conversation ID, try to use ElevenLabs data
       fetchConversationDataAndGenerateTimetable();
+    } else if (transcript.length > 0) {
+      // We have local speech transcript data
+      generateTimetableFromLocalTranscript();
     } else if (localConversation.length > 0) {
       // We have local text conversation data
       generateTimetableFromLocalConversation();
@@ -440,7 +530,8 @@ const TimetableGeneratorComponent: React.FC<TimetableGeneratorProps> = ({
             {isGenerating ? '✨ Generating...' : '✨ Generate My Timetable'}
           </Button>
           <p className="text-xs text-wellness-charcoal mt-2">
-            {currentConversationId ? "Using voice conversation data" : "Using text conversation data"}
+            {transcript.length > 0 ? "Using speech transcript data" :
+             currentConversationId ? "Using voice conversation data" : "Using text conversation data"}
           </p>
         </div>
       )}

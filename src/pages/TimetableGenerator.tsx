@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Clock, Mic, MessageSquare } from 'lucide-react';
@@ -68,6 +69,28 @@ const TimetableGenerator = () => {
     if (timetable && timetable.length > 0) {
       setShowTimetable(true);
     }
+
+    // Setup event listener for speech transcript
+    const handleSpeechTranscript = (event: CustomEvent) => {
+      if (event.detail && event.detail.transcript) {
+        setTranscript(prev => [...prev, event.detail.transcript]);
+      }
+    };
+
+    // Setup event listener for complete conversation transcript
+    const handleConversationTranscript = (event: CustomEvent) => {
+      if (event.detail && event.detail.transcript) {
+        setTranscript(event.detail.transcript);
+      }
+    };
+
+    window.addEventListener('speechTranscript', handleSpeechTranscript as EventListener);
+    window.addEventListener('conversationTranscript', handleConversationTranscript as EventListener);
+
+    return () => {
+      window.removeEventListener('speechTranscript', handleSpeechTranscript as EventListener);
+      window.removeEventListener('conversationTranscript', handleConversationTranscript as EventListener);
+    };
   }, []);
 
   const handleAddResponse = (question: string, answer: string) => {
