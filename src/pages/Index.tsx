@@ -174,11 +174,11 @@ wellness goals with intelligent, AI-powered tools.</p>
                 </button>)}
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 my-0 px-0 mx-0 py-0">
-              {categories[activeCategory].tools.map((tool, idx) => <div key={idx} style={{
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-[83px] mx-[171px] py-[19px] my-[18px]">
+              {categories[activeCategory].tools.map((tool, idx) => <div key={idx} className="opacity-0 animate-fade-in" style={{
               animationDelay: `${300 + idx * 100}ms`
-            }} className="opacity-0 animate-fade-in my-0 mx-[200px]">
-                  <button onClick={() => navigate(tool.path)} className="w-full h-full glass-panel hover:scale-[1.02] active:scale-[0.98] transition-all duration-500 ease-out-expo p-8 flex flex-col items-center text-center group text-[#f8f4e3]/55 bg-[#f8f4e3]/[0.51] rounded-full py-[41px] my-0 mx-0 px-[12px]">
+            }}>
+                  <button onClick={() => navigate(tool.path)} className="w-full h-full glass-panel hover:scale-[1.02] active:scale-[0.98] transition-all duration-500 ease-out-expo p-8 flex flex-col items-center text-center group text-[#f8f4e3]/55 bg-[#f8f4e3]/[0.51] rounded-full mx-0 px-[55px] my-[25px] py-[37px]">
                     <div className={`h-16 w-16 rounded-full bg-gradient-to-r ${tool.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500`}>
                       <tool.icon className="h-8 w-8 text-wellness-darkGreen" />
                     </div>
