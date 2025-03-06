@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
@@ -258,7 +259,7 @@ const Index = () => {
         </section>
         
         {/* Benefits Section */}
-        <section className="py-20 px-4 sm:px-6 bg-gradient-to-b from-white to-wellness-softGreen/20">
+        <section className="py-20 px-4 sm:px-6 bg-wellness-softBeige">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16">
               <h2 className="text-3xl sm:text-4xl font-medium text-wellness-darkGreen mb-4 opacity-0 animate-fade-in" style={{ animationDelay: '100ms' }}>
