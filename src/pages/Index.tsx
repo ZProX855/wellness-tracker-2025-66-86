@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
@@ -144,7 +143,7 @@ const Index = () => {
             isVisible ? 'opacity-100' : 'opacity-0'
           )}
           style={{
-            background: `radial-gradient(circle at 50% 50%, rgba(228, 243, 225, 0.3), rgba(255, 255, 255, 1))`
+            background: `bg-wellness-softBeige`
           }}
         >
           <div className="max-w-6xl mx-auto w-full">
