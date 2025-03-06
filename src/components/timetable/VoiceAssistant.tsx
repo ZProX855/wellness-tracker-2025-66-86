@@ -5,8 +5,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useConversation } from '@11labs/react';
 
 // ElevenLabs Agent ID and API key
-const ELEVENLABS_AGENT_ID = "LF5rdFTcFtmNyiCIzjc5";
-const DEFAULT_ELEVENLABS_API_KEY = "sk_36070a7f0b1022f8908a1794fce6a0ce19f6668f365740d0";
+const ELEVENLABS_AGENT_ID = "QAR0qWTiM76i0co0lMaU";
+const DEFAULT_ELEVENLABS_API_KEY = "sk_c12587e6581cef5f4f275b7a6d1e4acd591bee7c5a13465b";
 
 interface VoiceAssistantProps {
   isConversationActive: boolean;
