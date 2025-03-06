@@ -139,12 +139,9 @@ const Index = () => {
         {/* Hero Section */}
         <section 
           className={cn(
-            "min-h-[85vh] flex flex-col justify-center relative px-4 sm:px-6 transition-all duration-1000",
+            "min-h-[85vh] flex flex-col justify-center relative px-4 sm:px-6 transition-all duration-1000 bg-wellness-softBeige",
             isVisible ? 'opacity-100' : 'opacity-0'
           )}
-          style={{
-            background: `bg-wellness-softBeige`
-          }}
         >
           <div className="max-w-6xl mx-auto w-full">
             <div className="text-center mb-20">
