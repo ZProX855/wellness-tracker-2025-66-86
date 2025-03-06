@@ -153,7 +153,7 @@ wellness goals with intelligent, AI-powered tools.</p>
         </section>
         
         {/* Tools Section */}
-        <section className="py-20 px-4 sm:px-6 bg-white">
+        <section className="px-4 sm:px-6 bg-white py-[60px]">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16">
               <h2 className="text-3xl sm:text-4xl font-medium text-wellness-darkGreen mb-4 opacity-0 animate-fade-in" style={{
@@ -226,13 +226,13 @@ wellness goals with intelligent, AI-powered tools.</p>
         </section>
         
         {/* CTA Section */}
-        <section className="py-28 px-4 sm:px-6 text-center relative overflow-hidden">
+        <section className="px-4 sm:px-6 text-center relative overflow-hidden py-[65px]">
           <div style={{
           backgroundImage: "url('/lovable-uploads/0f3b37c0-5eca-43f3-9f19-60f760335d8d.png')",
           backgroundSize: "30%",
           backgroundPosition: "center",
           filter: "blur(60px)"
-        }} className="absolute inset-0 z-0 opacity-20 py-[12px]"></div>
+        }} className="absolute inset-0 z-0 opacity-20 bg-[#fcfbf4] py-0 my-[69px]"></div>
           
           <div className="max-w-3xl mx-auto relative z-10 opacity-0 animate-fade-in" style={{
           animationDelay: '400ms'
@@ -252,8 +252,8 @@ wellness goals with intelligent, AI-powered tools.</p>
       </main>
       
       <footer className="bg-white border-t border-wellness-softGreen/30 my-0 py-0">
-        <div className="container mx-auto px-4 text-center py-[9px]">
-          <img src="/lovable-uploads/0f3b37c0-5eca-43f3-9f19-60f760335d8d.png" alt="Wellness Tracker Logo" className="h-10 w-auto mx-auto mb-6" />
+        <div className="container mx-auto px-4 text-center bg-[#f8f4e3] py-[21px]">
+          
           <p className="text-wellness-charcoal/60 text-sm">
             © {new Date().getFullYear()} Wellness Tracker. All rights reserved.
           </p>
