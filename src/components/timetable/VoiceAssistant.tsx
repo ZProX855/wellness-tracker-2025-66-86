@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useConversation } from '@11labs/react';
 
 // ElevenLabs Agent ID and API key
-const ELEVENLABS_AGENT_ID = "QAR0qWTiM76i0co0lMaU";
+const ELEVENLABS_AGENT_ID = "PBIwiIwBWi1HsMvF0Llj";
 const DEFAULT_ELEVENLABS_API_KEY = "sk_c12587e6581cef5f4f275b7a6d1e4acd591bee7c5a13465b";
 
 interface VoiceAssistantProps {
@@ -29,9 +29,7 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const { toast } = useToast();
 
-  // Initialize the Web Speech API
   useEffect(() => {
-    // Check if SpeechRecognition is available
     if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       recognitionRef.current = new SpeechRecognition();
@@ -46,11 +44,9 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
         setTranscript(prev => [...prev, latestTranscript]);
         console.log("Local speech recognition transcript:", latestTranscript);
         
-        // Store the transcript in localStorage for persistence
         const updatedTranscript = [...transcript, latestTranscript];
         localStorage.setItem('lastConversationTranscript', JSON.stringify(updatedTranscript));
         
-        // Pass the transcript up to the parent component
         window.dispatchEvent(new CustomEvent('speechTranscript', { 
           detail: { transcript: latestTranscript } 
         }));
@@ -70,25 +66,19 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
     };
   }, [transcript]);
 
-  // Initialize ElevenLabs conversation hook with modified message handler for friendlier responses
   const conversation = useConversation({
     onMessage: (message) => {
       console.log("Message received:", message);
       
       if (message.type === 'agent' && message.content) {
-        // This is a question from the agent - store the original question
-        // Check if the message is too verbose and trim it if needed
         let formattedQuestion = message.content;
         
-        // Optionally, we could add emoji to the question here if desired
         if (!formattedQuestion.includes('👋') && !formattedQuestion.includes('😊')) {
-          // Add emoji for greeting messages
           if (formattedQuestion.toLowerCase().includes('hello') || 
               formattedQuestion.toLowerCase().includes('hi') || 
               formattedQuestion.toLowerCase().includes('welcome')) {
             formattedQuestion = `👋 ${formattedQuestion}`;
           }
-          // Add emoji for thank you messages
           else if (formattedQuestion.toLowerCase().includes('thank')) {
             formattedQuestion = `😊 ${formattedQuestion}`;
           }
@@ -96,42 +86,34 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
         
         onResponses(formattedQuestion, '');
         
-        // Save agent question to transcript for local processing
         setTranscript(prev => {
           const updatedTranscript = [...prev, `Agent: ${formattedQuestion}`];
           localStorage.setItem('lastConversationTranscript', JSON.stringify(updatedTranscript));
           return updatedTranscript;
         });
       } else if (message.type === 'user_message' && message.content) {
-        // Update the response with the user's answer
         onResponses('', message.content);
         
-        // Save user response to transcript for local processing
         setTranscript(prev => {
           const updatedTranscript = [...prev, `User: ${message.content}`];
           localStorage.setItem('lastConversationTranscript', JSON.stringify(updatedTranscript));
           return updatedTranscript;
         });
       } else if (message.type === 'end_of_conversation') {
-        // Conversation has ended
         setIsConversationActive(false);
         
-        // Save final transcript to localStorage for backup
         localStorage.setItem('lastConversationTranscript', JSON.stringify(transcript));
         
-        // Pass the transcript to the parent component before completing
         window.dispatchEvent(new CustomEvent('conversationTranscript', { 
           detail: { transcript: transcript } 
         }));
         
         onConversationComplete();
         
-        // Stop local speech recognition if it's active
         if (isLocalSpeechRecognitionActive) {
           stopLocalSpeechRecognition();
         }
         
-        // Show a friendly toast notification
         toast({
           title: "✨ Conversation Completed!",
           description: "Creating your personalized timetable now...",
@@ -147,19 +129,16 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
       });
       setIsConversationActive(false);
       
-      // Stop local speech recognition if it's active
       if (isLocalSpeechRecognitionActive) {
         stopLocalSpeechRecognition();
       }
     }
   });
 
-  // Set API key for ElevenLabs
   useEffect(() => {
     window.localStorage.setItem('xi-api-key', DEFAULT_ELEVENLABS_API_KEY);
   }, []);
 
-  // Start local speech recognition
   const startLocalSpeechRecognition = () => {
     if (recognitionRef.current) {
       try {
@@ -172,7 +151,6 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
     }
   };
 
-  // Stop local speech recognition
   const stopLocalSpeechRecognition = () => {
     if (recognitionRef.current) {
       try {
@@ -185,34 +163,27 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
     }
   };
 
-  // Start conversation
   const startConversation = async () => {
     try {
       setIsConnecting(true);
       
-      // Call the parent component's setIsConversationActive to hide the timetable
       setIsConversationActive(true);
       
-      // Clear previous transcript
       const savedTranscript = localStorage.getItem('lastConversationTranscript');
       if (savedTranscript) {
-        // Keep the saved transcript for reference but start with empty for this session
         console.log("Found saved transcript, but starting fresh for this session");
       }
       
       setTranscript([]);
       localStorage.setItem('currentSessionTranscript', JSON.stringify([]));
       
-      // Start the conversation session with the ElevenLabs agent
       const conversationId = await conversation.startSession({
         agentId: ELEVENLABS_AGENT_ID
       });
       
-      // Save the conversation ID
       onSetConversationId(conversationId);
       console.log("Conversation started with ID:", conversationId);
       
-      // Start local speech recognition for backup
       startLocalSpeechRecognition();
       
       toast({
@@ -231,26 +202,21 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
     }
   };
 
-  // End conversation
   const endConversation = async () => {
     try {
       await conversation.endSession();
       setIsConversationActive(false);
       
-      // Save transcript to localStorage before ending
       localStorage.setItem('lastConversationTranscript', JSON.stringify(transcript));
       
-      // Pass the final transcript to the parent component before ending
       window.dispatchEvent(new CustomEvent('conversationTranscript', { 
         detail: { transcript: transcript } 
       }));
       
-      // Stop local speech recognition
       if (isLocalSpeechRecognitionActive) {
         stopLocalSpeechRecognition();
       }
       
-      // Show toast to indicate timetable generation is in progress
       toast({
         title: "✨ Conversation Ended",
         description: "Creating your personalized timetable now...",
