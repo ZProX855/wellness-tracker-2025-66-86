@@ -1,10 +1,8 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { HeartPulse, Target, UtensilsCrossed } from 'lucide-react';
 
 const BenefitsSection: React.FC = () => {
-  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
-
   const benefits = [
     {
       title: 'Personalized Insights',
@@ -27,22 +25,9 @@ const BenefitsSection: React.FC = () => {
   ];
 
   return (
-    <section className="py-20 px-4 sm:px-6 bg-wellness-softBeige/70 backdrop-blur-sm relative">
-      {/* Background circle accents */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-20 -left-20 w-40 h-40 rounded-full bg-wellness-softGreen/20 blur-xl" />
-        <div className="absolute top-1/2 -right-32 w-64 h-64 rounded-full bg-wellness-softGreen/10 blur-xl" />
-        <div className="absolute bottom-10 left-1/4 w-24 h-24 rounded-full bg-wellness-mediumGreen/10 blur-lg" />
-      </div>
-      
-      <div className="max-w-6xl mx-auto relative z-10">
+    <section className="py-20 px-4 sm:px-6 bg-wellness-softBeige">
+      <div className="max-w-6xl mx-auto">
         <div className="text-center mb-16">
-          <div className="w-20 h-20 rounded-full bg-wellness-softGreen/40 mx-auto mb-6 flex items-center justify-center green-glow">
-            <div className="w-12 h-12 rounded-full bg-wellness-darkGreen/60 flex items-center justify-center">
-              <div className="w-6 h-6 rounded-full bg-white/90" />
-            </div>
-          </div>
-          
           <h2 
             className="text-3xl sm:text-4xl font-medium text-wellness-darkGreen mb-4 opacity-0 animate-fade-in" 
             style={{ animationDelay: '100ms' }}
@@ -61,35 +46,18 @@ const BenefitsSection: React.FC = () => {
           {benefits.map((benefit, idx) => (
             <div 
               key={idx} 
-              className="opacity-0 animate-fade-in relative" 
+              className="opacity-0 animate-fade-in" 
               style={{ animationDelay: `${300 + idx * 100}ms` }}
-              onMouseEnter={() => setHoveredIndex(idx)}
-              onMouseLeave={() => setHoveredIndex(null)}
             >
-              <div className={`glass-panel p-8 h-full transition-all duration-500 rounded-3xl border border-wellness-softGreen/40 backdrop-blur-md bg-white/50 ${hoveredIndex === idx ? 'green-glow' : ''}`}>
-                {/* Accent circles */}
-                <div className="absolute -top-3 -right-3 w-6 h-6 rounded-full bg-wellness-softGreen/30 opacity-70" />
-                <div className="absolute top-1/2 -left-2 w-4 h-4 rounded-full bg-wellness-darkGreen/20 opacity-50" />
-                
-                <div className="relative">
-                  <div className="mb-6 w-16 h-16 rounded-full bg-wellness-softGreen/50 flex items-center justify-center transition-transform duration-500 hover:scale-110">
-                    <div className="w-12 h-12 rounded-full bg-white/80 flex items-center justify-center">
-                      {benefit.icon}
-                    </div>
-                  </div>
-                  <h3 className="text-xl font-medium text-wellness-darkGreen mb-3">{benefit.title}</h3>
-                  <p className="text-wellness-charcoal/70">{benefit.description}</p>
+              <div className="glass-panel p-8 h-full hover:shadow-md transition-all duration-500">
+                <div className="mb-6 w-16 h-16 rounded-full bg-wellness-softGreen/50 flex items-center justify-center">
+                  {benefit.icon}
                 </div>
+                <h3 className="text-xl font-medium text-wellness-darkGreen mb-3">{benefit.title}</h3>
+                <p className="text-wellness-charcoal/70">{benefit.description}</p>
               </div>
             </div>
           ))}
-        </div>
-        
-        {/* Bottom decorative circles */}
-        <div className="mt-16 flex justify-center gap-3">
-          <div className="w-3 h-3 rounded-full bg-wellness-mediumGreen/40" />
-          <div className="w-3 h-3 rounded-full bg-wellness-mediumGreen/60" />
-          <div className="w-3 h-3 rounded-full bg-wellness-mediumGreen/40" />
         </div>
       </div>
     </section>
