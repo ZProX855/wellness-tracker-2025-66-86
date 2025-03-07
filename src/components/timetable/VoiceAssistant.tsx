@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Mic, MicOff } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -41,12 +42,24 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
           .map(result => result[0].transcript)
           .join(' ');
         
-        setTranscript(prev => [...prev, latestTranscript]);
         console.log("Local speech recognition transcript:", latestTranscript);
         
-        const updatedTranscript = [...transcript, latestTranscript];
-        localStorage.setItem('lastConversationTranscript', JSON.stringify(updatedTranscript));
+        // Update local transcript state
+        setTranscript(prev => {
+          const updatedTranscript = [...prev, latestTranscript];
+          
+          // Save to localStorage immediately for persistence
+          try {
+            localStorage.setItem('lastConversationTranscript', JSON.stringify(updatedTranscript));
+            console.log("Saved transcript to localStorage:", updatedTranscript);
+          } catch (error) {
+            console.error("Error saving transcript to localStorage:", error);
+          }
+          
+          return updatedTranscript;
+        });
         
+        // Dispatch event for other components to use
         window.dispatchEvent(new CustomEvent('speechTranscript', { 
           detail: { transcript: latestTranscript } 
         }));
@@ -64,6 +77,18 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
         recognitionRef.current.stop();
       }
     };
+  }, []);
+
+  // Update localStorage whenever transcript changes
+  useEffect(() => {
+    if (transcript.length > 0) {
+      try {
+        localStorage.setItem('lastConversationTranscript', JSON.stringify(transcript));
+        console.log("Updated transcript in localStorage:", transcript);
+      } catch (error) {
+        console.error("Error updating transcript in localStorage:", error);
+      }
+    }
   }, [transcript]);
 
   const conversation = useConversation({
@@ -88,7 +113,15 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
         
         setTranscript(prev => {
           const updatedTranscript = [...prev, `Agent: ${formattedQuestion}`];
-          localStorage.setItem('lastConversationTranscript', JSON.stringify(updatedTranscript));
+          
+          // Save to localStorage for persistence
+          try {
+            localStorage.setItem('lastConversationTranscript', JSON.stringify(updatedTranscript));
+            console.log("Saved agent message to transcript:", updatedTranscript);
+          } catch (error) {
+            console.error("Error saving transcript to localStorage:", error);
+          }
+          
           return updatedTranscript;
         });
       } else if (message.type === 'user_message' && message.content) {
@@ -96,14 +129,29 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
         
         setTranscript(prev => {
           const updatedTranscript = [...prev, `User: ${message.content}`];
-          localStorage.setItem('lastConversationTranscript', JSON.stringify(updatedTranscript));
+          
+          // Save to localStorage for persistence
+          try {
+            localStorage.setItem('lastConversationTranscript', JSON.stringify(updatedTranscript));
+            console.log("Saved user message to transcript:", updatedTranscript);
+          } catch (error) {
+            console.error("Error saving transcript to localStorage:", error);
+          }
+          
           return updatedTranscript;
         });
       } else if (message.type === 'end_of_conversation') {
         setIsConversationActive(false);
         
-        localStorage.setItem('lastConversationTranscript', JSON.stringify(transcript));
+        // Save final transcript to localStorage
+        try {
+          localStorage.setItem('lastConversationTranscript', JSON.stringify(transcript));
+          console.log("Saved final transcript to localStorage:", transcript);
+        } catch (error) {
+          console.error("Error saving final transcript to localStorage:", error);
+        }
         
+        // Dispatch event for other components
         window.dispatchEvent(new CustomEvent('conversationTranscript', { 
           detail: { transcript: transcript } 
         }));
@@ -169,13 +217,24 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
       
       setIsConversationActive(true);
       
-      const savedTranscript = localStorage.getItem('lastConversationTranscript');
-      if (savedTranscript) {
-        console.log("Found saved transcript, but starting fresh for this session");
+      // Check for existing transcript
+      try {
+        const savedTranscript = localStorage.getItem('lastConversationTranscript');
+        if (savedTranscript) {
+          console.log("Found saved transcript, but starting fresh for this session");
+        }
+      } catch (error) {
+        console.error("Error checking saved transcript:", error);
       }
       
+      // Start fresh transcript for this session
       setTranscript([]);
-      localStorage.setItem('currentSessionTranscript', JSON.stringify([]));
+      try {
+        localStorage.setItem('currentSessionTranscript', JSON.stringify([]));
+        console.log("Initialized fresh transcript for new session");
+      } catch (error) {
+        console.error("Error initializing transcript:", error);
+      }
       
       const conversationId = await conversation.startSession({
         agentId: ELEVENLABS_AGENT_ID
@@ -207,8 +266,15 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
       await conversation.endSession();
       setIsConversationActive(false);
       
-      localStorage.setItem('lastConversationTranscript', JSON.stringify(transcript));
+      // Save final transcript to localStorage
+      try {
+        localStorage.setItem('lastConversationTranscript', JSON.stringify(transcript));
+        console.log("Saved final transcript on conversation end:", transcript);
+      } catch (error) {
+        console.error("Error saving final transcript to localStorage:", error);
+      }
       
+      // Dispatch event for other components
       window.dispatchEvent(new CustomEvent('conversationTranscript', { 
         detail: { transcript: transcript } 
       }));

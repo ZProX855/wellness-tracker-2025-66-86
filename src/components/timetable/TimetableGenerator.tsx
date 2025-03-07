@@ -59,16 +59,35 @@ const TimetableGeneratorComponent: React.FC<TimetableGeneratorProps> = ({
     }
   }, []);
 
+  // Listen for transcript updates
+  useEffect(() => {
+    const handleConversationTranscript = (event: CustomEvent) => {
+      if (event.detail && event.detail.transcript && Array.isArray(event.detail.transcript)) {
+        console.log("Received updated transcript event:", event.detail.transcript);
+        setLastTranscript(event.detail.transcript);
+      }
+    };
+
+    window.addEventListener('conversationTranscript', handleConversationTranscript as EventListener);
+    
+    return () => {
+      window.removeEventListener('conversationTranscript', handleConversationTranscript as EventListener);
+    };
+  }, []);
+
   const generateTimetable = async () => {
     // Add a flag to track that we've attempted generation
     setHasAttemptedGeneration(true);
     
-    // Check for any conversation data, prioritizing current transcript
-    const hasCurrentTranscript = transcript && transcript.length > 0;
-    const hasSavedTranscript = lastTranscript && lastTranscript.length > 0;
+    // Determine which transcript to use
+    const transcriptToUse = transcript.length > 0 ? transcript : lastTranscript;
+    console.log("Transcript data to use for generation:", transcriptToUse);
+    
+    // Check for any conversation data
+    const hasTranscriptData = transcriptToUse && transcriptToUse.length > 0;
     const hasTextConversation = localConversation.length > 0 || responses.length > 0;
     
-    if (!hasCurrentTranscript && !hasSavedTranscript && !hasTextConversation) {
+    if (!hasTranscriptData && !hasTextConversation) {
       console.log("No data sources available: Creating fallback timetable");
       const fallbackTimetable = createFallbackTimetable();
       setTimetable(fallbackTimetable);
@@ -85,13 +104,21 @@ const TimetableGeneratorComponent: React.FC<TimetableGeneratorProps> = ({
     setShowTimetable(true);  // Show the timetable area while generating
     
     try {
-      // Determine which data source to use, in order of priority
-      if (hasCurrentTranscript) {
-        console.log("Using current transcript for timetable generation");
-        await generateTimetableFromLocalTranscript(transcript);
-      } else if (hasSavedTranscript) {
-        console.log("Using saved transcript from previous session for timetable generation");
-        await generateTimetableFromLocalTranscript(lastTranscript);
+      if (hasTranscriptData) {
+        console.log("Using transcript data for timetable generation");
+        // Check if there's enough content in the transcript
+        const validTranscript = transcriptToUse.filter(entry => 
+          typeof entry === 'string' && entry.trim().length > 5
+        );
+        
+        if (validTranscript.length > 0) {
+          await generateTimetableFromLocalTranscript(validTranscript);
+        } else if (hasTextConversation) {
+          console.log("Transcript data insufficient, falling back to text conversation");
+          await generateTimetableFromLocalConversation();
+        } else {
+          throw new Error("Transcript data available but insufficient for generation");
+        }
       } else if (hasTextConversation) {
         console.log("Using text conversation for timetable generation");
         await generateTimetableFromLocalConversation();
@@ -128,7 +155,20 @@ const TimetableGeneratorComponent: React.FC<TimetableGeneratorProps> = ({
     
     try {
       // Format the transcript for the AI
-      const transcriptText = transcriptData.join('\n');
+      // First, filter out empty strings and very short entries (likely noise)
+      const filteredTranscript = transcriptData.filter(entry => 
+        typeof entry === 'string' && entry.trim().length > 5
+      );
+      
+      if (filteredTranscript.length === 0) {
+        console.error("Filtered transcript is empty, using original transcript");
+        // Use original transcript as fallback
+      }
+      
+      const transcriptToUse = filteredTranscript.length > 0 ? filteredTranscript : transcriptData;
+      const transcriptText = transcriptToUse.join('\n');
+      
+      console.log("Using transcript text for generation:", transcriptText);
       
       const prompt = `Based on the following user speech transcript, generate a structured and balanced daily timetable. Format it with time slots and activities, ensuring it's well-balanced with work, meals, exercise, leisure, and rest.
       
@@ -156,15 +196,17 @@ const TimetableGeneratorComponent: React.FC<TimetableGeneratorProps> = ({
       });
       
       if (!response.ok) {
+        console.error(`Gemini API error: ${response.status} ${response.statusText}`);
         throw new Error(`Gemini API error: ${response.statusText}`);
       }
       
       const responseData = await response.json();
-      console.log("Gemini API response received");
+      console.log("Gemini API response received", responseData);
       
       if (!responseData || !responseData.candidates || !responseData.candidates[0] || 
           !responseData.candidates[0].content || !responseData.candidates[0].content.parts || 
           !responseData.candidates[0].content.parts[0]) {
+        console.error("Invalid response format from Gemini API:", responseData);
         throw new Error("Invalid response format from Gemini API");
       }
       
@@ -175,6 +217,7 @@ const TimetableGeneratorComponent: React.FC<TimetableGeneratorProps> = ({
       const parsedTimetable = parseTimetableText(timetableText);
       
       if (parsedTimetable.length === 0) {
+        console.error("Could not parse any timetable entries from the response:", timetableText);
         throw new Error("Could not parse any timetable entries from the response");
       }
       
@@ -214,9 +257,19 @@ const TimetableGeneratorComponent: React.FC<TimetableGeneratorProps> = ({
         description: "Please wait while we generate your timetable from your text conversation...",
       });
       
+      // Filter out empty conversations
+      const filteredConversation = conversationToUse.filter(
+        r => (r.question && r.question.trim().length > 0) || (r.answer && r.answer.trim().length > 0)
+      );
+      
+      if (filteredConversation.length === 0) {
+        console.error("Filtered conversation is empty");
+        throw new Error("No valid conversation data available after filtering");
+      }
+      
       // Use only the local text conversation to generate a timetable
-      const conversationText = conversationToUse.map(r => 
-        `Question: ${r.question}\nAnswer: ${r.answer}`
+      const conversationText = filteredConversation.map(r => 
+        `Question: ${r.question || 'N/A'}\nAnswer: ${r.answer || 'N/A'}`
       ).join('\n\n');
       
       console.log("Generating timetable from text conversation");
@@ -245,23 +298,28 @@ const TimetableGeneratorComponent: React.FC<TimetableGeneratorProps> = ({
       });
       
       if (!response.ok) {
+        console.error(`Gemini API error: ${response.status} ${response.statusText}`);
         throw new Error(`Gemini API error: ${response.statusText}`);
       }
       
       const data = await response.json();
+      console.log("Gemini API response for text conversation:", data);
       
       if (!data || !data.candidates || !data.candidates[0] || 
           !data.candidates[0].content || !data.candidates[0].content.parts || 
           !data.candidates[0].content.parts[0]) {
+        console.error("Invalid response format from Gemini API:", data);
         throw new Error("Invalid response format from Gemini API");
       }
       
       const timetableText = data.candidates[0].content.parts[0].text;
+      console.log("Timetable text from Gemini:", timetableText.substring(0, 100) + "...");
       
       // Parse the timetable text into structured data
       const parsedTimetable = parseTimetableText(timetableText);
       
       if (parsedTimetable.length === 0) {
+        console.error("Could not parse any timetable entries from the response:", timetableText);
         throw new Error("Could not parse any timetable entries from the response");
       }
       
@@ -300,69 +358,81 @@ const TimetableGeneratorComponent: React.FC<TimetableGeneratorProps> = ({
   };
 
   const parseTimetableText = (text: string): TimetableEntry[] => {
+    if (!text || typeof text !== 'string') {
+      console.error("Invalid timetable text:", text);
+      return [];
+    }
+    
     const lines = text.split('\n').filter(line => line.trim() !== '');
     const entries: TimetableEntry[] = [];
     
     const timeRegex = /(\d{1,2}:\d{2}\s*(?:AM|PM))/i;
     const categoryRegex = /(routine|work|meal|exercise|leisure|learning|rest)/i;
     
+    console.log("Parsing timetable text. Number of lines:", lines.length);
+    
     for (const line of lines) {
-      // Skip headers or non-timetable lines
-      if (!timeRegex.test(line)) continue;
-      
-      const timeMatch = line.match(timeRegex);
-      if (!timeMatch) continue;
-      
-      const time = timeMatch[1];
-      
-      // Find where the activity starts (after the time and potential dash)
-      const activityStartIndex = line.indexOf('-', line.indexOf(time) + time.length);
-      let activityText = activityStartIndex > -1 
-        ? line.substring(activityStartIndex + 1).trim() 
-        : line.substring(line.indexOf(time) + time.length).trim();
-      
-      // Try to extract category from the line if it's explicitly mentioned
-      let category: TimetableEntry['category'] = 'routine';
-      const categoryMatch = line.match(categoryRegex);
-      
-      if (categoryMatch) {
-        category = categoryMatch[1].toLowerCase() as TimetableEntry['category'];
-        // Remove the category from the activity text if it was in brackets or parentheses
-        activityText = activityText.replace(/\[(routine|work|meal|exercise|leisure|learning|rest)\]/i, '').trim();
-        activityText = activityText.replace(/\((routine|work|meal|exercise|leisure|learning|rest)\)/i, '').trim();
-        activityText = activityText.replace(/- (routine|work|meal|exercise|leisure|learning|rest)$/i, '').trim();
-      } else {
-        // Try to infer the category from keywords
-        const lowerActivity = activityText.toLowerCase();
-        if (lowerActivity.includes('wake') || lowerActivity.includes('sleep') || lowerActivity.includes('routine') || lowerActivity.includes('preparation')) {
-          category = 'routine';
-        } else if (lowerActivity.includes('work') || lowerActivity.includes('study') || lowerActivity.includes('meeting')) {
-          category = 'work';
-        } else if (lowerActivity.includes('breakfast') || lowerActivity.includes('lunch') || lowerActivity.includes('dinner') || lowerActivity.includes('meal')) {
-          category = 'meal';
-        } else if (lowerActivity.includes('exercise') || lowerActivity.includes('gym') || lowerActivity.includes('workout') || lowerActivity.includes('walk')) {
-          category = 'exercise';
-        } else if (lowerActivity.includes('relax') || lowerActivity.includes('entertainment') || lowerActivity.includes('hobby')) {
-          category = 'leisure';
-        } else if (lowerActivity.includes('learn') || lowerActivity.includes('read') || lowerActivity.includes('class') || lowerActivity.includes('course')) {
-          category = 'learning';
-        } else if (lowerActivity.includes('rest') || lowerActivity.includes('break')) {
-          category = 'rest';
+      try {
+        // Skip headers or non-timetable lines
+        if (!timeRegex.test(line)) continue;
+        
+        const timeMatch = line.match(timeRegex);
+        if (!timeMatch) continue;
+        
+        const time = timeMatch[1];
+        
+        // Find where the activity starts (after the time and potential dash)
+        const activityStartIndex = line.indexOf('-', line.indexOf(time) + time.length);
+        let activityText = activityStartIndex > -1 
+          ? line.substring(activityStartIndex + 1).trim() 
+          : line.substring(line.indexOf(time) + time.length).trim();
+        
+        // Try to extract category from the line if it's explicitly mentioned
+        let category: TimetableEntry['category'] = 'routine';
+        const categoryMatch = line.match(categoryRegex);
+        
+        if (categoryMatch) {
+          category = categoryMatch[1].toLowerCase() as TimetableEntry['category'];
+          // Remove the category from the activity text if it was in brackets or parentheses
+          activityText = activityText.replace(/\[(routine|work|meal|exercise|leisure|learning|rest)\]/i, '').trim();
+          activityText = activityText.replace(/\((routine|work|meal|exercise|leisure|learning|rest)\)/i, '').trim();
+          activityText = activityText.replace(/- (routine|work|meal|exercise|leisure|learning|rest)$/i, '').trim();
+        } else {
+          // Try to infer the category from keywords
+          const lowerActivity = activityText.toLowerCase();
+          if (lowerActivity.includes('wake') || lowerActivity.includes('sleep') || lowerActivity.includes('routine') || lowerActivity.includes('preparation')) {
+            category = 'routine';
+          } else if (lowerActivity.includes('work') || lowerActivity.includes('study') || lowerActivity.includes('meeting')) {
+            category = 'work';
+          } else if (lowerActivity.includes('breakfast') || lowerActivity.includes('lunch') || lowerActivity.includes('dinner') || lowerActivity.includes('meal')) {
+            category = 'meal';
+          } else if (lowerActivity.includes('exercise') || lowerActivity.includes('gym') || lowerActivity.includes('workout') || lowerActivity.includes('walk')) {
+            category = 'exercise';
+          } else if (lowerActivity.includes('relax') || lowerActivity.includes('entertainment') || lowerActivity.includes('hobby')) {
+            category = 'leisure';
+          } else if (lowerActivity.includes('learn') || lowerActivity.includes('read') || lowerActivity.includes('class') || lowerActivity.includes('course')) {
+            category = 'learning';
+          } else if (lowerActivity.includes('rest') || lowerActivity.includes('break')) {
+            category = 'rest';
+          }
         }
+        
+        // Clean up the activity text
+        activityText = activityText.replace(/^\s*-\s*/, ''); // Remove leading dash if present
+        
+        entries.push({
+          time,
+          activity: activityText,
+          category,
+          completed: false,
+          important: category === 'work' || category === 'routine'  // Mark work and routine as important by default
+        });
+      } catch (error) {
+        console.error("Error parsing timetable line:", line, error);
       }
-      
-      // Clean up the activity text
-      activityText = activityText.replace(/^\s*-\s*/, ''); // Remove leading dash if present
-      
-      entries.push({
-        time,
-        activity: activityText,
-        category,
-        completed: false,
-        important: category === 'work' || category === 'routine'  // Mark work and routine as important by default
-      });
     }
     
+    console.log("Parsed timetable entries:", entries.length);
     return entries;
   };
 
@@ -386,17 +456,26 @@ const TimetableGeneratorComponent: React.FC<TimetableGeneratorProps> = ({
 
   // Determine what to display based on available data and generation status
   const shouldShowGenerateButton = () => {
-    // Always show generate button if we have any data source
-    return transcript.length > 0 || lastTranscript.length > 0 || 
-           localConversation.length > 0 || responses.length > 0 || 
-           timetable.length > 0;
+    const hasCurrentTranscript = transcript && transcript.length > 0;
+    const hasSavedTranscript = lastTranscript && lastTranscript.length > 0;
+    const hasTextData = localConversation.length > 0 || responses.length > 0;
+    
+    return hasCurrentTranscript || hasSavedTranscript || hasTextData || timetable.length > 0;
   };
 
   const getDataSourceDescription = () => {
-    if (transcript.length > 0) return "Using current speech transcript data";
-    if (lastTranscript.length > 0) return "Using saved speech transcript data";
-    if (localConversation.length > 0) return "Using text conversation data";
-    if (responses.length > 0) return "Using conversation responses";
+    if (transcript && transcript.length > 0) {
+      return "Using current speech transcript data";
+    }
+    if (lastTranscript && lastTranscript.length > 0) {
+      return "Using saved speech transcript data";
+    }
+    if (localConversation.length > 0) {
+      return "Using text conversation data";
+    }
+    if (responses.length > 0) {
+      return "Using conversation responses";
+    }
     return "No conversation data detected, will create sample timetable";
   };
 
