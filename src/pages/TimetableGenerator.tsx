@@ -286,6 +286,10 @@ const TimetableGenerator = () => {
     setShowInsights(false);
   };
 
+  const handleHideTimetable = () => {
+    setShowTimetable(false);
+  };
+
   return <div className="min-h-screen bg-gradient-to-b from-wellness-softBeige to-wellness-softGreen/30">
       <Header />
       
@@ -319,13 +323,16 @@ const TimetableGenerator = () => {
               onResponses={handleAddResponse} 
               onSetConversationId={setCurrentConversationId}
               onHideInsights={handleHideInsights}
+              onHideTimetable={handleHideTimetable}
             />}
             
             {chatMode === 'text' && <TextChatAssistant 
               isTextChatActive={isTextChatActive} 
               setIsTextChatActive={handleStartTextConversation} 
               onConversationComplete={handleConversationComplete} 
-              onResponses={handleAddResponse} 
+              onResponses={handleAddResponse}
+              onHideInsights={handleHideInsights}
+              onHideTimetable={handleHideTimetable}
             />}
             
             <ConversationSummary responses={responses} showSummary={chatMode === 'voice'} />
@@ -512,4 +519,3 @@ const TimetableGenerator = () => {
 };
 
 export default TimetableGenerator;
-

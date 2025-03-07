@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Mic, MicOff } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -15,7 +14,8 @@ interface VoiceAssistantProps {
   onConversationComplete: () => void;
   onResponses: (question: string, answer: string) => void;
   onSetConversationId: (id: string) => void;
-  onHideInsights: () => void; // Add new prop for hiding insights
+  onHideInsights: () => void;
+  onHideTimetable: () => void;
 }
 
 const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
@@ -24,7 +24,8 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
   onConversationComplete,
   onResponses,
   onSetConversationId,
-  onHideInsights
+  onHideInsights,
+  onHideTimetable
 }) => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isLocalSpeechRecognitionActive, setIsLocalSpeechRecognitionActive] = useState(false);
@@ -221,6 +222,9 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
       
       // Hide insights when conversation starts
       onHideInsights();
+      
+      // Hide timetable when conversation starts
+      onHideTimetable();
       
       // Check for existing transcript
       try {
