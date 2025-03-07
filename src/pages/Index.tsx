@@ -250,8 +250,8 @@ more balanced lifestyle with our AI-powered tools.</p>
         </section>
       </main>
       
-      <footer className="bg-white border-t border-wellness-softGreen/30 my-0 py-0">
-        <div className="container mx-auto text-center bg-[#f8f4e3] py-[21px] px-0">
+      <footer className="border-t border-wellness-softGreen/30 my-0 py-0 bg-[Refactor_TimetableGenerator.tsx] bg-white">
+        <div className="container text-center py-[5px] mx-0 px-0 bg-white">
           
           <p className="text-wellness-charcoal/60 text-sm">
             © {new Date().getFullYear()} Wellness Tracker. All rights reserved.
