@@ -39,6 +39,15 @@ canvas {
   -webkit-transform: translate3d(0,0,0) !important;
 }
 
+/* Enhanced performance optimizations for 3D rendering */
+.webgl-content {
+  transform: translate3d(0,0,0) !important;
+  backface-visibility: hidden !important;
+  perspective: 1000px !important;
+  will-change: transform !important;
+  contain: layout paint size !important;
+}
+
 /* Add high contrast between background and foreground */
 body {
   overflow-x: hidden; /* Prevent horizontal scrolling */

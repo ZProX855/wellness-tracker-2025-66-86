@@ -11,16 +11,20 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
 
   useEffect(() => {
     let sketch: p5;
-    let circles: Array<Circle> = [];
+    let shapes: Array<Shape3D> = [];
     let particles: Array<Particle> = [];
     let lastScrollY = 0;
     
-    class Circle {
+    class Shape3D {
       position: p5.Vector;
       velocity: p5.Vector;
       acceleration: p5.Vector;
-      rotation: number;
-      rotationSpeed: number;
+      rotationX: number;
+      rotationY: number;
+      rotationZ: number;
+      rotationSpeedX: number;
+      rotationSpeedY: number;
+      rotationSpeedZ: number;
       size: number;
       color: p5.Color;
       glowColor: p5.Color;
@@ -29,53 +33,69 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
       seed: number;
       targetPosition: p5.Vector;
       lerp: number;
+      shapeType: 'box' | 'sphere' | 'cone' | 'torus';
 
       constructor(p: p5, x: number, y: number, size: number) {
         this.position = p.createVector(x, y);
         this.velocity = p5.Vector.random2D().mult(p.random(0.2, 0.8));
         this.acceleration = p.createVector(0, 0);
-        this.rotation = p.random(0, p.TWO_PI);
-        this.rotationSpeed = p.random(0.001, 0.005) * (Math.random() > 0.5 ? 1 : -1);
+        
+        // 3D rotation properties
+        this.rotationX = p.random(0, p.TWO_PI);
+        this.rotationY = p.random(0, p.TWO_PI);
+        this.rotationZ = p.random(0, p.TWO_PI);
+        
+        this.rotationSpeedX = p.random(0.001, 0.005) * (Math.random() > 0.5 ? 1 : -1);
+        this.rotationSpeedY = p.random(0.001, 0.005) * (Math.random() > 0.5 ? 1 : -1);
+        this.rotationSpeedZ = p.random(0.001, 0.005) * (Math.random() > 0.5 ? 1 : -1);
+        
         this.size = size;
         
-        // Green color palette with transparency
+        // Green-cyan color palette for cyber aesthetic
         this.color = p.color(
-          p.random(100, 150), // Red component (low for green)
+          p.random(100, 150), // Red component (low for green/cyan)
           p.random(200, 255), // Green component (high)
-          p.random(100, 150), // Blue component (low for green)
-          p.random(80, 180)   // Alpha (transparency)
+          p.random(180, 255), // Blue component (medium-high for cyan tint)
+          p.random(120, 180)  // Alpha (transparency)
         );
         
-        // Glow color (brighter green)
+        // Glow color (brighter)
         this.glowColor = p.color(
           p.random(150, 200), // Red component
           p.random(230, 255), // Green component (high)
-          p.random(150, 200), // Blue component
-          p.random(100, 200)  // Alpha (transparency)
+          p.random(200, 255), // Blue component
+          p.random(150, 200)  // Alpha (transparency)
         );
         
         this.maxSpeed = p.random(0.3, 0.7);
-        this.centerAvoidanceRadius = p.width / 2; // Increased radius to avoid center
+        this.centerAvoidanceRadius = p.width / 1.8; // Increased radius to avoid center
         this.seed = p.random(1000); // Random seed for perlin noise
         this.targetPosition = p.createVector(x, y);
         this.lerp = 0.05;
+        
+        // Randomly choose a 3D shape type
+        const shapes = ['box', 'sphere', 'cone', 'torus'] as const;
+        this.shapeType = shapes[Math.floor(p.random(shapes.length))];
       }
 
       update(p: p5, frameCount: number, scrollDelta: number) {
-        // Continuous rotation
-        this.rotation += this.rotationSpeed;
+        // Update rotation angles based on rotation speeds
+        this.rotationX += this.rotationSpeedX;
+        this.rotationY += this.rotationSpeedY;
+        this.rotationZ += this.rotationSpeedZ;
         
         // Apply scroll influence to motion with damping
-        const scrollInfluence = p.createVector(0, scrollDelta * 0.1);
-        scrollInfluence.limit(0.5); // Limit the scroll effect
+        const scrollInfluence = p.createVector(0, scrollDelta * 0.08);
+        scrollInfluence.limit(0.4); // Limit the scroll effect
         this.applyForce(scrollInfluence);
         
         // Autonomous movement using perlin noise with less jitter
-        const noiseScale = 0.0008; // Reduced for smoother movement
+        const noiseScale = 0.0006; // Reduced for smoother movement
         const noiseX = p.map(p.noise(this.seed + frameCount * noiseScale), 0, 1, -1, 1);
         const noiseY = p.map(p.noise(this.seed + 500 + frameCount * noiseScale), 0, 1, -1, 1);
-        const noiseForce = p.createVector(noiseX, noiseY);
-        noiseForce.mult(0.03); // Gentler force
+        const noiseZ = p.map(p.noise(this.seed + 1000 + frameCount * noiseScale), 0, 1, -0.5, 0.5);
+        const noiseForce = p.createVector(noiseX, noiseY, noiseZ);
+        noiseForce.mult(0.04); // Gentler force
         this.applyForce(noiseForce);
         
         // Strong center avoidance force
@@ -86,7 +106,7 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
           // Create a force that points away from center
           const avoidForce = p5.Vector.sub(this.position, center);
           // Stronger avoidance as we get closer to center
-          const strength = p.map(distToCenter, 0, this.centerAvoidanceRadius, 0.1, 0);
+          const strength = p.map(distToCenter, 0, this.centerAvoidanceRadius, 0.12, 0);
           avoidForce.normalize().mult(strength);
           this.applyForce(avoidForce);
         }
@@ -111,9 +131,9 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
       
       applyBounds(p: p5) {
         const padding = this.size;
-        const bound = p.width / 1.8; // Slightly smaller boundary to avoid edges
+        const bound = p.width / 1.6; // Boundary area
         
-        // Wrapping behavior for X-axis
+        // Seamless wrapping behavior with interpolation for X-axis
         if (this.targetPosition.x > bound) {
           this.targetPosition.x = -bound + padding;
           this.position.x = -bound + padding;
@@ -122,7 +142,7 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
           this.position.x = bound - padding;
         }
         
-        // Wrapping behavior for Y-axis
+        // Seamless wrapping behavior with interpolation for Y-axis
         if (this.targetPosition.y > bound) {
           this.targetPosition.y = -bound + padding;
           this.position.y = -bound + padding;
@@ -135,9 +155,13 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
       draw(p: p5, mouseX: number, mouseY: number) {
         p.push();
         
-        // Position the circle
+        // Position the shape
         p.translate(this.position.x, this.position.y);
-        p.rotate(this.rotation);
+        
+        // Apply 3D rotations
+        p.rotateX(this.rotationX);
+        p.rotateY(this.rotationY);
+        p.rotateZ(this.rotationZ);
         
         // Calculate distance to mouse for dynamic lighting
         const distToMouse = p.dist(
@@ -146,28 +170,25 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
         );
         const lightInfluence = p.constrain(p.map(distToMouse, 0, 300, 1.5, 0.8), 0.8, 1.5);
         
-        // Apply glow effect based on mouse proximity
-        p.drawingContext.shadowBlur = 15 * lightInfluence;
-        p.drawingContext.shadowColor = p.color(120, 255, 150, 50);
+        // Apply material properties
+        p.specularMaterial(p.red(this.color), p.green(this.color), p.blue(this.color), p.alpha(this.color));
+        p.shininess(30 * lightInfluence);
         
-        // Draw main circle with subtle gradient
-        p.noStroke();
-        p.fill(this.color);
-        p.ellipse(0, 0, this.size, this.size);
-        
-        // Draw inner details
-        p.fill(this.glowColor);
-        p.ellipse(0, 0, this.size * 0.6, this.size * 0.6);
-        
-        // Draw a few additional circular patterns
-        p.noFill();
-        p.stroke(this.glowColor);
-        p.strokeWeight(2);
-        p.ellipse(0, 0, this.size * 0.8, this.size * 0.8);
-        
-        p.strokeWeight(1);
-        p.stroke(255, 255, 255, 80);
-        p.ellipse(0, 0, this.size * 0.4, this.size * 0.4);
+        // Draw the selected 3D shape
+        switch (this.shapeType) {
+          case 'box':
+            p.box(this.size);
+            break;
+          case 'sphere':
+            p.sphere(this.size / 2);
+            break;
+          case 'cone':
+            p.cone(this.size / 2, this.size);
+            break;
+          case 'torus':
+            p.torus(this.size / 2, this.size / 4);
+            break;
+        }
         
         p.pop();
       }
@@ -186,11 +207,11 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
         this.vel = p5.Vector.random2D().mult(p.random(0.2, 0.8));
         this.acc = p.createVector(0, 0);
         this.size = p.random(2, 5);
-        // Green/white particles
+        // Cyan/blue particles
         this.color = p.color(
-          p.random(200, 255),
-          p.random(240, 255),
-          p.random(200, 255),
+          p.random(100, 180),
+          p.random(220, 255),
+          p.random(220, 255),
           p.random(100, 200)
         );
         this.lifespan = 255;
@@ -207,7 +228,10 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
         p.noStroke();
         const c = this.color;
         p.fill(p.red(c), p.green(c), p.blue(c), this.lifespan);
-        p.circle(this.pos.x, this.pos.y, this.size);
+        p.push();
+        p.translate(this.pos.x, this.pos.y, 0);
+        p.sphere(this.size / 2);
+        p.pop();
       }
       
       isDead() {
@@ -226,8 +250,8 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
         p.frameRate(60); // Higher frame rate for smoother animations
         p.colorMode(p.RGB, 255, 255, 255, 255);
         
-        // Create circles away from center
-        for (let i = 0; i < 18; i++) {
+        // Create shapes away from center
+        for (let i = 0; i < 16; i++) {
           // Create positions avoiding the center
           let x, y;
           do {
@@ -235,7 +259,7 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
             y = p.random(-p.height/2, p.height/2);
           } while (p.dist(x, y, 0, 0) < p.width/3); // Avoid center
           
-          circles.push(new Circle(p, x, y, p.random(60, 180)));
+          shapes.push(new Shape3D(p, x, y, p.random(40, 100)));
         }
       };
 
@@ -247,7 +271,7 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
         lastScrollY = lastScrollY + (scrollY - lastScrollY) * 0.1; // Smooth scrolling
         
         // Background with less opacity for better contrast
-        p.background(245, 248, 250, 5);
+        p.background(0, 0, 0, 5);
         
         // Smoothly track mouse position for lighting
         const targetMouseX = p.mouseX;
@@ -259,12 +283,12 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
         const mouseXPos = (mouseXNorm / p.width) * 2 - 1;
         const mouseYPos = (mouseYNorm / p.height) * 2 - 1;
         
-        // Lighting effects
-        p.ambientLight(120, 150, 120);
+        // Enhanced lighting effects for 3D shapes
+        p.ambientLight(50, 70, 80); // Subtle ambient light
         
         // Directional light that follows the mouse
         p.directionalLight(
-          150, 255, 150,  // Green tint
+          150, 255, 230,  // Cyan tint
           mouseXPos,
           mouseYPos,
           -0.5
@@ -272,14 +296,14 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
         
         // Point light at the mouse position for interactive highlights
         p.pointLight(
-          200, 255, 200,  // Brighter green
+          200, 255, 250,  // Brighter cyan
           mouseXPos * p.width/2,
           mouseYPos * p.height/2,
           200
         );
         
         // Add occasional particles for sparkle effects
-        if (p.random(1) < 0.2) {
+        if (p.random(1) < 0.3) {
           // Generate particles away from center
           let x, y;
           do {
@@ -299,17 +323,17 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
           }
         }
         
-        // Update and draw all circles with the current frame count and scroll delta
-        for (const circle of circles) {
-          circle.update(p, p.frameCount, scrollDelta);
-          circle.draw(p, mouseXNorm - p.width/2, mouseYNorm - p.height/2);
+        // Update and draw all shapes with the current frame count and scroll delta
+        for (const shape of shapes) {
+          shape.update(p, p.frameCount, scrollDelta);
+          shape.draw(p, mouseXNorm - p.width/2, mouseYNorm - p.height/2);
           
-          // Add small particles around circles occasionally
-          if (p.random(1) < 0.03) {
+          // Add small particles around shapes occasionally
+          if (p.random(1) < 0.04) {
             particles.push(new Particle(
               p,
-              circle.position.x + p.random(-circle.size/2, circle.size/2),
-              circle.position.y + p.random(-circle.size/2, circle.size/2)
+              shape.position.x + p.random(-shape.size/2, shape.size/2),
+              shape.position.y + p.random(-shape.size/2, shape.size/2)
             ));
           }
         }
@@ -317,9 +341,9 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
       
       p.windowResized = () => {
         p.resizeCanvas(p.windowWidth, p.windowHeight);
-        // Update center avoidance radius for circles
-        for (const circle of circles) {
-          circle.centerAvoidanceRadius = p.width / 2;
+        // Update center avoidance radius for shapes
+        for (const shape of shapes) {
+          shape.centerAvoidanceRadius = p.width / 1.8;
         }
       };
     };
