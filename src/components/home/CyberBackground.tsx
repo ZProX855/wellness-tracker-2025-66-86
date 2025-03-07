@@ -30,25 +30,38 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className, scrollY = 
     // Only create the sketch once
     if (containerRef.current) {
       const sketch = (p: p5) => {
-        let angle = 0;
-        let shapes: Shape[] = [];
-        let numShapes = 15;
+        // Core animation variables
+        let time = 0;
+        let shapes: FloatingShape[] = [];
+        let particles: Particle[] = [];
+        let mouseX = 0;
+        let mouseY = 0;
+        let targetMouseX = 0;
+        let targetMouseY = 0;
         let canvasElement: HTMLElement | null = null;
         
+        // Visual elements configuration
+        const NUM_SHAPES = 8;
+        const NUM_PARTICLES = 60;
+        const PRIMARY_COLOR = [104, 166, 136]; // Wellness green in RGB
+        const SECONDARY_COLOR = [70, 88, 78];  // Darker variant
+        const ACCENT_COLOR = [240, 248, 235];  // Light accent
+
         // Setup canvas
         p.setup = () => {
           console.log("P5 setup running - creating canvas...");
+          p.createCanvas(window.innerWidth, window.innerHeight, p.WEBGL);
+          p.pixelDensity(Math.min(window.devicePixelRatio, 2)); // Performance optimization for high-DPI screens
+          p.colorMode(p.RGB, 255, 255, 255, 1);
+          p.smooth();
           
-          // Create canvas with dimensions matched to container
-          const canvas = p.createCanvas(window.innerWidth, window.innerHeight, p.WEBGL);
-          
-          // Debug - confirm canvas creation
+          // Check if canvas was created
           canvasElement = document.querySelector('canvas.p5Canvas');
           if (canvasElement) {
-            console.log("Canvas successfully created:", canvasElement);
+            console.log("Canvas successfully created");
             canvasCreatedRef.current = true;
             
-            // Apply additional styles directly to ensure visibility
+            // Apply canvas styles
             canvasElement.style.display = 'block';
             canvasElement.style.position = 'fixed';
             canvasElement.style.top = '0';
@@ -61,327 +74,354 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className, scrollY = 
             console.error("Failed to find canvas element after creation!");
           }
           
-          p.colorMode(p.HSB, 100);
-          p.noStroke();
-          p.frameRate(30);
-          
-          // Create shape objects
-          for (let i = 0; i < numShapes; i++) {
-            shapes.push(new Shape(p));
+          // Initialize shapes with staggered sizes and positions
+          for (let i = 0; i < NUM_SHAPES; i++) {
+            shapes.push(new FloatingShape(p, i));
           }
           
-          // Debug log
-          console.log("P5 setup complete. Canvas dimensions:", p.width, "x", p.height);
+          // Initialize particles
+          for (let i = 0; i < NUM_PARTICLES; i++) {
+            particles.push(new Particle(p));
+          }
+          
+          console.log("P5 setup complete");
         };
 
-        // Resize handler
+        // Handle window resize
         p.windowResized = () => {
-          console.log("Window resized. Updating canvas dimensions.");
           p.resizeCanvas(window.innerWidth, window.innerHeight);
+          console.log("Canvas resized to:", p.width, "x", p.height);
           
           // Re-check canvas element after resize
           if (!canvasElement) {
             canvasElement = document.querySelector('canvas.p5Canvas');
-            if (canvasElement) {
-              console.log("Canvas found after resize:", canvasElement);
-            }
           }
+        };
+        
+        // Process mouse movement for interactivity
+        p.mouseMoved = () => {
+          targetMouseX = p.mouseX;
+          targetMouseY = p.mouseY;
         };
 
         // Main draw loop
         p.draw = () => {
           if (!canvasCreatedRef.current) {
-            console.log("Canvas not yet created, skipping draw");
             return;
           }
           
+          // Smoothly follow mouse position for more elegant movement
+          mouseX = p.lerp(mouseX, targetMouseX, 0.05);
+          mouseY = p.lerp(mouseY, targetMouseY, 0.05);
+          
+          // Get current scroll position and convert to normalized value
+          const currentScrollY = scrollYRef.current;
+          const normalizedScroll = p.map(currentScrollY, 0, 1000, 0, 1);
+          
+          // Prepare canvas for rendering
           p.clear();
           
-          // Add a more visible background with higher opacity
-          p.background(70, 10, 10, 0.8); // Significantly increased opacity
+          // Set semi-transparent background with gradient
+          setGradientBackground(p, normalizedScroll);
           
-          // Set light sources - wellness themed colors with increased intensity
-          const greenLight = p.color(140, 90, 95); // Brighter green
-          const orangeLight = p.color(25, 95, 98);  // Brighter orange
-          const blueLight = p.color(195, 90, 98);   // Brighter blue
+          // Create ambient light environment
+          p.ambientLight(200, 200, 220, 0.5);
           
-          p.pointLight(greenLight, -300, 0, 300);
-          p.pointLight(orangeLight, 300, -200, -300);
-          p.pointLight(blueLight, 0, 300, -200);
+          // Set directional lights for depth
+          const lightIntensity = 0.8 + p.sin(time * 0.5) * 0.1;
+          p.directionalLight(
+            PRIMARY_COLOR[0], 
+            PRIMARY_COLOR[1], 
+            PRIMARY_COLOR[2], 
+            lightIntensity,
+            0.5, 0.5, -1
+          );
           
-          // Apply ambient light - increase intensity
-          p.ambientLight(90, 15, 95); // Brighter ambient light
+          p.directionalLight(
+            ACCENT_COLOR[0],
+            ACCENT_COLOR[1],
+            ACCENT_COLOR[2],
+            lightIntensity * 0.7,
+            -0.5, -0.3, -0.5
+          );
           
-          // Handle mouse interaction
-          const mouseYRotation = p.map(p.mouseX, 0, p.width, -0.1, 0.1);
-          const mouseXRotation = p.map(p.mouseY, 0, p.height, -0.1, 0.1);
+          // Draw all particles (background elements)
+          for (let particle of particles) {
+            particle.update(p, time, normalizedScroll);
+            particle.display(p);
+          }
           
-          // Get scroll position from ref
-          const currentScrollY = scrollYRef.current;
+          // Apply camera transformations based on mouse position
+          p.translate(p.width / 2, p.height / 2);
+          const mouseFactor = 0.03;
+          p.rotateY((mouseX - p.width/2) * mouseFactor * 0.01);
+          p.rotateX((mouseY - p.height/2) * mouseFactor * 0.01);
           
-          // Scale based on scroll position - make starting scale larger
-          const scrollScale = p.map(currentScrollY, 0, 1000, 2.0, 1.5); // Even larger initial scale
-          const scrollRotation = currentScrollY * 0.001;
-          
-          // Create main transformations
-          p.push();
-          p.translate(0, 0, 0);
-          
-          // Apply mouse-based rotation
-          p.rotateY(mouseYRotation + angle * 0.2);
-          p.rotateX(mouseXRotation + angle * 0.1);
-          
-          // Apply scroll-based transformations
+          // Apply scroll-based zoom and rotation
+          const scrollScale = p.map(normalizedScroll, 0, 1, 1, 0.7);
           p.scale(scrollScale);
-          p.rotateZ(scrollRotation);
+          p.rotateZ(normalizedScroll * 0.1);
           
-          // Draw the wellness core
-          drawWellnessCore(p, angle, currentScrollY);
-          
-          // Draw all shapes
+          // Draw main floating shapes
           for (let shape of shapes) {
-            shape.display(p, angle, currentScrollY);
+            shape.update(p, time, mouseX, mouseY, normalizedScroll);
+            shape.display(p);
           }
           
-          p.pop();
-          
-          // Update animation values
-          angle += 0.005; // Slower rotation for a more relaxed feel
+          // Update time
+          time += 0.01;
         };
         
-        // Function to draw the wellness core
-        const drawWellnessCore = (p: p5, angle: number, scrollY: number) => {
-          // Increase base size for better visibility
-          const baseSize = Math.min(p.width, p.height) * 0.25; // Increased from 0.18
-          const scrollEffect = p.map(scrollY, 0, 500, 0, 0.5);
-          
-          // Inner pulsing core (green)
+        // Set gradient background using a combination of shapes
+        const setGradientBackground = (p: p5, scroll: number) => {
           p.push();
-          const pulseAmount = p.sin(angle * 3) * 0.1 + 1;
-          // Green for health and wellness
-          p.fill(140, 90, 95, 1.0); // Full opacity
-          p.scale(pulseAmount * 0.6);
-          p.rotateX(angle * 0.5 + scrollEffect);
-          p.rotateZ(angle * 0.3);
+          p.noLights();
+          p.translate(0, 0, -500);
           
-          // Create organic heart-like core shape
-          p.beginShape();
-          for (let i = 0; i < 36; i++) {
-            const ang = p.map(i, 0, 36, 0, p.TWO_PI);
-            // Heart-like shape
-            const rad = baseSize * (0.5 + 
-              p.sin(ang * 2 + angle * 2) * 0.3 * 
-              (1 + p.sin(ang) * 0.2));
-            const x = rad * p.cos(ang);
-            const y = rad * p.sin(ang);
-            const z = baseSize * 0.3 * p.sin(ang * 4 + angle * 1.5);
-            p.vertex(x, y, z);
-          }
-          p.endShape(p.CLOSE);
-          p.pop();
+          // Create radial gradient effect with subtle interaction
+          p.noStroke();
           
-          // Middle layer (orange energy)
-          p.push();
-          // Orange for energy
-          p.fill(25, 95, 95, 1.0); // Full opacity
-          p.rotateX(angle * -0.4 + scrollEffect * 2);
-          p.rotateZ(angle * 0.2);
-          const morphSize = p.sin(angle * 2) * 0.15 + 1;
-          p.scale(0.8 * morphSize);
-          // Draw a wellness symbol
-          drawWellnessSymbol(p, baseSize, angle);
-          p.pop();
+          // Base gradient
+          const centerX = p.width/2 + (mouseX - p.width/2) * 0.1;
+          const centerY = p.height/2 + (mouseY - p.height/2) * 0.1;
           
-          // Outer glow layer (blue)
-          p.push();
-          // Blue for tranquility
-          p.fill(195, 90, 95, 0.9); // Increased opacity
-          p.rotateY(angle * -0.3 + scrollEffect);
-          p.rotateZ(angle * -0.2);
-          p.scale(1.2);
-          p.torus(baseSize * 0.9, baseSize * 0.1); // Increased thickness
-          p.pop();
-        };
-        
-        // Function to draw a wellness symbol
-        const drawWellnessSymbol = (p: p5, size: number, angle: number) => {
-          p.push();
-          
-          // Draw a balanced symbol representing wellness
-          const sphereSize = size * 0.4; // Increased from 0.3
-          
-          // Draw a circular arrangement of small spheres
-          for (let i = 0; i < 8; i++) {
-            p.push();
-            const ang = i * p.TWO_PI / 8 + angle;
-            const x = size * 0.7 * p.cos(ang);
-            const y = size * 0.7 * p.sin(ang);
-            p.translate(x, y, 0);
-            p.sphere(sphereSize * 0.4);
-            p.pop();
-          }
-          
-          // Central sphere - make it bigger
-          p.sphere(sphereSize);
-          
-          p.pop();
-        };
-        
-        // Shape class for organic elements
-        class Shape {
-          position: p5.Vector;
-          size: number;
-          rotSpeed: number;
-          hue: number;
-          orbitRadius: number;
-          orbitSpeed: number;
-          phase: number;
-          type: number;
-          
-          constructor(p: p5) {
-            // Increase base size for better visibility
-            const baseSize = Math.min(p.width, p.height) * 0.07; // Increased from 0.05
-            this.size = baseSize * (0.8 + p.random(0.5));
-            this.rotSpeed = p.random(0.5, 1.5);
+          for (let i = 12; i > 0; i--) {
+            const alpha = p.map(i, 12, 0, 0.02, 0.15);
+            const size = p.map(i, 12, 0, p.width * 2, 0);
             
-            // Color variations for wellness theme
-            // Green, blue, orange range for fitness and wellness
-            this.hue = p.random([140, 195, 25, 45]); 
+            // Wellness green to dark background gradient
+            const r = p.map(i, 12, 0, PRIMARY_COLOR[0] * 0.3, SECONDARY_COLOR[0]);
+            const g = p.map(i, 12, 0, PRIMARY_COLOR[1] * 0.3, SECONDARY_COLOR[1]);
+            const b = p.map(i, 12, 0, PRIMARY_COLOR[2] * 0.3, SECONDARY_COLOR[2]);
             
-            // Orbital parameters
-            this.orbitRadius = p.random(1.5, 3) * baseSize * 3;
-            this.orbitSpeed = p.random(0.3, 1.2);
+            p.fill(r, g, b, alpha);
+            p.ellipse(centerX, centerY, size, size);
+          }
+          
+          p.pop();
+        };
+        
+        // Floating Shape class for the main visual elements
+        class FloatingShape {
+          private baseSize: number;
+          private position: p5.Vector;
+          private rotationSpeed: p5.Vector;
+          private orbitRadius: number;
+          private orbitSpeed: number;
+          private shapeType: number;
+          private phase: number;
+          private color: number[];
+          private index: number;
+          
+          constructor(p: p5, index: number) {
+            this.index = index;
+            
+            // Size based on viewport dimensions for responsiveness
+            const baseSize = Math.min(p.width, p.height) * 0.15;
+            this.baseSize = baseSize * (0.4 + (index % 3) * 0.2);
+            
+            // Staggered positions for visual interest
+            this.position = p.createVector(
+              p.random(-p.width/5, p.width/5),
+              p.random(-p.height/5, p.height/5),
+              p.random(-100, 100)
+            );
+            
+            // Rotation behaviors
+            this.rotationSpeed = p.createVector(
+              p.random(-0.01, 0.01),
+              p.random(-0.01, 0.01),
+              p.random(-0.01, 0.01)
+            );
+            
+            // Orbit parameters
+            this.orbitRadius = p.random(50, 150);
+            this.orbitSpeed = p.random(0.05, 0.2) * (index % 2 === 0 ? 1 : -1);
             this.phase = p.random(p.TWO_PI);
             
-            // Determine shape type
-            this.type = Math.floor(p.random(3));
+            // Shape variety (0: sphere, 1: torus, 2: blob)
+            this.shapeType = index % 3;
             
-            // Initial position
-            this.position = p5.Vector.random3D().mult(this.orbitRadius);
+            // Color variations with wellness theme
+            const hueOffset = p.random(-20, 20);
+            this.color = [
+              PRIMARY_COLOR[0] + hueOffset,
+              PRIMARY_COLOR[1] + hueOffset,
+              PRIMARY_COLOR[2] + hueOffset
+            ];
           }
           
-          display(p: p5, globalAngle: number, scrollY: number) {
-            const scrollEffect = p.map(scrollY, 0, 500, 0, 0.5);
+          update(p: p5, time: number, mouseX: number, mouseY: number, scroll: number) {
+            // Update position based on orbital motion
+            this.phase += this.orbitSpeed * (0.01 + scroll * 0.02);
             
+            // React subtly to mouse position
+            const mouseInfluence = p.map(
+              p.dist(mouseX, mouseY, p.width/2, p.height/2),
+              0, p.width/2,
+              0.2, 0
+            );
+            
+            const orbitX = Math.cos(this.phase + this.index) * this.orbitRadius * (1 + scroll * 0.2);
+            const orbitY = Math.sin(this.phase + this.index) * this.orbitRadius * (1 + scroll * 0.2);
+            const orbitZ = Math.sin(this.phase * 2) * this.orbitRadius * 0.5;
+            
+            this.position.x = orbitX + (mouseX - p.width/2) * mouseInfluence * 0.1;
+            this.position.y = orbitY + (mouseY - p.height/2) * mouseInfluence * 0.1;
+            this.position.z = orbitZ;
+          }
+          
+          display(p: p5) {
             p.push();
             
-            // Calculate orbit position with scroll influence
-            const orbitFactor = 1 + scrollEffect * 0.3;
-            const orbitX = Math.cos(this.phase + globalAngle * this.orbitSpeed) * this.orbitRadius * orbitFactor;
-            const orbitY = Math.sin(this.phase + globalAngle * this.orbitSpeed) * this.orbitRadius * 0.6 * orbitFactor;
-            const orbitZ = Math.sin(this.phase * 2 + globalAngle * this.orbitSpeed) * this.orbitRadius * 0.3 * orbitFactor;
+            // Apply transformations
+            p.translate(this.position.x, this.position.y, this.position.z);
+            p.rotateX(this.phase * this.rotationSpeed.x);
+            p.rotateY(this.phase * this.rotationSpeed.y);
+            p.rotateZ(this.phase * this.rotationSpeed.z);
             
-            p.translate(orbitX, orbitY, orbitZ);
-            p.rotateX(globalAngle * this.rotSpeed + scrollEffect);
-            p.rotateZ(globalAngle * this.rotSpeed * 0.7);
+            // Set material and color
+            p.specularMaterial(this.color[0], this.color[1], this.color[2]);
+            p.shininess(30);
             
-            // Draw shape based on type with full opacity
-            p.fill(this.hue, 85, 90, 1.0); // Full opacity
-            
-            switch(this.type) {
-              case 0:
-                // Leaf/Petal shape
-                this.drawLeafShape(p, this.size);
+            // Render different shape types
+            switch(this.shapeType) {
+              case 0: // Sphere
+                p.sphere(this.baseSize * (0.5 + Math.sin(this.phase * 2) * 0.1));
                 break;
-              case 1:
-                // Water droplet for hydration
-                this.drawDropShape(p, this.size);
+              case 1: // Torus
+                p.torus(this.baseSize * 0.8, this.baseSize * 0.3);
                 break;
-              case 2:
-                // Small energy burst
-                this.drawEnergyShape(p, this.size);
+              case 2: // Custom blob shape
+                this.drawBlobShape(p, this.baseSize);
                 break;
             }
             
             p.pop();
           }
           
-          drawLeafShape(p: p5, size: number) {
+          // Custom organic blob shape
+          drawBlobShape(p: p5, size: number) {
             p.beginShape();
-            // Create a leaf-like shape with gentle curves
-            const leafWidth = size * 0.6;
-            const leafLength = size * 1.5;
             
-            // Draw the leaf outline using curved vertices
-            p.vertex(0, -leafLength/2, 0); // Tip
+            const detail = 24;
+            const noiseScale = 3;
+            const noiseStrength = 0.3;
             
-            // Right side curve
-            p.bezierVertex(
-              leafWidth/3, -leafLength/4, 0,
-              leafWidth/2, 0, 0,
-              leafWidth/3, leafLength/4, 0
-            );
+            for (let i = 0; i <= detail; i++) {
+              const lat = p.map(i, 0, detail, -p.HALF_PI, p.HALF_PI);
+              const latRadius = size * Math.cos(lat);
+              
+              for (let j = 0; j <= detail; j++) {
+                const lon = p.map(j, 0, detail, 0, p.TWO_PI);
+                
+                // Generate organic deformation
+                const noiseValue = p.noise(
+                  Math.cos(lon) * noiseScale + this.phase,
+                  Math.sin(lon) * noiseScale,
+                  Math.sin(lat) * noiseScale
+                );
+                
+                const radius = size * (1 + noiseValue * noiseStrength);
+                
+                const x = Math.cos(lon) * Math.cos(lat) * radius;
+                const y = Math.sin(lon) * Math.cos(lat) * radius;
+                const z = Math.sin(lat) * radius;
+                
+                p.vertex(x, y, z);
+              }
+            }
             
-            p.vertex(0, leafLength/2, 0); // Base
-            
-            // Left side curve
-            p.bezierVertex(
-              -leafWidth/3, leafLength/4, 0,
-              -leafWidth/2, 0, 0,
-              -leafWidth/3, -leafLength/4, 0
-            );
-            
-            p.endShape(p.CLOSE);
-            
-            // Add a simple vein down the center
-            p.push();
-            p.fill(this.hue, 60, 70, 0.7);
-            p.translate(0, 0, size * 0.01);
-            p.beginShape();
-            p.vertex(0, -leafLength/2, 0);
-            p.vertex(0, leafLength/2, 0);
             p.endShape();
-            p.pop();
+          }
+        }
+        
+        // Particle class for background atmosphere
+        class Particle {
+          private position: p5.Vector;
+          private velocity: p5.Vector;
+          private size: number;
+          private opacity: number;
+          private color: number[];
+          
+          constructor(p: p5) {
+            // Random position across the entire viewport
+            this.position = p.createVector(
+              p.random(-p.width, p.width),
+              p.random(-p.height, p.height),
+              p.random(-500, -100)
+            );
+            
+            // Gentle movement
+            this.velocity = p5.Vector.random3D().mult(p.random(0.2, 1));
+            
+            // Visual properties
+            this.size = p.random(3, 10);
+            this.opacity = p.random(0.1, 0.4);
+            
+            // Color variations with wellness theme
+            const isAccent = p.random() > 0.8;
+            const baseColor = isAccent ? ACCENT_COLOR : PRIMARY_COLOR;
+            const variation = p.random(-30, 30);
+            
+            this.color = [
+              baseColor[0] + variation,
+              baseColor[1] + variation,
+              baseColor[2] + variation
+            ];
           }
           
-          drawDropShape(p: p5, size: number) {
-            // Water droplet shape for hydration
-            p.push();
-            p.rotateX(p.PI);
-            p.beginShape();
+          update(p: p5, time: number, scroll: number) {
+            // Move based on velocity
+            this.position.add(this.velocity);
             
-            for (let angle = 0; angle < p.TWO_PI; angle += 0.1) {
-              let r = size * 0.8 * (1 - Math.sin(angle) * 0.3);
-              let x = r * Math.cos(angle);
-              let y = r * Math.sin(angle);
-              let z = size * Math.sin(angle) * 0.3;
-              p.vertex(x, y, z);
+            // Reset particle when it moves out of view
+            if (
+              this.position.x < -p.width || this.position.x > p.width ||
+              this.position.y < -p.height || this.position.y > p.height ||
+              this.position.z > 200
+            ) {
+              this.position = p.createVector(
+                p.random(-p.width, p.width),
+                p.random(-p.height, p.height),
+                -500
+              );
+              
+              // Adjust velocity based on scroll for dynamic response
+              const scrollFactor = 1 + scroll * 2;
+              this.velocity = p5.Vector.random3D().mult(p.random(0.2, 1) * scrollFactor);
             }
             
-            p.endShape(p.CLOSE);
-            p.pop();
+            // Subtle size and opacity pulsing
+            const pulse = (Math.sin(time * 2 + this.position.x * 0.01) + 1) * 0.5;
+            this.opacity = p.map(pulse, 0, 1, 0.1, 0.4);
           }
           
-          drawEnergyShape(p: p5, size: number) {
-            // Energy burst shape
+          display(p: p5) {
             p.push();
+            p.translate(this.position.x, this.position.y, this.position.z);
+            p.noLights();
+            p.noStroke();
+            p.fill(
+              this.color[0],
+              this.color[1],
+              this.color[2],
+              this.opacity
+            );
             
-            const spikes = 5;
-            const innerRadius = size * 0.4;
-            const outerRadius = size;
-            
-            p.beginShape();
-            for (let i = 0; i < spikes * 2; i++) {
-              const angle = p.map(i, 0, spikes * 2, 0, p.TWO_PI);
-              const radius = i % 2 === 0 ? outerRadius : innerRadius;
-              const x = radius * Math.cos(angle);
-              const y = radius * Math.sin(angle);
-              p.vertex(x, y, 0);
-            }
-            p.endShape(p.CLOSE);
-            
+            // Use circle for better performance than sphere
+            p.circle(0, 0, this.size);
             p.pop();
           }
         }
       };
 
-      // Create the p5 instance with a callback to get the instance
-      console.log("Creating new P5 instance in container:", containerRef.current);
+      // Create the p5 instance
+      console.log("Creating new P5 instance");
       sketchRef.current = new p5(sketch, containerRef.current);
       
-      // Debug check if p5 instance was created
+      // Verify canvas creation
       setTimeout(() => {
-        console.log("P5 instance created:", sketchRef.current, "Canvas created:", canvasCreatedRef.current);
         if (sketchRef.current && !canvasCreatedRef.current) {
           console.warn("Canvas not created after initialization. Attempting to reinitialize...");
           if (sketchRef.current) {
@@ -394,7 +434,6 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className, scrollY = 
 
     // Cleanup function
     return () => {
-      console.log("Cleaning up P5 instance");
       if (sketchRef.current) {
         sketchRef.current.remove();
         sketchRef.current = null;
@@ -406,8 +445,8 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className, scrollY = 
     <div 
       ref={containerRef} 
       className={`fixed top-0 left-0 w-full h-full -z-10 overflow-hidden ${className || ''}`}
-      style={{ pointerEvents: 'none' }} // Ensure it doesn't block interactions
-      data-testid="cyber-background" // Add a test ID for debugging
+      style={{ pointerEvents: 'none' }} 
+      data-testid="cyber-background"
     />
   );
 };

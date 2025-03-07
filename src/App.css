@@ -1,3 +1,4 @@
+
 #root {
   max-width: 100%;
   margin: 0 auto;
@@ -34,6 +35,50 @@ body {
   position: relative; /* Create stacking context */
 }
 
+/* Create a gentle floating animation */
+@keyframes float {
+  0% {
+    transform: translateY(0px) translateX(0px);
+  }
+  25% {
+    transform: translateY(-10px) translateX(5px);
+  }
+  50% {
+    transform: translateY(0px) translateX(10px);
+  }
+  75% {
+    transform: translateY(10px) translateX(5px);
+  }
+  100% {
+    transform: translateY(0px) translateX(0px);
+  }
+}
+
+/* Soft pulsing for subtle emphasis */
+@keyframes pulse-soft {
+  0% {
+    opacity: 0.8;
+    transform: scale(0.98);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
+  100% {
+    opacity: 0.8;
+    transform: scale(0.98);
+  }
+}
+
+.animate-float {
+  animation: float 8s ease-in-out infinite;
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 4s ease-in-out infinite;
+}
+
+/* Smooth scrolling */
 .apple-scroll {
   scroll-behavior: smooth;
   scrollbar-width: thin;
@@ -129,4 +174,25 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
+}
+
+/* Glass morphism effects */
+.glass-card {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.glass-button {
+  background: rgba(104, 166, 136, 0.8);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.glass-button:hover {
+  background: rgba(104, 166, 136, 0.9);
+  box-shadow: 0 5px 15px rgba(104, 166, 136, 0.4);
+  transform: translateY(-2px);
 }
