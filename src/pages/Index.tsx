@@ -43,7 +43,11 @@ const Index = () => {
         </main>
         
         <footer className="border-t border-wellness-softGreen/30 my-0 py-0 bg-white/80 backdrop-blur-sm">
-          
+          <div className="container mx-auto px-4 py-8">
+            <p className="text-center text-wellness-charcoal/70">
+              © {new Date().getFullYear()} WellnessHub. All rights reserved.
+            </p>
+          </div>
         </footer>
       </div>
     </div>
