@@ -1,3 +1,4 @@
+
 #root {
   max-width: 100%;
   margin: 0 auto;
@@ -17,6 +18,7 @@
 canvas {
   display: block !important;
   cursor: grab; /* Add grab cursor to indicate draggable elements */
+  will-change: transform; /* Optimize animation performance */
 }
 
 canvas:active {
@@ -219,4 +221,12 @@ body {
 
 .interactive-element:active {
   transform: translateY(-2px) scale(0.98);
+}
+
+/* Performance optimizations for animations */
+.gpu-accelerated {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+  will-change: transform, opacity;
 }

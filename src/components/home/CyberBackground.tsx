@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import p5 from 'p5';
 
@@ -29,6 +28,11 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
       color: p5.Color;
       secondaryColor: p5.Color;
       isDragged: boolean = false;
+      velocity: p5.Vector;
+      acceleration: p5.Vector;
+      maxSpeed: number;
+      centerAvoidanceRadius: number;
+      seed: number;
 
       constructor(p: p5, x: number, y: number, size: number) {
         this.position = p.createVector(x, y);
@@ -57,9 +61,16 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
           p.random(150, 200), // Blue component
           p.random(60, 100)   // Alpha (transparency)
         );
+        
+        // Add properties for autonomous movement
+        this.velocity = p5.Vector.random2D().mult(p.random(0.2, 0.5));
+        this.acceleration = p.createVector(0, 0);
+        this.maxSpeed = p.random(0.3, 0.8);
+        this.centerAvoidanceRadius = p.width / 3; // Radius to avoid center
+        this.seed = p.random(1000); // Random seed for perlin noise
       }
 
-      update(p: p5, mouseX: number, mouseY: number, isDragging: boolean, dragOffsetX: number, dragOffsetY: number, scale: number) {
+      update(p: p5, mouseX: number, mouseY: number, isDragging: boolean, dragOffsetX: number, dragOffsetY: number, scale: number, frameCount: number) {
         // Apply a smooth easing effect to the movement
         const easing = 0.03;
         
@@ -80,14 +91,74 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
             this.isDragged = true;
             this.targetPosition.x = mouseX + dragOffsetX;
             this.targetPosition.y = mouseY + dragOffsetY;
+            // Reset acceleration when dragged
+            this.acceleration.mult(0);
+          } else {
+            this.isDragged = false;
           }
         } else {
           this.isDragged = false;
         }
         
+        if (!this.isDragged) {
+          // Autonomous movement using perlin noise for smooth paths
+          const noiseX = p.noise(this.seed + frameCount * 0.001) * 2 - 1;
+          const noiseY = p.noise(this.seed + 500 + frameCount * 0.001) * 2 - 1;
+          const noiseForce = p.createVector(noiseX, noiseY);
+          noiseForce.mult(0.01);
+          this.applyForce(noiseForce);
+          
+          // Add center avoidance force
+          const center = p.createVector(0, 0);
+          const distToCenter = p.dist(this.position.x, this.position.y, center.x, center.y);
+          
+          if (distToCenter < this.centerAvoidanceRadius) {
+            // Create a force that points away from center
+            const avoidForce = p5.Vector.sub(this.position, center);
+            // Stronger avoidance as we get closer to center
+            const strength = p.map(distToCenter, 0, this.centerAvoidanceRadius, 0.05, 0);
+            avoidForce.normalize().mult(strength);
+            this.applyForce(avoidForce);
+          }
+          
+          // Apply soft bounds to keep shapes in view
+          this.applyBounds(p);
+          
+          // Update velocity and position
+          this.velocity.add(this.acceleration);
+          this.velocity.limit(this.maxSpeed);
+          this.targetPosition.add(this.velocity);
+          this.acceleration.mult(0); // Reset acceleration
+        }
+        
         // Apply smooth movement towards the target position
         this.position.x += (this.targetPosition.x - this.position.x) * easing;
         this.position.y += (this.targetPosition.y - this.position.y) * easing;
+      }
+      
+      applyForce(force: p5.Vector) {
+        this.acceleration.add(force);
+      }
+      
+      applyBounds(p: p5) {
+        const padding = this.size;
+        const bound = p.width / 2 - padding;
+        
+        if (this.targetPosition.x > bound) {
+          const force = p.createVector(-0.03, 0);
+          this.applyForce(force);
+        } else if (this.targetPosition.x < -bound) {
+          const force = p.createVector(0.03, 0);
+          this.applyForce(force);
+        }
+        
+        if (this.targetPosition.y > bound) {
+          const force = p.createVector(0, -0.03);
+          this.applyForce(force);
+        } else if (this.targetPosition.y < -bound) {
+          const force = p.createVector(0, 0.03);
+          this.applyForce(force);
+        }
       }
 
       draw(p: p5) {
@@ -205,14 +276,16 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
         p.frameRate(60); // Higher frame rate for smoother animations
         p.colorMode(p.RGB, 255, 255, 255, 255);
         
-        // Create several floating shapes
-        for (let i = 0; i < 8; i++) {
-          shapes.push(new Shape(
-            p,
-            p.random(-p.width/3, p.width/3),
-            p.random(-p.height/3, p.height/3),
-            p.random(50, 150)
-          ));
+        // Create several floating shapes, but keep them away from center initially
+        for (let i = 0; i < 10; i++) {
+          // Create positions avoiding the center
+          let x, y;
+          do {
+            x = p.random(-p.width/2, p.width/2);
+            y = p.random(-p.height/2, p.height/2);
+          } while (p.dist(x, y, 0, 0) < p.width/4); // Avoid center
+          
+          shapes.push(new Shape(p, x, y, p.random(50, 150)));
         }
       };
 
@@ -251,12 +324,15 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
         );
         
         // Add occasional particles for sparkle effects
-        if (p.random(1) < 0.1) {
-          particles.push(new Particle(
-            p,
-            p.random(-p.width/2, p.width/2),
-            p.random(-p.height/2, p.height/2)
-          ));
+        if (p.random(1) < 0.2) { // Increased particle generation
+          // Generate particles away from center
+          let x, y;
+          do {
+            x = p.random(-p.width/2, p.width/2);
+            y = p.random(-p.height/2, p.height/2);
+          } while (p.dist(x, y, 0, 0) < p.width/5);
+          
+          particles.push(new Particle(p, x, y));
         }
         
         // Update and draw particles
@@ -268,13 +344,13 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
           }
         }
         
-        // Update and draw all shapes
+        // Update and draw all shapes with the current frame count for perlin noise
         for (const shape of shapes) {
-          shape.update(p, mousePosX - p.width/2, mousePosY - p.height/2, isDragging, dragOffset.x, dragOffset.y, scale);
+          shape.update(p, mousePosX - p.width/2, mousePosY - p.height/2, isDragging, dragOffset.x, dragOffset.y, scale, p.frameCount);
           shape.draw(p);
           
           // Add small particles around shapes for additional effect
-          if (p.random(1) < 0.03) {
+          if (p.random(1) < 0.05) { // Increased particle generation
             particles.push(new Particle(
               p,
               shape.position.x + p.random(-shape.size/2, shape.size/2),
@@ -286,6 +362,10 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
       
       p.windowResized = () => {
         p.resizeCanvas(p.windowWidth, p.windowHeight);
+        // Update center avoidance radius for shapes
+        for (const shape of shapes) {
+          shape.centerAvoidanceRadius = p.width / 3;
+        }
       };
     };
     
