@@ -41,7 +41,6 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className }) => {
 
     const sketch = (p: p5) => {
       let angle = 0;
-      let hue = 0;
       let canvasWidth = window.innerWidth;
       let canvasHeight = window.innerHeight;
       let canvasElement: HTMLElement | null = null;
@@ -86,12 +85,15 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className }) => {
         // Dynamic background color (very subtle)
         p.background(240, 10, 10, 0.05);
         
-        // Enhanced lighting for better visibility
-        const pointLight = p.color(60, 80, 100); // Blue
-        const pointLight2 = p.color(90, 80, 100); // Purple
-        p.pointLight(pointLight, 0, -300, 300);
-        p.pointLight(pointLight2, 0, 300, -300);
-        p.ambientLight(20, 20, 40); // Increased ambient light
+        // Enhanced lighting for better visibility of rounded shapes
+        const blueLight = p.color(60, 80, 100); // Blue
+        const purpleLight = p.color(90, 80, 100); // Purple
+        const pinkLight = p.color(320, 80, 100); // Pink
+        
+        p.pointLight(blueLight, 200, -300, 300);
+        p.pointLight(purpleLight, -200, 300, -300);
+        p.pointLight(pinkLight, 0, 0, 500);
+        p.ambientLight(25, 25, 45); // Increased ambient light for better shape visibility
         
         // Handle mouse interaction
         const mouseYRotation = p.map(p.mouseX, 0, p.width, -0.1, 0.1);
@@ -118,77 +120,108 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className }) => {
           p.rotateY(mouseYRotation);
         }
         
-        // Create the abstract shape with improved opacity
-        drawAbstractShape(p, angle);
+        // Draw all the rounded shapes
+        drawRoundedShapes(p, angle);
         
         p.pop();
         
         // Update animation values
         angle += 0.01;
-        hue = (hue + 0.1) % 100;
       };
       
-      // Function to draw our abstract cyberpunk shape
-      const drawAbstractShape = (p: p5, angle: number) => {
-        // Create a series of shapes that form together
-        const baseSize = Math.min(p.width, p.height) * 0.20; // Increased size
+      // Function to draw our collection of rounded 3D shapes
+      const drawRoundedShapes = (p: p5, angle: number) => {
+        const baseSize = Math.min(p.width, p.height) * 0.20;
         
-        // Inner core - pulsing effect
+        // Main central sphere with pulsing effect
         p.push();
         const pulseAmount = p.sin(angle * 2) * 0.1 + 0.9;
-        p.fill(280, 70, 90, 0.9); // Increased opacity
-        p.scale(pulseAmount * 0.6);
-        p.rotateX(angle * 0.7);
-        p.rotateY(angle * 0.6);
-        p.torus(baseSize * 0.5, baseSize * 0.1);
+        p.fill(280, 70, 90, 0.8);
+        p.sphere(baseSize * 0.25 * pulseAmount);
         p.pop();
         
-        // Middle layer
+        // Large torus rotating around the center
         p.push();
-        p.fill(220, 80, 90, 0.9); // Increased opacity
-        p.rotateX(angle * -0.5);
-        p.rotateZ(angle * 0.3);
-        const morphSize = p.sin(angle) * 0.1 + 1;
-        p.scale(0.8 * morphSize);
-        customShape(p, baseSize);
-        p.pop();
-        
-        // Outer layer with glow effect
-        p.push();
-        p.fill(200, 80, 80, 0.6); // Increased opacity
-        p.rotateY(angle * -0.2);
-        p.rotateZ(angle * -0.1);
-        p.scale(1.2);
+        p.fill(220, 80, 90, 0.7);
+        p.rotateX(angle * 0.5);
+        p.rotateY(angle * 0.3);
         p.torus(baseSize * 0.8, baseSize * 0.1);
         p.pop();
         
-        // Create orbiting smaller elements
-        for (let i = 0; i < 5; i++) { // Added more elements
+        // Second torus at different angle
+        p.push();
+        p.fill(180, 70, 85, 0.6);
+        p.rotateX(angle * -0.3);
+        p.rotateZ(angle * 0.4);
+        p.torus(baseSize * 0.6, baseSize * 0.08);
+        p.pop();
+        
+        // Third torus at different angle
+        p.push();
+        p.fill(320, 60, 95, 0.5);
+        p.rotateY(angle * -0.2);
+        p.rotateZ(angle * -0.5);
+        p.torus(baseSize * 1.0, baseSize * 0.05);
+        p.pop();
+        
+        // Create orbiting spheres
+        const numSpheres = 12; // More orbiting spheres
+        for (let i = 0; i < numSpheres; i++) {
           p.push();
-          const orbitAngle = angle + (i * p.TWO_PI / 5);
-          const orbitRadius = baseSize * 1.5;
-          const x = p.sin(orbitAngle) * orbitRadius;
-          const y = p.cos(orbitAngle) * orbitRadius * 0.5;
+          // Create different orbital paths
+          const orbitAngle = angle + (i * p.TWO_PI / numSpheres);
+          const orbitRadius = baseSize * 1.2;
           
-          p.translate(x, y, 0);
-          p.fill(280 + i*15, 90, 90, 0.8); // Increased opacity
-          p.sphere(baseSize * 0.15); // Increased size
+          // Calculate position using sine and cosine for smooth circular motion
+          // Adding variation to create more dynamic, non-overlapping paths
+          const pathVariation = i % 3; // Creates 3 different orbital planes
+          
+          let x, y, z;
+          if (pathVariation === 0) {
+            // Horizontal orbit
+            x = p.sin(orbitAngle) * orbitRadius;
+            y = p.cos(orbitAngle) * orbitRadius * 0.3;
+            z = 0;
+          } else if (pathVariation === 1) {
+            // Vertical orbit
+            x = p.sin(orbitAngle) * orbitRadius * 0.5;
+            y = 0;
+            z = p.cos(orbitAngle) * orbitRadius * 0.8;
+          } else {
+            // Diagonal orbit
+            x = p.sin(orbitAngle) * orbitRadius * 0.7;
+            y = p.cos(orbitAngle) * orbitRadius * 0.7;
+            z = p.sin(orbitAngle * 2) * orbitRadius * 0.3;
+          }
+          
+          p.translate(x, y, z);
+          
+          // Size variation based on position
+          const sphereSize = baseSize * (0.07 + p.sin(orbitAngle * 3) * 0.03);
+          
+          // Color variation
+          const hue = (260 + i * 10) % 360;
+          p.fill(hue, 80, 95, 0.8);
+          
+          // Draw the sphere
+          p.sphere(sphereSize);
           p.pop();
         }
-      };
-      
-      // Custom abstract shape combining geometries
-      const customShape = (p: p5, size: number) => {
-        p.beginShape();
-        for (let i = 0; i < 24; i++) {
-          const ang = p.map(i, 0, 24, 0, p.TWO_PI);
-          const rad = size * (0.6 + p.sin(ang * 3 + angle) * 0.2);
-          const x = rad * p.cos(ang);
-          const y = rad * p.sin(ang);
-          const z = size * 0.3 * p.sin(ang * 2 + angle);
-          p.vertex(x, y, z);
+        
+        // Add some medium-sized spheres in the middle distance
+        for (let i = 0; i < 5; i++) {
+          p.push();
+          const medAngle = angle * 0.7 + (i * p.TWO_PI / 5);
+          const medRadius = baseSize * 0.6;
+          const medX = p.sin(medAngle) * medRadius;
+          const medY = p.cos(medAngle) * medRadius;
+          const medZ = p.sin(medAngle * 1.5) * medRadius * 0.5;
+          
+          p.translate(medX, medY, medZ);
+          p.fill(200 + i * 30, 70, 85, 0.7);
+          p.sphere(baseSize * 0.12);
+          p.pop();
         }
-        p.endShape(p.CLOSE);
       };
     };
 
