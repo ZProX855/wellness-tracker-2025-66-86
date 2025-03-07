@@ -1,3 +1,4 @@
+
 #root {
   max-width: 100%;
   margin: 0 auto;
@@ -21,6 +22,7 @@
   width: 100% !important;
   height: 100% !important;
   z-index: -5 !important;
+  filter: drop-shadow(0 0 20px rgba(104, 166, 136, 0.5));
 }
 
 .background-container {
@@ -128,4 +130,19 @@
   left: 0;
   right: 0;
   bottom: 0;
+}
+
+/* New animations for birds and light effects */
+@keyframes glow {
+  0%, 100% { filter: drop-shadow(0 0 5px rgba(104, 166, 136, 0.5)); }
+  50% { filter: drop-shadow(0 0 15px rgba(104, 166, 136, 0.8)); }
+}
+
+.glow-effect {
+  animation: glow 3s ease-in-out infinite;
+}
+
+.light-interaction:hover {
+  filter: brightness(1.2) drop-shadow(0 0 10px rgba(104, 166, 136, 0.8));
+  transition: all 0.3s ease;
 }

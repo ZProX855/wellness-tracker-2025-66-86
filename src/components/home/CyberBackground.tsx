@@ -45,6 +45,125 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className }) => {
       let canvasWidth = window.innerWidth;
       let canvasHeight = window.innerHeight;
       let canvasElement: HTMLElement | null = null;
+      let lights: Light[] = [];
+      let birds: Bird[] = [];
+      let mouseInteractive = false;
+      
+      class Light {
+        x: number;
+        y: number;
+        size: number;
+        alpha: number;
+        hue: number;
+        pulse: number;
+        pulseSpeed: number;
+
+        constructor() {
+          this.x = p.random(canvasWidth);
+          this.y = p.random(canvasHeight);
+          this.size = p.random(50, 150);
+          this.alpha = p.random(10, 40);
+          this.hue = p.random(60, 140); // Green hues
+          this.pulse = 0;
+          this.pulseSpeed = p.random(0.02, 0.05);
+        }
+
+        update(mouseX: number, mouseY: number) {
+          this.pulse += this.pulseSpeed;
+          
+          // Add mouse interactivity - lights grow when mouse is near
+          const distToMouse = p.dist(this.x, this.y, mouseX, mouseY);
+          const interactionRadius = 300;
+          
+          if (distToMouse < interactionRadius) {
+            const influence = p.map(distToMouse, 0, interactionRadius, 1.5, 1);
+            this.size = p.lerp(this.size, this.size * influence, 0.1);
+            this.alpha = p.lerp(this.alpha, this.alpha * 1.2, 0.1);
+          }
+        }
+
+        display() {
+          const pulseFactor = p.sin(this.pulse) * 0.3 + 0.7;
+          const size = this.size * pulseFactor;
+          
+          p.noStroke();
+          
+          // Glow effect with multiple layers
+          for (let i = 3; i > 0; i--) {
+            const layerSize = size * (i / 3);
+            const layerAlpha = this.alpha * (i / 3);
+            p.fill(this.hue, 80, 80, layerAlpha);
+            p.ellipse(this.x, this.y, layerSize, layerSize);
+          }
+        }
+      }
+      
+      class Bird {
+        x: number;
+        y: number;
+        z: number;
+        speed: number;
+        size: number;
+        wingAngle: number;
+        wingSpeed: number;
+        hue: number;
+        
+        constructor() {
+          this.z = p.random(0.1, 1); // Z-depth for parallax
+          this.x = p.random(canvasWidth);
+          this.y = p.random(canvasHeight * 0.7); // Higher up in the canvas
+          this.speed = p.map(this.z, 0.1, 1, 0.5, 2);
+          this.size = p.map(this.z, 0.1, 1, 5, 15);
+          this.wingAngle = 0;
+          this.wingSpeed = p.random(0.1, 0.3);
+          this.hue = p.random(60, 140); // Green hues
+        }
+        
+        update() {
+          this.x += this.speed;
+          this.wingAngle += this.wingSpeed;
+          
+          // Reset position when bird leaves the screen
+          if (this.x > canvasWidth + 50) {
+            this.x = -50;
+            this.y = p.random(canvasHeight * 0.7);
+          }
+        }
+        
+        display() {
+          p.push();
+          p.translate(this.x, this.y);
+          
+          // Bird body color
+          p.fill(this.hue, 70, 90, 0.7);
+          p.noStroke();
+          
+          // Bird body
+          p.ellipse(0, 0, this.size * 2, this.size);
+          
+          // Wings
+          const wingY = p.sin(this.wingAngle) * this.size * 0.8;
+          
+          // Left wing
+          p.beginShape();
+          p.vertex(0, 0);
+          p.vertex(-this.size * 1.5, wingY);
+          p.vertex(-this.size * 0.5, wingY * 0.5);
+          p.endShape(p.CLOSE);
+          
+          // Right wing
+          p.beginShape();
+          p.vertex(0, 0);
+          p.vertex(this.size * 1.5, wingY);
+          p.vertex(this.size * 0.5, wingY * 0.5);
+          p.endShape(p.CLOSE);
+          
+          // Bird head
+          p.ellipse(this.size, 0, this.size * 0.8, this.size * 0.8);
+          
+          p.pop();
+        }
+      }
       
       // Setup canvas
       p.setup = () => {
@@ -69,6 +188,16 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className }) => {
         } else {
           debug('Canvas element not found after creation');
         }
+        
+        // Initialize lights
+        for (let i = 0; i < 15; i++) {
+          lights.push(new Light());
+        }
+        
+        // Initialize birds
+        for (let i = 0; i < 12; i++) {
+          birds.push(new Bird());
+        }
       };
 
       // Resize handler
@@ -85,6 +214,23 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className }) => {
         
         // Dynamic background color (very subtle)
         p.background(240, 10, 10, 0.05);
+        
+        // Place back in normal 2D mode for drawing birds and lights
+        p.push();
+        p.translate(-p.width/2, -p.height/2, 0);
+        
+        // Draw lights
+        for (const light of lights) {
+          light.update(p.mouseX, p.mouseY);
+          light.display();
+        }
+        
+        // Draw birds
+        for (const bird of birds) {
+          bird.update();
+          bird.display();
+        }
+        p.pop();
         
         // Enhanced lighting for better visibility
         const pointLight = p.color(60, 80, 100); // Blue
@@ -126,6 +272,10 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className }) => {
         // Update animation values
         angle += 0.01;
         hue = (hue + 0.1) % 100;
+      };
+
+      p.mouseMoved = () => {
+        mouseInteractive = true;
       };
       
       // Function to draw our abstract cyberpunk shape
