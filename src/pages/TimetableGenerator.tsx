@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Clock, Mic } from 'lucide-react';
+import { ArrowLeft, Clock, Mic, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Header from '../components/Header';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -16,6 +16,7 @@ import ConversationSummary from '@/components/timetable/ConversationSummary';
 import TimetableGeneratorComponent from '@/components/timetable/TimetableGenerator';
 import ChatModeSelector from '@/components/timetable/ChatModeSelector';
 import TimetableInsights from '@/components/timetable/TimetableInsights';
+
 interface TimetableEntry {
   time: string;
   activity: string;
@@ -24,10 +25,12 @@ interface TimetableEntry {
   completed?: boolean;
   important?: boolean;
 }
+
 interface ConversationResponse {
   question: string;
   answer: string;
 }
+
 const TimetableGenerator = () => {
   const [isConversationActive, setIsConversationActive] = useState(false);
   const [isTextChatActive, setIsTextChatActive] = useState(false);
@@ -65,6 +68,32 @@ const TimetableGenerator = () => {
     toast
   } = useToast();
   const navigate = useNavigate();
+
+  const resetTool = () => {
+    setTimetable([]);
+    setIsConversationActive(false);
+    setIsTextChatActive(false);
+    setResponses([]);
+    setConversationComplete(false);
+    setLoadingTimetable(false);
+    setIsGeneratingAfterConversation(false);
+    setTranscript([]);
+    setLocalConversation([]);
+    setChatMode(null);
+    setShowTimetable(false);
+    setShowInsights(false);
+    try {
+      localStorage.removeItem('lastConversationTranscript');
+      localStorage.removeItem('currentSessionTranscript');
+    } catch (error) {
+      console.error("Error clearing local storage:", error);
+    }
+    toast({
+      title: "Tool Reset",
+      description: "The timetable generator has been reset to its initial state."
+    });
+  };
+
   useEffect(() => {
     if (timetable && timetable.length > 0) {
       setShowTimetable(true);
@@ -101,6 +130,7 @@ const TimetableGenerator = () => {
       window.removeEventListener('conversationTranscript', handleConversationTranscript as EventListener);
     };
   }, [transcript]);
+
   const handleAddResponse = (question: string, answer: string) => {
     if (question && !answer) {
       setResponses(prev => [...prev, {
@@ -128,6 +158,7 @@ const TimetableGenerator = () => {
       });
     }
   };
+
   const handleConversationComplete = () => {
     setConversationComplete(true);
     setIsGeneratingAfterConversation(true);
@@ -135,11 +166,13 @@ const TimetableGenerator = () => {
       generateTimetableFromLocalData();
     }, 1000);
   };
+
   const generateTimetableFromLocalData = () => {
     setIsGeneratingAfterConversation(false);
     setShowTimetable(true);
     setShowInsights(true);
   };
+
   const handleEditEntry = (entry: TimetableEntry, index: number) => {
     setEditEntry({
       ...entry
@@ -147,6 +180,7 @@ const TimetableGenerator = () => {
     setEditIndex(index);
     setIsDrawerOpen(true);
   };
+
   const saveEditedEntry = () => {
     if (editEntry && editIndex !== null) {
       const updatedTimetable = [...timetable];
@@ -159,6 +193,7 @@ const TimetableGenerator = () => {
       });
     }
   };
+
   const addNewEntry = () => {
     if (newEntry.time && newEntry.activity) {
       setTimetable(prev => [...prev, {
@@ -185,6 +220,7 @@ const TimetableGenerator = () => {
       });
     }
   };
+
   const deleteEntry = (entry: TimetableEntry, index: number) => {
     const updatedTimetable = [...timetable];
     updatedTimetable.splice(index, 1);
@@ -194,16 +230,19 @@ const TimetableGenerator = () => {
       description: "Activity has been removed from your timetable."
     });
   };
+
   const toggleCompleted = (index: number) => {
     const updatedTimetable = [...timetable];
     updatedTimetable[index].completed = !updatedTimetable[index].completed;
     setTimetable(updatedTimetable);
   };
+
   const toggleImportant = (index: number) => {
     const updatedTimetable = [...timetable];
     updatedTimetable[index].important = !updatedTimetable[index].important;
     setTimetable(updatedTimetable);
   };
+
   const shareTimetable = async () => {
     try {
       const timetableText = timetable.map(entry => `${entry.time} - ${entry.activity}${entry.description ? ` (${entry.description})` : ''}`).join('\n');
@@ -232,6 +271,7 @@ const TimetableGenerator = () => {
       });
     }
   };
+
   const downloadTimetable = () => {
     const timetableText = timetable.map(entry => `${entry.time} - ${entry.activity}${entry.description ? ` (${entry.description})` : ''}`).join('\n');
     const blob = new Blob([timetableText], {
@@ -250,41 +290,72 @@ const TimetableGenerator = () => {
       description: "Your timetable has been downloaded as a text file."
     });
   };
+
   const handleStartVoiceConversation = () => {
     setIsConversationActive(true);
     setShowTimetable(false);
     setShowInsights(false);
   };
+
   const handleHideInsights = () => {
     setShowInsights(false);
   };
+
   const handleHideTimetable = () => {
     setShowTimetable(false);
   };
+
   return <div className="min-h-screen bg-gradient-to-b from-wellness-softBeige to-wellness-softGreen/30">
       <Header />
       
       <main className="pt-24 pb-16 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto">
-          <div className="mb-8">
-            <Link to="/" className="inline-flex items-center text-wellness-darkGreen hover:text-wellness-mediumGreen transition-colors">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Home
-            </Link>
-            <h1 className="text-3xl font-medium text-wellness-darkGreen mt-4 mb-2 animate-fade-in">
-              AI Timetable Generator
-            </h1>
-            <p className="text-wellness-charcoal animate-fade-in">
-              Have a conversation with our AI voice assistant to create your personalized daily timetable.
-            </p>
+          <div className="mb-8 flex justify-between items-center">
+            <div>
+              <Link to="/" className="inline-flex items-center text-wellness-darkGreen hover:text-wellness-mediumGreen transition-colors">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Home
+              </Link>
+              <h1 className="text-3xl font-medium text-wellness-darkGreen mt-4 mb-2 animate-fade-in">
+                AI Timetable Generator
+              </h1>
+              <p className="text-wellness-charcoal animate-fade-in">
+                Have a conversation with our AI voice assistant to create your personalized daily timetable.
+              </p>
+            </div>
+            
+            {(timetable.length > 0 || isConversationActive || conversationComplete) && (
+              <Button
+                onClick={resetTool}
+                variant="outline"
+                className="border-wellness-darkGreen text-wellness-darkGreen hover:bg-wellness-softGreen/20"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Reset Tool
+              </Button>
+            )}
           </div>
           
           <div className="bg-white bg-opacity-70 backdrop-blur-sm rounded-xl p-6 border border-wellness-softGreen/30 shadow-sm mb-8 hover:shadow-md transition-shadow">
+            <ChatModeSelector 
+              chatMode={chatMode} 
+              setChatMode={setChatMode} 
+              isConversationActive={isConversationActive} 
+              isTextChatActive={isTextChatActive}
+              onStartVoiceConversation={handleStartVoiceConversation}
+            />
             
-            
-            <ChatModeSelector chatMode={chatMode} setChatMode={setChatMode} isConversationActive={isConversationActive} isTextChatActive={isTextChatActive} />
-            
-            {(chatMode === 'voice' || chatMode === null) && <VoiceAssistant isConversationActive={isConversationActive} setIsConversationActive={handleStartVoiceConversation} onConversationComplete={handleConversationComplete} onResponses={handleAddResponse} onSetConversationId={setCurrentConversationId} onHideInsights={handleHideInsights} onHideTimetable={handleHideTimetable} />}
+            {(chatMode === 'voice' || chatMode === null) && (
+              <VoiceAssistant 
+                isConversationActive={isConversationActive} 
+                setIsConversationActive={handleStartVoiceConversation}
+                onConversationComplete={handleConversationComplete}
+                onResponses={handleAddResponse}
+                onSetConversationId={setCurrentConversationId}
+                onHideInsights={handleHideInsights}
+                onHideTimetable={handleHideTimetable}
+              />
+            )}
             
             <ConversationSummary responses={responses} showSummary={chatMode === 'voice'} />
           </div>
@@ -468,4 +539,5 @@ const TimetableGenerator = () => {
       </Drawer>
     </div>;
 };
+
 export default TimetableGenerator;
