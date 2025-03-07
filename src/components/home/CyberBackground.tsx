@@ -41,18 +41,16 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className }) => {
 
     const sketch = (p: p5) => {
       let angle = 0;
-      let hue = 120; // Starting with green hue
+      let hue = 0;
       let canvasWidth = window.innerWidth;
       let canvasHeight = window.innerHeight;
       let canvasElement: HTMLElement | null = null;
-      let mouseInteracting = false;
-      let glowIntensity = 0;
       
       // Setup canvas
       p.setup = () => {
         debug(`Creating canvas: ${canvasWidth}x${canvasHeight}`);
         const canvas = p.createCanvas(canvasWidth, canvasHeight, p.WEBGL);
-        p.colorMode(p.HSB, 360, 100, 100, 1);
+        p.colorMode(p.HSB, 100);
         p.noStroke();
         p.frameRate(30);
         
@@ -81,33 +79,19 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className }) => {
         p.resizeCanvas(canvasWidth, canvasHeight);
       };
 
-      // Mouse event handlers for interaction
-      p.mousePressed = () => {
-        const distToCenter = p.dist(p.mouseX, p.mouseY, p.width/2, p.height/2);
-        if (distToCenter < p.width/3) {
-          mouseInteracting = true;
-          // Trigger glow effect
-          glowIntensity = 1;
-        }
-      };
-
-      p.mouseReleased = () => {
-        mouseInteracting = false;
-      };
-
       // Main draw loop
       p.draw = () => {
         p.clear();
         
-        // Subtle green background
-        p.background(120, 10, 10, 0.05);
+        // Dynamic background color (very subtle)
+        p.background(240, 10, 10, 0.05);
         
         // Enhanced lighting for better visibility
-        const mainLight = p.color(120, 80, 90); // Bright green
-        const accentLight = p.color(150, 70, 90); // Teal/green
-        p.pointLight(mainLight, 0, -300, 300);
-        p.pointLight(accentLight, 0, 300, -300);
-        p.ambientLight(30, 20, 50); // Increased ambient light
+        const pointLight = p.color(60, 80, 100); // Blue
+        const pointLight2 = p.color(90, 80, 100); // Purple
+        p.pointLight(pointLight, 0, -300, 300);
+        p.pointLight(pointLight2, 0, 300, -300);
+        p.ambientLight(20, 20, 40); // Increased ambient light
         
         // Handle mouse interaction
         const mouseYRotation = p.map(p.mouseX, 0, p.width, -0.1, 0.1);
@@ -121,128 +105,88 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className }) => {
         p.push();
         
         // Center and scale based on screen size
-        const scale = Math.min(p.width, p.height) / 700; // Responsive scaling
-        p.scale(scale * 1.7); // Increased scale for better visibility
+        const scale = Math.min(p.width, p.height) / 800; // Responsive scaling
+        p.scale(scale * 1.5); // Increased scale for better visibility
         
         p.translate(0, 0, 0);
-        p.rotateY(angle * 0.4);
-        p.rotateX(angle * 0.2);
+        p.rotateY(angle * 0.5);
+        p.rotateX(angle * 0.3);
         
         // Apply mouse-based rotation if mouse is active
         if (isMouseActive) {
-          p.rotateX(mouseXRotation * 2);
-          p.rotateY(mouseYRotation * 2);
+          p.rotateX(mouseXRotation);
+          p.rotateY(mouseYRotation);
         }
         
         // Create the abstract shape with improved opacity
-        drawEnhancedGreenShape(p, angle);
+        drawAbstractShape(p, angle);
         
         p.pop();
         
         // Update animation values
         angle += 0.01;
-        
-        // Cycle through green hues (100-150)
-        hue = 120 + 15 * p.sin(angle * 0.5);
-        
-        // Gradually reduce glow intensity
-        if (glowIntensity > 0) {
-          glowIntensity -= 0.02;
-        }
+        hue = (hue + 0.1) % 100;
       };
       
-      // Function to draw our enhanced green shape
-      const drawEnhancedGreenShape = (p: p5, angle: number) => {
+      // Function to draw our abstract cyberpunk shape
+      const drawAbstractShape = (p: p5, angle: number) => {
         // Create a series of shapes that form together
-        const baseSize = Math.min(p.width, p.height) * 0.22; // Increased size
-        
-        // Outer glow effect (when interacted with)
-        if (glowIntensity > 0) {
-          p.push();
-          p.fill(120, 90, 90, glowIntensity * 0.4);
-          p.sphere(baseSize * 1.5 * (1 + glowIntensity * 0.2));
-          p.pop();
-        }
+        const baseSize = Math.min(p.width, p.height) * 0.20; // Increased size
         
         // Inner core - pulsing effect
         p.push();
         const pulseAmount = p.sin(angle * 2) * 0.1 + 0.9;
-        p.fill(120, 90, 90, 0.9); // Bright green, increased opacity
-        p.scale(pulseAmount * 0.7);
+        p.fill(280, 70, 90, 0.9); // Increased opacity
+        p.scale(pulseAmount * 0.6);
         p.rotateX(angle * 0.7);
         p.rotateY(angle * 0.6);
-        p.torus(baseSize * 0.6, baseSize * 0.12);
+        p.torus(baseSize * 0.5, baseSize * 0.1);
         p.pop();
         
-        // Middle layer - green morphing core
+        // Middle layer
         p.push();
-        p.fill(hue, 85, 85, 0.9); // Dynamic green, increased opacity
+        p.fill(220, 80, 90, 0.9); // Increased opacity
         p.rotateX(angle * -0.5);
         p.rotateZ(angle * 0.3);
-        const morphSize = p.sin(angle) * 0.15 + 1;
+        const morphSize = p.sin(angle) * 0.1 + 1;
         p.scale(0.8 * morphSize);
-        leafShape(p, baseSize);
+        customShape(p, baseSize);
         p.pop();
         
-        // Outer layer with forest green glow
+        // Outer layer with glow effect
         p.push();
-        p.fill(140, 85, 75, 0.7); // Forest green, increased opacity
+        p.fill(200, 80, 80, 0.6); // Increased opacity
         p.rotateY(angle * -0.2);
         p.rotateZ(angle * -0.1);
-        p.scale(1.3);
-        p.torus(baseSize * 0.8, baseSize * 0.08);
+        p.scale(1.2);
+        p.torus(baseSize * 0.8, baseSize * 0.1);
         p.pop();
         
-        // Create orbiting smaller elements resembling leaf particles
-        for (let i = 0; i < 7; i++) { // Added more elements
+        // Create orbiting smaller elements
+        for (let i = 0; i < 5; i++) { // Added more elements
           p.push();
-          const orbitAngle = angle + (i * p.TWO_PI / 7);
-          const orbitRadius = baseSize * 1.7;
+          const orbitAngle = angle + (i * p.TWO_PI / 5);
+          const orbitRadius = baseSize * 1.5;
           const x = p.sin(orbitAngle) * orbitRadius;
           const y = p.cos(orbitAngle) * orbitRadius * 0.5;
-          const z = p.sin(orbitAngle * 2) * orbitRadius * 0.3;
           
-          p.translate(x, y, z);
-          p.rotateX(angle * (i % 3));
-          p.rotateY(angle * (i % 2));
-          
-          const particleHue = 100 + (i * 10); // Varying shades of green
-          p.fill(particleHue, 90, 90, 0.85); // Brighter, increased opacity
-          
-          // Small leaf-like shape
-          if (i % 2 === 0) {
-            miniLeaf(p, baseSize * 0.18);
-          } else {
-            p.sphere(baseSize * 0.12);
-          }
+          p.translate(x, y, 0);
+          p.fill(280 + i*15, 90, 90, 0.8); // Increased opacity
+          p.sphere(baseSize * 0.15); // Increased size
           p.pop();
         }
       };
       
-      // Custom organic leaf-like shape
-      const leafShape = (p: p5, size: number) => {
+      // Custom abstract shape combining geometries
+      const customShape = (p: p5, size: number) => {
         p.beginShape();
-        for (let i = 0; i < 36; i++) {
-          const ang = p.map(i, 0, 36, 0, p.TWO_PI);
-          const leafFactor = p.pow(p.sin(ang * 3), 2) * 0.3 + 0.7; // Leaf-like shape factor
-          const rad = size * leafFactor * (0.7 + p.sin(ang * 5 + angle) * 0.1);
+        for (let i = 0; i < 24; i++) {
+          const ang = p.map(i, 0, 24, 0, p.TWO_PI);
+          const rad = size * (0.6 + p.sin(ang * 3 + angle) * 0.2);
           const x = rad * p.cos(ang);
           const y = rad * p.sin(ang);
-          const z = size * 0.25 * p.sin(ang * 4 + angle * 2);
+          const z = size * 0.3 * p.sin(ang * 2 + angle);
           p.vertex(x, y, z);
-        }
-        p.endShape(p.CLOSE);
-      };
-      
-      // Mini leaf shape for particles
-      const miniLeaf = (p: p5, size: number) => {
-        p.beginShape();
-        for (let i = 0; i < 12; i++) {
-          const ang = p.map(i, 0, 12, 0, p.TWO_PI);
-          const rad = size * (1 + p.sin(ang * 2) * 0.5);
-          const x = rad * p.cos(ang);
-          const y = rad * p.sin(ang);
-          p.vertex(x, y, 0);
         }
         p.endShape(p.CLOSE);
       };
