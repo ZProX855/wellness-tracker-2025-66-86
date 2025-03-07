@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import p5 from 'p5';
 
 interface CyberBackgroundProps {
@@ -7,133 +7,86 @@ interface CyberBackgroundProps {
 
 const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [mousePosX, setMousePosX] = useState(0);
-  const [mousePosY, setMousePosY] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const [scale, setScale] = useState(1);
 
   useEffect(() => {
     let sketch: p5;
-    let shapes: Array<Shape> = [];
+    let circles: Array<Circle> = [];
     let particles: Array<Particle> = [];
     
-    class Shape {
+    class Circle {
       position: p5.Vector;
-      targetPosition: p5.Vector;
-      rotation: p5.Vector;
-      size: number;
-      complexity: number;
-      originalSize: number;
-      color: p5.Color;
-      secondaryColor: p5.Color;
-      isDragged: boolean = false;
       velocity: p5.Vector;
       acceleration: p5.Vector;
+      rotation: number;
+      rotationSpeed: number;
+      size: number;
+      color: p5.Color;
+      glowColor: p5.Color;
       maxSpeed: number;
       centerAvoidanceRadius: number;
       seed: number;
 
       constructor(p: p5, x: number, y: number, size: number) {
         this.position = p.createVector(x, y);
-        this.targetPosition = p.createVector(x, y);
-        this.rotation = p.createVector(
-          p.random(0, p.TWO_PI),
-          p.random(0, p.TWO_PI),
-          p.random(0, p.TWO_PI)
-        );
+        this.velocity = p5.Vector.random2D().mult(p.random(0.5, 1.5));
+        this.acceleration = p.createVector(0, 0);
+        this.rotation = p.random(0, p.TWO_PI);
+        this.rotationSpeed = p.random(0.002, 0.01) * (Math.random() > 0.5 ? 1 : -1); // Clockwise or counter-clockwise
         this.size = size;
-        this.originalSize = size;
-        this.complexity = p.random(4, 8);
         
-        // Create green color with transparency
+        // Green color palette with transparency
         this.color = p.color(
           p.random(100, 150), // Red component (low for green)
           p.random(200, 255), // Green component (high)
           p.random(100, 150), // Blue component (low for green)
-          p.random(40, 80)    // Alpha (transparency)
+          p.random(80, 180)   // Alpha (transparency)
         );
         
-        // Secondary color for highlights
-        this.secondaryColor = p.color(
+        // Glow color (brighter green)
+        this.glowColor = p.color(
           p.random(150, 200), // Red component
-          p.random(220, 255), // Green component (high)
+          p.random(230, 255), // Green component (high)
           p.random(150, 200), // Blue component
-          p.random(60, 100)   // Alpha (transparency)
+          p.random(100, 200)  // Alpha (transparency)
         );
         
-        // Add properties for autonomous movement
-        this.velocity = p5.Vector.random2D().mult(p.random(0.2, 0.5));
-        this.acceleration = p.createVector(0, 0);
-        this.maxSpeed = p.random(0.3, 0.8);
-        this.centerAvoidanceRadius = p.width / 3; // Radius to avoid center
+        this.maxSpeed = p.random(0.5, 1.2);
+        this.centerAvoidanceRadius = p.width / 2.5; // Increased radius to avoid center
         this.seed = p.random(1000); // Random seed for perlin noise
       }
 
-      update(p: p5, mouseX: number, mouseY: number, isDragging: boolean, dragOffsetX: number, dragOffsetY: number, scale: number, frameCount: number) {
-        // Apply a smooth easing effect to the movement
-        const easing = 0.03;
+      update(p: p5, frameCount: number) {
+        // Continuous rotation
+        this.rotation += this.rotationSpeed;
         
-        // Update rotation with a smooth, continuous motion
-        this.rotation.x += 0.003;
-        this.rotation.y += 0.002;
-        this.rotation.z += 0.001;
+        // Autonomous movement using perlin noise
+        const noiseX = p.noise(this.seed + frameCount * 0.001) * 2 - 1;
+        const noiseY = p.noise(this.seed + 500 + frameCount * 0.001) * 2 - 1;
+        const noiseForce = p.createVector(noiseX, noiseY);
+        noiseForce.mult(0.05);
+        this.applyForce(noiseForce);
         
-        // Apply scaling
-        this.size = this.originalSize * scale;
+        // Strong center avoidance force
+        const center = p.createVector(0, 0);
+        const distToCenter = p.dist(this.position.x, this.position.y, center.x, center.y);
         
-        // Handle dragging
-        if (isDragging) {
-          const distToMouse = p.dist(mouseX, mouseY, this.position.x, this.position.y);
-          
-          // If mouse is close to the shape, make it follow the mouse
-          if (distToMouse < this.size * 1.5) {
-            this.isDragged = true;
-            this.targetPosition.x = mouseX + dragOffsetX;
-            this.targetPosition.y = mouseY + dragOffsetY;
-            // Reset acceleration when dragged
-            this.acceleration.mult(0);
-          } else {
-            this.isDragged = false;
-          }
-        } else {
-          this.isDragged = false;
+        if (distToCenter < this.centerAvoidanceRadius) {
+          // Create a force that points away from center
+          const avoidForce = p5.Vector.sub(this.position, center);
+          // Stronger avoidance as we get closer to center
+          const strength = p.map(distToCenter, 0, this.centerAvoidanceRadius, 0.08, 0);
+          avoidForce.normalize().mult(strength);
+          this.applyForce(avoidForce);
         }
         
-        if (!this.isDragged) {
-          // Autonomous movement using perlin noise for smooth paths
-          const noiseX = p.noise(this.seed + frameCount * 0.001) * 2 - 1;
-          const noiseY = p.noise(this.seed + 500 + frameCount * 0.001) * 2 - 1;
-          const noiseForce = p.createVector(noiseX, noiseY);
-          noiseForce.mult(0.01);
-          this.applyForce(noiseForce);
-          
-          // Add center avoidance force
-          const center = p.createVector(0, 0);
-          const distToCenter = p.dist(this.position.x, this.position.y, center.x, center.y);
-          
-          if (distToCenter < this.centerAvoidanceRadius) {
-            // Create a force that points away from center
-            const avoidForce = p5.Vector.sub(this.position, center);
-            // Stronger avoidance as we get closer to center
-            const strength = p.map(distToCenter, 0, this.centerAvoidanceRadius, 0.05, 0);
-            avoidForce.normalize().mult(strength);
-            this.applyForce(avoidForce);
-          }
-          
-          // Apply soft bounds to keep shapes in view
-          this.applyBounds(p);
-          
-          // Update velocity and position
-          this.velocity.add(this.acceleration);
-          this.velocity.limit(this.maxSpeed);
-          this.targetPosition.add(this.velocity);
-          this.acceleration.mult(0); // Reset acceleration
-        }
+        // Apply soft bounds to keep circles in view
+        this.applyBounds(p);
         
-        // Apply smooth movement towards the target position
-        this.position.x += (this.targetPosition.x - this.position.x) * easing;
-        this.position.y += (this.targetPosition.y - this.position.y) * easing;
+        // Update velocity and position
+        this.velocity.add(this.acceleration);
+        this.velocity.limit(this.maxSpeed);
+        this.position.add(this.velocity);
+        this.acceleration.mult(0); // Reset acceleration
       }
       
       applyForce(force: p5.Vector) {
@@ -144,84 +97,61 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
         const padding = this.size;
         const bound = p.width / 2 - padding;
         
-        if (this.targetPosition.x > bound) {
-          const force = p.createVector(-0.03, 0);
+        if (this.position.x > bound) {
+          const force = p.createVector(-0.05, 0);
           this.applyForce(force);
-        } else if (this.targetPosition.x < -bound) {
-          const force = p.createVector(0.03, 0);
+        } else if (this.position.x < -bound) {
+          const force = p.createVector(0.05, 0);
           this.applyForce(force);
         }
         
-        if (this.targetPosition.y > bound) {
-          const force = p.createVector(0, -0.03);
+        if (this.position.y > bound) {
+          const force = p.createVector(0, -0.05);
           this.applyForce(force);
-        } else if (this.targetPosition.y < -bound) {
-          const force = p.createVector(0, 0.03);
+        } else if (this.position.y < -bound) {
+          const force = p.createVector(0, 0.05);
           this.applyForce(force);
         }
       }
 
-      draw(p: p5) {
+      draw(p: p5, mouseX: number, mouseY: number) {
         p.push();
+        
+        // Position the circle
         p.translate(this.position.x, this.position.y);
-        p.rotateX(this.rotation.x);
-        p.rotateY(this.rotation.y);
-        p.rotateZ(this.rotation.z);
+        p.rotate(this.rotation);
         
-        // Apply a subtle glow effect if being dragged
-        if (this.isDragged) {
-          p.drawingContext.shadowBlur = 30;
-          p.drawingContext.shadowColor = p.color(150, 255, 150, 100);
-        } else {
-          p.drawingContext.shadowBlur = 15;
-          p.drawingContext.shadowColor = p.color(100, 200, 100, 50);
-        }
+        // Calculate distance to mouse for dynamic lighting
+        const distToMouse = p.dist(
+          mouseX, mouseY, 
+          this.position.x + p.width/2, this.position.y + p.height/2
+        );
+        const lightInfluence = p.constrain(p.map(distToMouse, 0, 300, 1.5, 0.8), 0.8, 1.5);
         
+        // Apply glow effect based on mouse proximity
+        p.drawingContext.shadowBlur = 15 * lightInfluence;
+        p.drawingContext.shadowColor = p.color(120, 255, 150, 70);
+        
+        // Draw main circle with subtle gradient
         p.noStroke();
         p.fill(this.color);
+        p.ellipse(0, 0, this.size, this.size);
         
-        // Draw a more organic, complex shape
-        this.drawOrganicShape(p);
+        // Draw inner details
+        p.fill(this.glowColor);
+        p.ellipse(0, 0, this.size * 0.6, this.size * 0.6);
+        
+        // Draw a few additional circular patterns
+        p.noFill();
+        p.stroke(this.glowColor);
+        p.strokeWeight(2);
+        p.ellipse(0, 0, this.size * 0.8, this.size * 0.8);
+        
+        p.strokeWeight(1);
+        p.stroke(255, 255, 255, 80);
+        p.ellipse(0, 0, this.size * 0.4, this.size * 0.4);
         
         p.pop();
-      }
-      
-      drawOrganicShape(p: p5) {
-        // Create a more organic, smooth shape using beginShape()
-        p.beginShape();
-        
-        const baseRadius = this.size;
-        const petalCount = Math.floor(this.complexity);
-        
-        // Create smooth, curved petals
-        for (let angle = 0; angle < p.TWO_PI; angle += 0.1) {
-          // Create a wave pattern for the radius
-          const waveR = p.sin(angle * petalCount) * 0.2 + 0.8;
-          const r = baseRadius * waveR;
-          
-          const x = r * p.cos(angle);
-          const y = r * p.sin(angle);
-          const z = r * p.sin(angle * 2) * 0.3;
-          
-          p.vertex(x, y, z);
-        }
-        
-        p.endShape(p.CLOSE);
-        
-        // Add inner details with the secondary color
-        p.fill(this.secondaryColor);
-        p.beginShape();
-        for (let angle = 0; angle < p.TWO_PI; angle += 0.1) {
-          const innerWaveR = p.sin(angle * (petalCount + 2)) * 0.1 + 0.4;
-          const innerR = baseRadius * innerWaveR;
-          
-          const x = innerR * p.cos(angle);
-          const y = innerR * p.sin(angle);
-          const z = innerR * p.sin(angle * 3) * 0.2;
-          
-          p.vertex(x, y, z);
-        }
-        p.endShape(p.CLOSE);
       }
     }
     
@@ -235,9 +165,10 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
       
       constructor(p: p5, x: number, y: number) {
         this.pos = p.createVector(x, y);
-        this.vel = p5.Vector.random2D().mult(p.random(0.5, 2));
+        this.vel = p5.Vector.random2D().mult(p.random(0.5, 1.5));
         this.acc = p.createVector(0, 0);
-        this.size = p.random(2, 8);
+        this.size = p.random(2, 5);
+        // Green/white particles
         this.color = p.color(
           p.random(200, 255),
           p.random(240, 255),
@@ -251,7 +182,7 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
         this.vel.add(this.acc);
         this.pos.add(this.vel);
         this.acc.mult(0);
-        this.lifespan -= 3;
+        this.lifespan -= 2;
       }
       
       draw(p: p5) {
@@ -268,6 +199,8 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
 
     const createSketch = (p: p5) => {
       let lastScrollY = 0;
+      let mouseXNorm = 0;
+      let mouseYNorm = 0;
       
       p.setup = () => {
         const canvas = p.createCanvas(p.windowWidth, p.windowHeight, p.WEBGL);
@@ -276,16 +209,16 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
         p.frameRate(60); // Higher frame rate for smoother animations
         p.colorMode(p.RGB, 255, 255, 255, 255);
         
-        // Create several floating shapes, but keep them away from center initially
-        for (let i = 0; i < 10; i++) {
+        // Create circles away from center
+        for (let i = 0; i < 15; i++) {
           // Create positions avoiding the center
           let x, y;
           do {
             x = p.random(-p.width/2, p.width/2);
             y = p.random(-p.height/2, p.height/2);
-          } while (p.dist(x, y, 0, 0) < p.width/4); // Avoid center
+          } while (p.dist(x, y, 0, 0) < p.width/3); // Avoid center
           
-          shapes.push(new Shape(p, x, y, p.random(50, 150)));
+          circles.push(new Circle(p, x, y, p.random(60, 180)));
         }
       };
 
@@ -293,44 +226,47 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
         p.clear();
         p.background(245, 248, 250, 5); // Very subtle background
         
-        // Apply global transformations
-        p.translate(0, 0, -200);  // Push everything back for better 3D effect
+        // Smoothly track mouse position for lighting
+        const targetMouseX = p.mouseX;
+        const targetMouseY = p.mouseY;
+        mouseXNorm = mouseXNorm + (targetMouseX - mouseXNorm) * 0.05;
+        mouseYNorm = mouseYNorm + (targetMouseY - mouseYNorm) * 0.05;
         
-        // Get normalized mouse positions from React state
-        const mouseXNorm = (mousePosX / p.width) * 2 - 1;
-        const mouseYNorm = (mousePosY / p.height) * 2 - 1;
+        // Calculate normalized mouse positions
+        const mouseXPos = (mouseXNorm / p.width) * 2 - 1;
+        const mouseYPos = (mouseYNorm / p.height) * 2 - 1;
         
         // Calculate scroll effect - smoother parallax
-        const scrollEffect = (scrollY - lastScrollY) * 0.1;
+        const scrollEffect = (scrollY - lastScrollY) * 0.05;
         lastScrollY = lastScrollY + (scrollY - lastScrollY) * 0.1; // Smooth scrolling
         
-        // Ambient light for overall illumination
-        p.ambientLight(100, 150, 100);
+        // Lighting effects
+        p.ambientLight(120, 150, 120);
         
         // Directional light that follows the mouse
         p.directionalLight(
           150, 255, 150,  // Green tint
-          mouseXNorm,
-          mouseYNorm,
+          mouseXPos,
+          mouseYPos,
           -0.5
         );
         
         // Point light at the mouse position for interactive highlights
         p.pointLight(
           200, 255, 200,  // Brighter green
-          mouseXNorm * p.width/2,
-          mouseYNorm * p.height/2,
+          mouseXPos * p.width/2,
+          mouseYPos * p.height/2,
           200
         );
         
         // Add occasional particles for sparkle effects
-        if (p.random(1) < 0.2) { // Increased particle generation
+        if (p.random(1) < 0.1) {
           // Generate particles away from center
           let x, y;
           do {
             x = p.random(-p.width/2, p.width/2);
             y = p.random(-p.height/2, p.height/2);
-          } while (p.dist(x, y, 0, 0) < p.width/5);
+          } while (p.dist(x, y, 0, 0) < p.width/4);
           
           particles.push(new Particle(p, x, y));
         }
@@ -344,17 +280,17 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
           }
         }
         
-        // Update and draw all shapes with the current frame count for perlin noise
-        for (const shape of shapes) {
-          shape.update(p, mousePosX - p.width/2, mousePosY - p.height/2, isDragging, dragOffset.x, dragOffset.y, scale, p.frameCount);
-          shape.draw(p);
+        // Update and draw all circles with the current frame count for perlin noise
+        for (const circle of circles) {
+          circle.update(p, p.frameCount);
+          circle.draw(p, mouseXNorm - p.width/2, mouseYNorm - p.height/2);
           
-          // Add small particles around shapes for additional effect
-          if (p.random(1) < 0.05) { // Increased particle generation
+          // Add small particles around circles occasionally
+          if (p.random(1) < 0.03) {
             particles.push(new Particle(
               p,
-              shape.position.x + p.random(-shape.size/2, shape.size/2),
-              shape.position.y + p.random(-shape.size/2, shape.size/2)
+              circle.position.x + p.random(-circle.size/2, circle.size/2),
+              circle.position.y + p.random(-circle.size/2, circle.size/2)
             ));
           }
         }
@@ -362,62 +298,28 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
       
       p.windowResized = () => {
         p.resizeCanvas(p.windowWidth, p.windowHeight);
-        // Update center avoidance radius for shapes
-        for (const shape of shapes) {
-          shape.centerAvoidanceRadius = p.width / 3;
+        // Update center avoidance radius for circles
+        for (const circle of circles) {
+          circle.centerAvoidanceRadius = p.width / 2.5;
         }
+      };
+      
+      // Track mouse movement for lighting effects only
+      p.mouseMoved = () => {
+        // Just track the mouse - no direct interaction needed
       };
     };
     
-    // Track mouse position
-    const handleMouseMove = (e: MouseEvent) => {
-      if (containerRef.current) {
-        setMousePosX(e.clientX);
-        setMousePosY(e.clientY);
-      }
-    };
-    
-    // Handle mouse interactions for dragging
-    const handleMouseDown = (e: MouseEvent) => {
-      setIsDragging(true);
-      setDragOffset({ x: 0, y: 0 }); // Reset drag offset
-    };
-    
-    const handleMouseUp = () => {
-      setIsDragging(false);
-    };
-    
-    // Handle mouse wheel for scaling
-    const handleWheel = (e: WheelEvent) => {
-      // Prevent the default scroll behavior when over the canvas
-      e.preventDefault();
-      
-      // Update scale based on wheel direction
-      const scaleChange = e.deltaY * -0.001;
-      const newScale = Math.max(0.5, Math.min(2.5, scale + scaleChange));
-      setScale(newScale);
-    };
-
     // Initialize the p5 sketch
     if (containerRef.current) {
       sketch = new p5(createSketch, containerRef.current);
     }
     
-    // Add event listeners
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mousedown', handleMouseDown);
-    window.addEventListener('mouseup', handleMouseUp);
-    window.addEventListener('wheel', handleWheel, { passive: false });
-    
     // Cleanup
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mousedown', handleMouseDown);
-      window.removeEventListener('mouseup', handleMouseUp);
-      window.removeEventListener('wheel', handleWheel);
       sketch?.remove();
     };
-  }, [scrollY, mousePosX, mousePosY, isDragging, dragOffset, scale]);
+  }, [scrollY]);
 
   return <div ref={containerRef} className="absolute inset-0 z-0" />;
 };

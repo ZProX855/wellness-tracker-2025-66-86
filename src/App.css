@@ -1,4 +1,3 @@
-
 #root {
   max-width: 100%;
   margin: 0 auto;
@@ -17,12 +16,7 @@
 /* Ensure p5.js canvas is visible with stronger z-index rules */
 canvas {
   display: block !important;
-  cursor: grab; /* Add grab cursor to indicate draggable elements */
   will-change: transform; /* Optimize animation performance */
-}
-
-canvas:active {
-  cursor: grabbing; /* Change cursor when actively dragging */
 }
 
 .p5Canvas {
@@ -32,7 +26,7 @@ canvas:active {
   z-index: -1 !important;
   width: 100% !important;
   height: 100% !important;
-  pointer-events: all !important; /* Allow canvas to receive mouse events */
+  pointer-events: none !important; /* Disable interaction with the canvas */
   touch-action: none !important; /* Prevent touch scroll for mobile */
   -webkit-tap-highlight-color: transparent !important; /* Remove touch highlight */
   -webkit-user-select: none !important; /* Prevent text selection */
@@ -229,4 +223,16 @@ body {
   backface-visibility: hidden;
   perspective: 1000px;
   will-change: transform, opacity;
+}
+
+/* Green glow effect for text contrast against the background */
+.text-glow {
+  text-shadow: 0 0 10px rgba(150, 255, 180, 0.5);
+}
+
+/* Enhanced contrast for content over the animated background */
+.content-over-bg {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 8px 32px rgba(104, 166, 136, 0.15);
 }
