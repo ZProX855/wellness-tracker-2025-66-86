@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import p5 from 'p5';
 
 interface CyberBackgroundProps {
@@ -9,144 +9,218 @@ interface CyberBackgroundProps {
 const CyberBackground: React.FC<CyberBackgroundProps> = ({ className }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const sketchRef = useRef<p5 | null>(null);
+  const [canvasCreated, setCanvasCreated] = useState(false);
+  const [debugMessage, setDebugMessage] = useState<string>('');
+
+  // Helper to log debug messages
+  const debug = (message: string) => {
+    console.log(`CyberBackground: ${message}`);
+    setDebugMessage(prev => `${prev}\n${message}`);
+  };
 
   useEffect(() => {
     // Only create the sketch once
-    if (containerRef.current && !sketchRef.current) {
-      const sketch = (p: p5) => {
-        let angle = 0;
-        let hue = 0;
-        
-        // Setup canvas
-        p.setup = () => {
-          p.createCanvas(window.innerWidth, window.innerHeight, p.WEBGL);
-          p.colorMode(p.HSB, 100);
-          p.noStroke();
-          p.frameRate(30);
-        };
+    if (!containerRef.current) {
+      debug('Container ref not available');
+      return;
+    }
 
-        // Resize handler
-        p.windowResized = () => {
-          p.resizeCanvas(window.innerWidth, window.innerHeight);
-        };
+    if (sketchRef.current) {
+      debug('Sketch already exists, removing');
+      sketchRef.current.remove();
+      sketchRef.current = null;
+    }
 
-        // Main draw loop
-        p.draw = () => {
-          p.clear();
-          
-          // Dynamic background color (very subtle)
-          p.background(240, 10, 10, 0.05);
-          
-          // Set light sources
-          const pointLight = p.color(60, 80, 100); // Blue
-          const pointLight2 = p.color(90, 80, 100); // Purple
-          p.pointLight(pointLight, 0, -300, 300);
-          p.pointLight(pointLight2, 0, 300, -300);
-          
-          // Apply ambient light
-          p.ambientLight(10, 10, 30);
-          
-          // Handle mouse interaction
-          const mouseYRotation = p.map(p.mouseX, 0, p.width, -0.1, 0.1);
-          const mouseXRotation = p.map(p.mouseY, 0, p.height, -0.1, 0.1);
-          
-          // Use mouse for rotation if mouse is near center of the screen
-          const distFromCenter = p.dist(p.mouseX, p.mouseY, p.width/2, p.height/2);
-          const isMouseActive = distFromCenter < p.width/3;
-          
-          // Create main transformations
-          p.push();
-          p.translate(0, 0, 0);
-          p.rotateY(angle * 0.5);
-          p.rotateX(angle * 0.3);
-          
-          // Apply mouse-based rotation if mouse is active
-          if (isMouseActive) {
-            p.rotateX(mouseXRotation);
-            p.rotateY(mouseYRotation);
-          }
-          
-          // Create the abstract shape
-          drawAbstractShape(p, angle);
-          
-          p.pop();
-          
-          // Update animation values
-          angle += 0.01;
-          hue = (hue + 0.1) % 100;
-        };
+    debug('Initializing sketch');
+    
+    // Clear container before creating new canvas
+    if (containerRef.current.childNodes.length > 0) {
+      debug(`Container has ${containerRef.current.childNodes.length} children, clearing`);
+      containerRef.current.innerHTML = '';
+    }
+
+    const sketch = (p: p5) => {
+      let angle = 0;
+      let hue = 0;
+      let canvasWidth = window.innerWidth;
+      let canvasHeight = window.innerHeight;
+      let canvasElement: HTMLElement | null = null;
+      
+      // Setup canvas
+      p.setup = () => {
+        debug(`Creating canvas: ${canvasWidth}x${canvasHeight}`);
+        const canvas = p.createCanvas(canvasWidth, canvasHeight, p.WEBGL);
+        p.colorMode(p.HSB, 100);
+        p.noStroke();
+        p.frameRate(30);
         
-        // Function to draw our abstract cyberpunk shape
-        const drawAbstractShape = (p: p5, angle: number) => {
-          // Create a series of shapes that form together
-          const baseSize = Math.min(p.width, p.height) * 0.15;
-          
-          // Inner core - pulsing effect
-          p.push();
-          const pulseAmount = p.sin(angle * 2) * 0.1 + 0.9;
-          p.fill(280, 70, 90, 0.8); // Purple
-          p.scale(pulseAmount * 0.6);
-          p.rotateX(angle * 0.7);
-          p.rotateY(angle * 0.6);
-          p.torus(baseSize * 0.5, baseSize * 0.1);
-          p.pop();
-          
-          // Middle layer
-          p.push();
-          p.fill(220, 80, 90, 0.8); // Blue
-          p.rotateX(angle * -0.5);
-          p.rotateZ(angle * 0.3);
-          const morphSize = p.sin(angle) * 0.1 + 1;
-          p.scale(0.8 * morphSize);
-          customShape(p, baseSize);
-          p.pop();
-          
-          // Outer layer with glow effect
-          p.push();
-          p.fill(200, 80, 80, 0.3); // Lighter blue with transparency for glow
-          p.rotateY(angle * -0.2);
-          p.rotateZ(angle * -0.1);
-          p.scale(1.2);
-          p.torus(baseSize * 0.8, baseSize * 0.1);
-          p.pop();
-          
-          // Create orbiting smaller elements
-          for (let i = 0; i < 3; i++) {
-            p.push();
-            const orbitAngle = angle + (i * p.TWO_PI / 3);
-            const orbitRadius = baseSize * 1.5;
-            const x = p.sin(orbitAngle) * orbitRadius;
-            const y = p.cos(orbitAngle) * orbitRadius * 0.5;
-            
-            p.translate(x, y, 0);
-            p.fill(280 + i*15, 90, 90, 0.7); // Pink/purple gradients
-            p.sphere(baseSize * 0.1);
-            p.pop();
-          }
-        };
-        
-        // Custom abstract shape combining geometries
-        const customShape = (p: p5, size: number) => {
-          p.beginShape();
-          for (let i = 0; i < 24; i++) {
-            const ang = p.map(i, 0, 24, 0, p.TWO_PI);
-            const rad = size * (0.6 + p.sin(ang * 3 + angle) * 0.2);
-            const x = rad * p.cos(ang);
-            const y = rad * p.sin(ang);
-            const z = size * 0.3 * p.sin(ang * 2 + angle);
-            p.vertex(x, y, z);
-          }
-          p.endShape(p.CLOSE);
-        };
+        // Get canvas element to apply styles
+        canvasElement = document.getElementById('defaultCanvas0');
+        if (canvasElement) {
+          debug('Canvas element found, applying styles');
+          canvasElement.style.position = 'absolute';
+          canvasElement.style.top = '0';
+          canvasElement.style.left = '0';
+          canvasElement.style.width = '100%';
+          canvasElement.style.height = '100%';
+          canvasElement.style.zIndex = '-5';
+          canvasElement.classList.add('p5Canvas');
+          setCanvasCreated(true);
+        } else {
+          debug('Canvas element not found after creation');
+        }
       };
 
-      // Create the p5 instance
+      // Resize handler
+      p.windowResized = () => {
+        canvasWidth = window.innerWidth;
+        canvasHeight = window.innerHeight;
+        debug(`Resizing canvas: ${canvasWidth}x${canvasHeight}`);
+        p.resizeCanvas(canvasWidth, canvasHeight);
+      };
+
+      // Main draw loop
+      p.draw = () => {
+        p.clear();
+        
+        // Dynamic background color (very subtle)
+        p.background(240, 10, 10, 0.05);
+        
+        // Enhanced lighting for better visibility
+        const pointLight = p.color(60, 80, 100); // Blue
+        const pointLight2 = p.color(90, 80, 100); // Purple
+        p.pointLight(pointLight, 0, -300, 300);
+        p.pointLight(pointLight2, 0, 300, -300);
+        p.ambientLight(20, 20, 40); // Increased ambient light
+        
+        // Handle mouse interaction
+        const mouseYRotation = p.map(p.mouseX, 0, p.width, -0.1, 0.1);
+        const mouseXRotation = p.map(p.mouseY, 0, p.height, -0.1, 0.1);
+        
+        // Use mouse for rotation if mouse is near center of the screen
+        const distFromCenter = p.dist(p.mouseX, p.mouseY, p.width/2, p.height/2);
+        const isMouseActive = distFromCenter < p.width/3;
+        
+        // Create main transformations
+        p.push();
+        
+        // Center and scale based on screen size
+        const scale = Math.min(p.width, p.height) / 800; // Responsive scaling
+        p.scale(scale * 1.5); // Increased scale for better visibility
+        
+        p.translate(0, 0, 0);
+        p.rotateY(angle * 0.5);
+        p.rotateX(angle * 0.3);
+        
+        // Apply mouse-based rotation if mouse is active
+        if (isMouseActive) {
+          p.rotateX(mouseXRotation);
+          p.rotateY(mouseYRotation);
+        }
+        
+        // Create the abstract shape with improved opacity
+        drawAbstractShape(p, angle);
+        
+        p.pop();
+        
+        // Update animation values
+        angle += 0.01;
+        hue = (hue + 0.1) % 100;
+      };
+      
+      // Function to draw our abstract cyberpunk shape
+      const drawAbstractShape = (p: p5, angle: number) => {
+        // Create a series of shapes that form together
+        const baseSize = Math.min(p.width, p.height) * 0.20; // Increased size
+        
+        // Inner core - pulsing effect
+        p.push();
+        const pulseAmount = p.sin(angle * 2) * 0.1 + 0.9;
+        p.fill(280, 70, 90, 0.9); // Increased opacity
+        p.scale(pulseAmount * 0.6);
+        p.rotateX(angle * 0.7);
+        p.rotateY(angle * 0.6);
+        p.torus(baseSize * 0.5, baseSize * 0.1);
+        p.pop();
+        
+        // Middle layer
+        p.push();
+        p.fill(220, 80, 90, 0.9); // Increased opacity
+        p.rotateX(angle * -0.5);
+        p.rotateZ(angle * 0.3);
+        const morphSize = p.sin(angle) * 0.1 + 1;
+        p.scale(0.8 * morphSize);
+        customShape(p, baseSize);
+        p.pop();
+        
+        // Outer layer with glow effect
+        p.push();
+        p.fill(200, 80, 80, 0.6); // Increased opacity
+        p.rotateY(angle * -0.2);
+        p.rotateZ(angle * -0.1);
+        p.scale(1.2);
+        p.torus(baseSize * 0.8, baseSize * 0.1);
+        p.pop();
+        
+        // Create orbiting smaller elements
+        for (let i = 0; i < 5; i++) { // Added more elements
+          p.push();
+          const orbitAngle = angle + (i * p.TWO_PI / 5);
+          const orbitRadius = baseSize * 1.5;
+          const x = p.sin(orbitAngle) * orbitRadius;
+          const y = p.cos(orbitAngle) * orbitRadius * 0.5;
+          
+          p.translate(x, y, 0);
+          p.fill(280 + i*15, 90, 90, 0.8); // Increased opacity
+          p.sphere(baseSize * 0.15); // Increased size
+          p.pop();
+        }
+      };
+      
+      // Custom abstract shape combining geometries
+      const customShape = (p: p5, size: number) => {
+        p.beginShape();
+        for (let i = 0; i < 24; i++) {
+          const ang = p.map(i, 0, 24, 0, p.TWO_PI);
+          const rad = size * (0.6 + p.sin(ang * 3 + angle) * 0.2);
+          const x = rad * p.cos(ang);
+          const y = rad * p.sin(ang);
+          const z = size * 0.3 * p.sin(ang * 2 + angle);
+          p.vertex(x, y, z);
+        }
+        p.endShape(p.CLOSE);
+      };
+    };
+
+    // Create the p5 instance
+    try {
+      debug('Creating p5 instance');
       sketchRef.current = new p5(sketch, containerRef.current);
+    } catch (err) {
+      debug(`Error creating p5 instance: ${err}`);
     }
+
+    // Additional check to ensure canvas is created
+    const checkCanvasTimeout = setTimeout(() => {
+      const canvas = document.getElementById('defaultCanvas0');
+      if (!canvas && containerRef.current) {
+        debug('Canvas not created after timeout, attempting to recreate');
+        // Try to recreate sketch if canvas wasn't created
+        if (sketchRef.current) {
+          sketchRef.current.remove();
+          sketchRef.current = null;
+        }
+        sketchRef.current = new p5(sketch, containerRef.current);
+      } else if (canvas) {
+        debug('Canvas successfully created and found after timeout');
+      }
+    }, 1000);
 
     // Cleanup function
     return () => {
+      clearTimeout(checkCanvasTimeout);
       if (sketchRef.current) {
+        debug('Removing sketch');
         sketchRef.current.remove();
         sketchRef.current = null;
       }
@@ -154,10 +228,18 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className }) => {
   }, []);
 
   return (
-    <div 
-      ref={containerRef} 
-      className={`fixed top-0 left-0 w-full h-full -z-10 overflow-hidden ${className || ''}`}
-    />
+    <>
+      <div 
+        ref={containerRef} 
+        className={`fixed top-0 left-0 w-full h-full overflow-hidden ${className || ''}`}
+        style={{ zIndex: -10 }}
+      />
+      {debugMessage && process.env.NODE_ENV === 'development' && (
+        <div className="fixed bottom-0 left-0 bg-black/70 text-white p-2 text-xs z-50 max-w-xs max-h-32 overflow-auto">
+          <pre>{debugMessage}</pre>
+        </div>
+      )}
+    </>
   );
 };
 
