@@ -111,7 +111,7 @@ const Index = () => {
       
       <main className="pt-24 pb-16 py-0">
         {/* Hero Section */}
-        <section className="py-[30px] bg-[#f8f4e3] rounded-none">
+        <section className="bg-[#f8f4e3] rounded-none py-[29px] my-0 mx-0">
           <div className="max-w-6xl mx-auto w-full">
             <div className="text-center mb-20 my-[43px]">
               <div className="mb-8 transform transition-transform duration-700" style={{
@@ -154,7 +154,7 @@ wellness goals with intelligent, AI-powered tools.</p>
         
         {/* Tools Section */}
         <section className="px-4 sm:px-6 bg-white py-[60px]">
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-6xl py-0 mx-[240px] my-[4px] px-0">
             <div className="text-center mb-16">
               <h2 className="text-3xl sm:text-4xl font-medium text-wellness-darkGreen mb-4 opacity-0 animate-fade-in" style={{
               animationDelay: '100ms'
@@ -178,7 +178,7 @@ wellness goals with intelligent, AI-powered tools.</p>
               {categories[activeCategory].tools.map((tool, idx) => <div key={idx} className="opacity-0 animate-fade-in" style={{
               animationDelay: `${300 + idx * 100}ms`
             }}>
-                  <button onClick={() => navigate(tool.path)} className="w-full h-full glass-panel hover:scale-[1.02] active:scale-[0.98] transition-all duration-500 ease-out-expo p-8 flex flex-col items-center text-center group bg-[#f8f4e3]/[0.53] rounded-full text-4xl px-[45px] py-[29px] mx-0">
+                  <button onClick={() => navigate(tool.path)} className="w-full h-full glass-panel hover:scale-[1.02] active:scale-[0.98] transition-all duration-500 ease-out-expo p-8 flex flex-col items-center text-center group rounded-full text-4xl px-[45px] py-[29px] mx-0 bg-[#f8f4e3]/[0.77]">
                     <div className={`h-16 w-16 rounded-full bg-gradient-to-r ${tool.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500`}>
                       <tool.icon className="h-8 w-8 text-wellness-darkGreen" />
                     </div>
