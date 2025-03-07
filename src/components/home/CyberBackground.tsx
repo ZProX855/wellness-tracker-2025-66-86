@@ -47,6 +47,12 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className }) => {
       let glowIntensity = 0;
       let glowDirection = 1; // 1 for increasing, -1 for decreasing
       
+      // Mouse tracking variables
+      let mouseX = canvasWidth / 2;
+      let mouseY = canvasHeight / 2;
+      let targetX = canvasWidth / 2;
+      let targetY = canvasHeight / 2;
+      
       // Setup canvas
       p.setup = () => {
         debug(`Creating canvas: ${canvasWidth}x${canvasHeight}`);
@@ -70,6 +76,12 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className }) => {
         } else {
           debug('Canvas element not found after creation');
         }
+      };
+
+      // Track mouse movement
+      p.mouseMoved = () => {
+        targetX = p.mouseX - canvasWidth / 2;
+        targetY = p.mouseY - canvasHeight / 2;
       };
 
       // Resize handler
@@ -97,14 +109,19 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className }) => {
           glowDirection = 1;
         }
         
-        // Enhanced lighting with glow effect
+        // Smooth follow mouse with easing
+        mouseX = p.lerp(mouseX, targetX, 0.05); // Slow follow effect
+        mouseY = p.lerp(mouseY, targetY, 0.05); // Slow follow effect
+        
+        // Enhanced lighting with glow effect that follows mouse
         const blueLight = p.color(60, 80, 100 * glowIntensity); // Blue with varying intensity
         const purpleLight = p.color(90, 80, 100 * glowIntensity); // Purple with varying intensity
         const pinkLight = p.color(320, 80, 100 * glowIntensity); // Pink with varying intensity
         
-        p.pointLight(blueLight, 200 * Math.sin(angle * 0.2), -300 * Math.cos(angle * 0.1), 300);
-        p.pointLight(purpleLight, -200 * Math.cos(angle * 0.15), 300 * Math.sin(angle * 0.1), -300);
-        p.pointLight(pinkLight, 0, 0, 500 * Math.sin(angle * 0.05));
+        // Lights that follow the cursor position with offset
+        p.pointLight(blueLight, mouseX * 0.8, mouseY * 0.8, 300);
+        p.pointLight(purpleLight, -mouseX * 0.6, -mouseY * 0.6, -300);
+        p.pointLight(pinkLight, mouseY * 0.5, -mouseX * 0.5, 500 * Math.sin(angle * 0.05));
         
         // Ambient light that changes with glow intensity
         p.ambientLight(25 * glowIntensity, 25 * glowIntensity, 45 * glowIntensity);
@@ -116,15 +133,16 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className }) => {
         const scale = Math.min(p.width, p.height) / 800; // Responsive scaling
         p.scale(scale * 1.5); // Increased scale for better visibility
         
-        p.translate(0, 0, 0);
+        // Translate scene based on mouse position with dampening
+        p.translate(mouseX * 0.1, mouseY * 0.1, 0);
         
-        // Slow, constant rotation without mouse interaction
-        p.rotateY(angle * 0.1);
-        p.rotateX(angle * 0.07);
+        // Slow, constant rotation with slight mouse influence
+        p.rotateY(angle * 0.1 + mouseX * 0.0002);
+        p.rotateX(angle * 0.07 + mouseY * 0.0002);
         p.rotateZ(angle * 0.03);
         
         // Draw all the rounded shapes with glow effect
-        drawRoundedShapes(p, angle, glowIntensity);
+        drawRoundedShapes(p, angle, glowIntensity, mouseX, mouseY);
         
         p.pop();
         
@@ -133,7 +151,7 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className }) => {
       };
       
       // Function to draw our collection of rounded 3D shapes
-      const drawRoundedShapes = (p: p5, angle: number, glowIntensity: number) => {
+      const drawRoundedShapes = (p: p5, angle: number, glowIntensity: number, mouseX: number, mouseY: number) => {
         const baseSize = Math.min(p.width, p.height) * 0.20;
         
         // Main central sphere with smooth pulsing effect
@@ -144,35 +162,35 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className }) => {
         p.sphere(baseSize * 0.25 * pulseAmount);
         p.pop();
         
-        // Large torus rotating around the center
+        // Large torus rotating around the center, influenced by mouse
         p.push();
         p.fill(220, 80 + (glowIntensity * 10), 90, 0.7);
-        p.rotateX(angle * 0.2);
-        p.rotateY(angle * 0.15);
+        p.rotateX(angle * 0.2 + mouseY * 0.0001);
+        p.rotateY(angle * 0.15 + mouseX * 0.0001);
         p.torus(baseSize * 0.8, baseSize * 0.1);
         p.pop();
         
-        // Second torus at different angle
+        // Second torus at different angle, influenced by mouse
         p.push();
         p.fill(180, 70 + (glowIntensity * 15), 85, 0.6);
-        p.rotateX(angle * -0.15);
-        p.rotateZ(angle * 0.18);
+        p.rotateX(angle * -0.15 - mouseY * 0.0001);
+        p.rotateZ(angle * 0.18 + mouseX * 0.0001);
         p.torus(baseSize * 0.6, baseSize * 0.08);
         p.pop();
         
-        // Third torus at different angle
+        // Third torus at different angle, influenced by mouse
         p.push();
         p.fill(320, 60 + (glowIntensity * 20), 95, 0.5);
-        p.rotateY(angle * -0.1);
-        p.rotateZ(angle * -0.2);
+        p.rotateY(angle * -0.1 - mouseX * 0.0001);
+        p.rotateZ(angle * -0.2 + mouseY * 0.0001);
         p.torus(baseSize * 1.0, baseSize * 0.05);
         p.pop();
         
-        // Create orbiting spheres
+        // Create orbiting spheres with slight mouse influence
         const numSpheres = 12; // Orbital spheres
         for (let i = 0; i < numSpheres; i++) {
           p.push();
-          // Create different orbital paths with slower movement
+          // Create different orbital paths with mouse influence
           const orbitAngle = angle * 0.4 + (i * p.TWO_PI / numSpheres);
           const orbitRadius = baseSize * 1.2;
           
@@ -180,22 +198,27 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className }) => {
           // Adding variation to create more dynamic, non-overlapping paths
           const pathVariation = i % 3; // Creates 3 different orbital planes
           
+          // Add small mouse influence to each orbit
+          const mouseInfluence = 0.2;
+          const mouseOffsetX = mouseX * 0.001 * mouseInfluence;
+          const mouseOffsetY = mouseY * 0.001 * mouseInfluence;
+          
           let x, y, z;
           if (pathVariation === 0) {
-            // Horizontal orbit
-            x = p.sin(orbitAngle) * orbitRadius;
-            y = p.cos(orbitAngle) * orbitRadius * 0.3;
-            z = 0;
+            // Horizontal orbit with mouse influence
+            x = p.sin(orbitAngle + mouseOffsetX) * orbitRadius;
+            y = p.cos(orbitAngle + mouseOffsetY) * orbitRadius * 0.3;
+            z = mouseOffsetX * orbitRadius * 0.2;
           } else if (pathVariation === 1) {
-            // Vertical orbit
-            x = p.sin(orbitAngle) * orbitRadius * 0.5;
-            y = 0;
-            z = p.cos(orbitAngle) * orbitRadius * 0.8;
+            // Vertical orbit with mouse influence
+            x = p.sin(orbitAngle + mouseOffsetY) * orbitRadius * 0.5;
+            y = mouseOffsetY * orbitRadius * 0.2;
+            z = p.cos(orbitAngle + mouseOffsetX) * orbitRadius * 0.8;
           } else {
-            // Diagonal orbit
-            x = p.sin(orbitAngle) * orbitRadius * 0.7;
-            y = p.cos(orbitAngle) * orbitRadius * 0.7;
-            z = p.sin(orbitAngle * 0.8) * orbitRadius * 0.3;
+            // Diagonal orbit with mouse influence
+            x = p.sin(orbitAngle + mouseOffsetX) * orbitRadius * 0.7;
+            y = p.cos(orbitAngle + mouseOffsetY) * orbitRadius * 0.7;
+            z = p.sin((orbitAngle + mouseOffsetX) * 0.8) * orbitRadius * 0.3;
           }
           
           p.translate(x, y, z);
@@ -213,10 +236,10 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className }) => {
           p.pop();
         }
         
-        // Add some medium-sized spheres in the middle distance
+        // Add some medium-sized spheres in the middle distance with mouse influence
         for (let i = 0; i < 5; i++) {
           p.push();
-          const medAngle = angle * 0.3 + (i * p.TWO_PI / 5);
+          const medAngle = angle * 0.3 + (i * p.TWO_PI / 5) + (mouseX + mouseY) * 0.0001;
           const medRadius = baseSize * 0.6;
           const medX = p.sin(medAngle) * medRadius;
           const medY = p.cos(medAngle) * medRadius;
