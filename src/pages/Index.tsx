@@ -121,17 +121,17 @@ const Index = () => {
                 <img src="/lovable-uploads/0f3b37c0-5eca-43f3-9f19-60f760335d8d.png" alt="Wellness Tracker Logo" className="h-32 w-auto mx-auto animate-pulse-soft" />
               </div>
               
-              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-medium tracking-tight text-wellness-darkGreen mb-6 leading-tight" style={{
+              <h1 style={{
               transform: `translateY(${scrollY * 0.2}px)`,
               opacity: Math.max(0, 1 - scrollY * 0.003)
-            }}>
+            }} className="text-5xl sm:text-6xl lg:text-7xl font-medium tracking-tight text-wellness-darkGreen mb-6 leading-tight px-0 mx-0 py-[4px]">
                 Your Wellness<br />Reimagined
               </h1>
               
               <p style={{
               transform: `translateY(${scrollY * 0.3}px)`,
               opacity: Math.max(0, 1 - scrollY * 0.004)
-            }} className="text-xl text-wellness-charcoal/80 max-w-3xl mx-auto mb-12 leading-relaxed sm:text-lg text-center py-0 px-[114px] my-[43px]">Track nutrition, monitor health, and achieve your 
+            }} className="text-xl text-wellness-charcoal/80 max-w-3xl mx-auto mb-12 leading-relaxed sm:text-lg text-center py-0 my-[44px] px-[159px]">Track nutrition, monitor health, and achieve your 
 wellness goals with intelligent, AI-powered tools.</p>
               
               <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -226,7 +226,7 @@ wellness goals with intelligent, AI-powered tools.</p>
         </section>
         
         {/* CTA Section */}
-        <section className="px-4 text-center relative overflow-hidden my-0 py-[66px] sm:px-0">
+        <section className="px-4 text-center relative overflow-hidden sm:px-0 py-0 my-[58px]">
           <div style={{
           backgroundImage: "url('/lovable-uploads/0f3b37c0-5eca-43f3-9f19-60f760335d8d.png')",
           backgroundSize: "30%",
@@ -251,12 +251,7 @@ more balanced lifestyle with our AI-powered tools.</p>
       </main>
       
       <footer className="border-t border-wellness-softGreen/30 my-0 py-0 bg-[Refactor_TimetableGenerator.tsx] bg-white">
-        <div className="container text-center py-[5px] mx-0 px-0 bg-white">
-          
-          <p className="text-wellness-charcoal/60 text-sm">
-            © {new Date().getFullYear()} Wellness Tracker. All rights reserved.
-          </p>
-        </div>
+        
       </footer>
     </div>;
 };
