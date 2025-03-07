@@ -12,7 +12,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ scrollY }) => {
   const navigate = useNavigate();
   
   return (
-    <section className="rounded-none py-[29px] my-0 mx-0 bg-transparent">
+    <section className="bg-[#f8f4e3] rounded-none py-[29px] my-0 mx-0">
       <div className="max-w-6xl mx-auto w-full">
         <div className="text-center mb-20 my-[43px]">
           <div 
@@ -34,7 +34,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ scrollY }) => {
               transform: `translateY(${scrollY * 0.2}px)`,
               opacity: Math.max(0, 1 - scrollY * 0.003)
             }} 
-            className="text-5xl sm:text-6xl lg:text-7xl font-medium tracking-tight text-wellness-darkGreen mb-6 leading-tight px-0 mx-0 py-[4px] text-shadow-lg"
+            className="text-5xl sm:text-6xl lg:text-7xl font-medium tracking-tight text-wellness-darkGreen mb-6 leading-tight px-0 mx-0 py-[4px]"
           >
             Your Wellness<br />Reimagined
           </h1>
@@ -44,7 +44,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ scrollY }) => {
               transform: `translateY(${scrollY * 0.3}px)`,
               opacity: Math.max(0, 1 - scrollY * 0.004)
             }} 
-            className="text-xl text-wellness-charcoal/90 max-w-3xl mx-auto mb-12 leading-relaxed sm:text-lg text-center py-0 my-[44px] px-[159px] bg-white/50 backdrop-blur-sm rounded-lg"
+            className="text-xl text-wellness-charcoal/80 max-w-3xl mx-auto mb-12 leading-relaxed sm:text-lg text-center py-0 my-[44px] px-[159px]"
           >
             Track nutrition, monitor health, and achieve your wellness goals with intelligent, AI-powered tools.
           </p>
@@ -52,7 +52,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ scrollY }) => {
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Button 
               onClick={() => navigate('/chat-assistant')} 
-              className="animate-fade-in glass-morphism bg-wellness-darkGreen hover:bg-wellness-darkGreen/90 text-white font-medium px-8 py-6 text-lg rounded-full"
+              className="animate-fade-in glass-morphism bg-wellness-darkGreen hover:bg-wellness-darkGreen/90 text-white font-medium px-8 py-6 text-lg rounded-full" 
               style={{ animationDelay: '600ms' }}
             >
               Get Started
@@ -62,12 +62,9 @@ const HeroSection: React.FC<HeroSectionProps> = ({ scrollY }) => {
         </div>
         
         <div 
-          className="fixed bottom-10 right-10 text-sm text-wellness-darkGreen bg-white/80 backdrop-blur-sm rounded-full px-4 py-2 shadow-sm"
+          className="absolute bottom-10 left-1/2 transform -translate-x-1/2 animate-bounce" 
           style={{ opacity: Math.max(0, 1 - scrollY * 0.01) }}
         >
-          <span className="hidden sm:inline">Drag to rotate • </span>
-          <span>Scroll to zoom • </span>
-          <span className="hidden sm:inline">Hover leaves for glow effect</span>
         </div>
       </div>
     </section>

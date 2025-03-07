@@ -14,28 +14,6 @@
   }
 }
 
-/* Ensure p5.js canvas is visible with stronger z-index rules */
-canvas {
-  display: block !important;
-}
-
-.p5Canvas {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  z-index: -1 !important;
-  width: 100% !important;
-  height: 100% !important;
-  pointer-events: auto !important; /* Allow interactions with the canvas */
-  touch-action: none !important; /* Prevent browser handling of touch events */
-}
-
-/* Add high contrast between background and foreground */
-body {
-  overflow-x: hidden; /* Prevent horizontal scrolling */
-  position: relative; /* Create stacking context */
-}
-
 .apple-scroll {
   scroll-behavior: smooth;
   scrollbar-width: thin;
@@ -131,25 +109,4 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-}
-
-/* Instructions for 3D leaf controls */
-.leaf-controls-hint {
-  position: fixed;
-  bottom: 20px;
-  left: 20px;
-  background: rgba(255, 255, 255, 0.8);
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 14px;
-  color: #2a513d;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  opacity: 0.8;
-  transition: opacity 0.3s;
-  z-index: 100;
-  pointer-events: none;
-}
-
-.leaf-controls-hint:hover {
-  opacity: 1;
 }
