@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { Mic, MessageSquare } from 'lucide-react';
+import { Mic } from 'lucide-react';
 
 interface ChatModeSelectorProps {
   chatMode: 'voice' | 'text' | null;
@@ -33,16 +33,6 @@ const ChatModeSelector: React.FC<ChatModeSelectorProps> = ({
         >
           <Mic className="h-4 w-4 mr-2" />
           Voice Assistant
-        </Button>
-        <Button 
-          variant={chatMode === 'text' ? 'default' : 'outline'}
-          className={`hover-scale transition-all ${chatMode === 'text' 
-            ? 'bg-gradient-to-r from-wellness-darkGreen to-wellness-mediumGreen text-white shadow-md' 
-            : 'border-wellness-darkGreen text-wellness-darkGreen hover:bg-wellness-softGreen/20'}`}
-          onClick={() => setChatMode('text')}
-        >
-          <MessageSquare className="h-4 w-4 mr-2" />
-          Text Chat
         </Button>
       </div>
     </div>

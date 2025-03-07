@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Clock, Mic, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Clock, Mic } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Header from '../components/Header';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -11,7 +11,6 @@ import { useMediaQuery } from '@/hooks/use-mobile';
 import TimetableVisualizer from '@/components/TimetableVisualizer';
 import useLocalStorage from '@/hooks/useLocalStorage';
 import VoiceAssistant from '@/components/timetable/VoiceAssistant';
-import TextChatAssistant from '@/components/timetable/TextChatAssistant';
 import ConversationSummary from '@/components/timetable/ConversationSummary';
 import TimetableGeneratorComponent from '@/components/timetable/TimetableGenerator';
 import ChatModeSelector from '@/components/timetable/ChatModeSelector';
@@ -61,7 +60,7 @@ const TimetableGenerator = () => {
     question: string;
     answer: string;
   }[]>([]);
-  const [chatMode, setChatMode] = useState<'voice' | 'text' | null>(null);
+  const [chatMode, setChatMode] = useState<'voice' | null>(null);
   const [showInsights, setShowInsights] = useState(true);
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const {
@@ -276,12 +275,6 @@ const TimetableGenerator = () => {
     setShowInsights(false);
   };
 
-  const handleStartTextConversation = () => {
-    setIsTextChatActive(true);
-    setShowTimetable(false);
-    setShowInsights(false);
-  };
-
   const handleHideInsights = () => {
     setShowInsights(false);
   };
@@ -304,36 +297,29 @@ const TimetableGenerator = () => {
               AI Timetable Generator
             </h1>
             <p className="text-wellness-charcoal animate-fade-in">
-              Have a conversation with our AI assistant to create your personalized daily timetable.
+              Have a conversation with our AI voice assistant to create your personalized daily timetable.
             </p>
           </div>
           
           <div className="bg-white bg-opacity-70 backdrop-blur-sm rounded-xl p-6 border border-wellness-softGreen/30 shadow-sm mb-8 hover:shadow-md transition-shadow">
             <h2 className="text-xl font-medium text-wellness-darkGreen mb-4 flex items-center">
               <Clock className="h-5 w-5 mr-2 text-wellness-mediumGreen" />
-              AI Assistant
+              AI Voice Assistant
             </h2>
             
             <ChatModeSelector chatMode={chatMode} setChatMode={setChatMode} isConversationActive={isConversationActive} isTextChatActive={isTextChatActive} />
             
-            {chatMode === 'voice' && <VoiceAssistant 
-              isConversationActive={isConversationActive} 
-              setIsConversationActive={handleStartVoiceConversation} 
-              onConversationComplete={handleConversationComplete} 
-              onResponses={handleAddResponse} 
-              onSetConversationId={setCurrentConversationId}
-              onHideInsights={handleHideInsights}
-              onHideTimetable={handleHideTimetable}
-            />}
-            
-            {chatMode === 'text' && <TextChatAssistant 
-              isTextChatActive={isTextChatActive} 
-              setIsTextChatActive={handleStartTextConversation} 
-              onConversationComplete={handleConversationComplete} 
-              onResponses={handleAddResponse}
-              onHideInsights={handleHideInsights}
-              onHideTimetable={handleHideTimetable}
-            />}
+            {(chatMode === 'voice' || chatMode === null) && 
+              <VoiceAssistant 
+                isConversationActive={isConversationActive} 
+                setIsConversationActive={handleStartVoiceConversation} 
+                onConversationComplete={handleConversationComplete} 
+                onResponses={handleAddResponse} 
+                onSetConversationId={setCurrentConversationId}
+                onHideInsights={handleHideInsights}
+                onHideTimetable={handleHideTimetable}
+              />
+            }
             
             <ConversationSummary responses={responses} showSummary={chatMode === 'voice'} />
           </div>
