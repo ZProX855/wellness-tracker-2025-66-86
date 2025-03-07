@@ -62,10 +62,12 @@ const HeroSection: React.FC<HeroSectionProps> = ({ scrollY }) => {
         </div>
         
         <div 
-          className="absolute bottom-10 left-1/2 transform -translate-x-1/2 animate-bounce"
+          className="fixed bottom-10 right-10 text-sm text-wellness-darkGreen bg-white/80 backdrop-blur-sm rounded-full px-4 py-2 shadow-sm"
           style={{ opacity: Math.max(0, 1 - scrollY * 0.01) }}
         >
-          {/* Scroll indicator can go here if needed */}
+          <span className="hidden sm:inline">Drag to rotate • </span>
+          <span>Scroll to zoom • </span>
+          <span className="hidden sm:inline">Hover leaves for glow effect</span>
         </div>
       </div>
     </section>
