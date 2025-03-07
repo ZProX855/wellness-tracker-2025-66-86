@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Mic } from 'lucide-react';
 
 interface ChatModeSelectorProps {
-  chatMode: 'voice' | 'text' | null;
-  setChatMode: (mode: 'voice' | 'text' | null) => void;
+  chatMode: 'voice' | null;
+  setChatMode: (mode: 'voice' | null) => void;
   isConversationActive: boolean;
   isTextChatActive: boolean;
 }

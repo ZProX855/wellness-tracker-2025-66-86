@@ -307,7 +307,12 @@ const TimetableGenerator = () => {
               AI Voice Assistant
             </h2>
             
-            <ChatModeSelector chatMode={chatMode} setChatMode={setChatMode} isConversationActive={isConversationActive} isTextChatActive={isTextChatActive} />
+            <ChatModeSelector 
+              chatMode={chatMode} 
+              setChatMode={setChatMode} 
+              isConversationActive={isConversationActive} 
+              isTextChatActive={isTextChatActive} 
+            />
             
             {(chatMode === 'voice' || chatMode === null) && 
               <VoiceAssistant 
