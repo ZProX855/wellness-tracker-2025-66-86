@@ -64,9 +64,7 @@ const TimetableGenerator = () => {
   const [chatMode, setChatMode] = useState<'voice' | null>(null);
   const [showInsights, setShowInsights] = useSessionStorage('show-timetable-insights', false);
   const isDesktop = useMediaQuery("(min-width: 768px)");
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -284,7 +282,8 @@ const TimetableGenerator = () => {
     setShowTimetable(false);
   };
 
-  return <div className="min-h-screen bg-gradient-to-b from-wellness-softBeige to-wellness-softGreen/30">
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-wellness-softBeige to-wellness-softGreen/30">
       <Header />
       
       <main className="pt-24 pb-16 px-4 sm:px-6">
@@ -507,7 +506,8 @@ const TimetableGenerator = () => {
           </DrawerFooter>
         </DrawerContent>
       </Drawer>
-    </div>;
+    </div>
+  );
 };
 
 export default TimetableGenerator;
