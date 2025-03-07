@@ -226,7 +226,7 @@ wellness goals with intelligent, AI-powered tools.</p>
         </section>
         
         {/* CTA Section */}
-        <section className="px-4 sm:px-6 text-center relative overflow-hidden py-0 my-[66px]">
+        <section className="px-4 text-center relative overflow-hidden my-0 py-[66px] sm:px-0">
           <div style={{
           backgroundImage: "url('/lovable-uploads/0f3b37c0-5eca-43f3-9f19-60f760335d8d.png')",
           backgroundSize: "30%",
