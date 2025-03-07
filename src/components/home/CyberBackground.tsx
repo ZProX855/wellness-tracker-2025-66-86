@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import p5 from 'p5';
 
@@ -41,18 +40,86 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className }) => {
 
     const sketch = (p: p5) => {
       let angle = 0;
-      let hue = 0;
       let canvasWidth = window.innerWidth;
       let canvasHeight = window.innerHeight;
       let canvasElement: HTMLElement | null = null;
+      
+      // Prepare circles for animation
+      const circleCount = 15;
+      const circles: Circle[] = [];
+      
+      class Circle {
+        x: number;
+        y: number;
+        z: number;
+        radius: number;
+        speed: number;
+        hue: number;
+        opacity: number;
+        pulseSpeed: number;
+        
+        constructor() {
+          this.x = p.random(-canvasWidth/2, canvasWidth/2);
+          this.y = p.random(-canvasHeight/2, canvasHeight/2);
+          this.z = p.random(-200, 200);
+          this.radius = p.random(20, 120);
+          this.speed = p.random(0.005, 0.02);
+          this.hue = p.random(110, 150); // Green hues
+          this.opacity = p.random(0.1, 0.35);
+          this.pulseSpeed = p.random(0.02, 0.05);
+        }
+        
+        update(angle: number, mouseX: number, mouseY: number) {
+          // Move circle with angle
+          this.z = 200 * p.sin(angle * this.speed + p.frameCount * 0.01);
+          
+          // Interactive movement based on mouse position
+          const mouseDistX = p.map(mouseX, 0, p.width, -10, 10);
+          const mouseDistY = p.map(mouseY, 0, p.height, -10, 10);
+          
+          this.x += mouseDistX * 0.01;
+          this.y += mouseDistY * 0.01;
+          
+          // Keep within bounds
+          if (this.x < -canvasWidth) this.x = canvasWidth;
+          if (this.x > canvasWidth) this.x = -canvasWidth;
+          if (this.y < -canvasHeight) this.y = canvasHeight;
+          if (this.y > canvasHeight) this.y = -canvasHeight;
+          
+          // Pulsing opacity
+          this.opacity = p.map(p.sin(p.frameCount * this.pulseSpeed), -1, 1, 0.1, 0.35);
+        }
+        
+        display() {
+          p.push();
+          p.translate(this.x, this.y, this.z);
+          
+          // Create green transparent circle
+          p.noStroke();
+          p.fill(this.hue, 80, 70, this.opacity);
+          p.sphere(this.radius);
+          
+          // Add subtle glow effect
+          p.fill(this.hue, 80, 90, this.opacity * 0.4);
+          p.sphere(this.radius * 1.2);
+          
+          p.pop();
+        }
+      }
       
       // Setup canvas
       p.setup = () => {
         debug(`Creating canvas: ${canvasWidth}x${canvasHeight}`);
         const canvas = p.createCanvas(canvasWidth, canvasHeight, p.WEBGL);
-        p.colorMode(p.HSB, 100);
+        p.colorMode(p.HSB, 360, 100, 100, 1.0);
         p.noStroke();
         p.frameRate(30);
+        p.blendMode(p.BLEND);
+        
+        // Initialize circles
+        for (let i = 0; i < circleCount; i++) {
+          circles.push(new Circle());
+        }
         
         // Get canvas element to apply styles
         canvasElement = document.getElementById('defaultCanvas0');
@@ -83,112 +150,38 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className }) => {
       p.draw = () => {
         p.clear();
         
-        // Dynamic background color (very subtle)
-        p.background(240, 10, 10, 0.05);
+        // Transparent dark background with slight green tint
+        p.background(140, 10, 10, 0.05);
         
         // Enhanced lighting for better visibility
-        const pointLight = p.color(60, 80, 100); // Blue
-        const pointLight2 = p.color(90, 80, 100); // Purple
-        p.pointLight(pointLight, 0, -300, 300);
-        p.pointLight(pointLight2, 0, 300, -300);
-        p.ambientLight(20, 20, 40); // Increased ambient light
+        p.ambientLight(140, 20, 70, 0.3); // Soft green ambient light
+        p.pointLight(140, 20, 100, 0, 0, 300); // Top light
+        p.pointLight(140, 80, 90, p.mouseX - p.width/2, p.mouseY - p.height/2, 200); // Mouse-following light
         
-        // Handle mouse interaction
-        const mouseYRotation = p.map(p.mouseX, 0, p.width, -0.1, 0.1);
-        const mouseXRotation = p.map(p.mouseY, 0, p.height, -0.1, 0.1);
-        
-        // Use mouse for rotation if mouse is near center of the screen
-        const distFromCenter = p.dist(p.mouseX, p.mouseY, p.width/2, p.height/2);
-        const isMouseActive = distFromCenter < p.width/3;
-        
-        // Create main transformations
-        p.push();
-        
-        // Center and scale based on screen size
-        const scale = Math.min(p.width, p.height) / 800; // Responsive scaling
-        p.scale(scale * 1.5); // Increased scale for better visibility
-        
-        p.translate(0, 0, 0);
-        p.rotateY(angle * 0.5);
-        p.rotateX(angle * 0.3);
-        
-        // Apply mouse-based rotation if mouse is active
-        if (isMouseActive) {
-          p.rotateX(mouseXRotation);
-          p.rotateY(mouseYRotation);
+        // Update and display all circles
+        for (let i = 0; i < circles.length; i++) {
+          circles[i].update(angle, p.mouseX, p.mouseY);
+          circles[i].display();
         }
         
-        // Create the abstract shape with improved opacity
-        drawAbstractShape(p, angle);
-        
+        // Add some small floating particles
+        p.push();
+        for (let i = 0; i < 30; i++) {
+          const t = p.frameCount * 0.01 + i;
+          const x = p.sin(t) * canvasWidth * 0.5;
+          const y = p.cos(t * 0.8) * canvasHeight * 0.3;
+          const z = p.sin(t * 1.2) * 100;
+          
+          p.push();
+          p.translate(x, y, z);
+          p.fill(140, 80, 90, 0.2 + 0.1 * p.sin(t * 2));
+          p.sphere(3 + 2 * p.sin(t));
+          p.pop();
+        }
         p.pop();
         
         // Update animation values
         angle += 0.01;
-        hue = (hue + 0.1) % 100;
-      };
-      
-      // Function to draw our abstract cyberpunk shape
-      const drawAbstractShape = (p: p5, angle: number) => {
-        // Create a series of shapes that form together
-        const baseSize = Math.min(p.width, p.height) * 0.20; // Increased size
-        
-        // Inner core - pulsing effect
-        p.push();
-        const pulseAmount = p.sin(angle * 2) * 0.1 + 0.9;
-        p.fill(280, 70, 90, 0.9); // Increased opacity
-        p.scale(pulseAmount * 0.6);
-        p.rotateX(angle * 0.7);
-        p.rotateY(angle * 0.6);
-        p.torus(baseSize * 0.5, baseSize * 0.1);
-        p.pop();
-        
-        // Middle layer
-        p.push();
-        p.fill(220, 80, 90, 0.9); // Increased opacity
-        p.rotateX(angle * -0.5);
-        p.rotateZ(angle * 0.3);
-        const morphSize = p.sin(angle) * 0.1 + 1;
-        p.scale(0.8 * morphSize);
-        customShape(p, baseSize);
-        p.pop();
-        
-        // Outer layer with glow effect
-        p.push();
-        p.fill(200, 80, 80, 0.6); // Increased opacity
-        p.rotateY(angle * -0.2);
-        p.rotateZ(angle * -0.1);
-        p.scale(1.2);
-        p.torus(baseSize * 0.8, baseSize * 0.1);
-        p.pop();
-        
-        // Create orbiting smaller elements
-        for (let i = 0; i < 5; i++) { // Added more elements
-          p.push();
-          const orbitAngle = angle + (i * p.TWO_PI / 5);
-          const orbitRadius = baseSize * 1.5;
-          const x = p.sin(orbitAngle) * orbitRadius;
-          const y = p.cos(orbitAngle) * orbitRadius * 0.5;
-          
-          p.translate(x, y, 0);
-          p.fill(280 + i*15, 90, 90, 0.8); // Increased opacity
-          p.sphere(baseSize * 0.15); // Increased size
-          p.pop();
-        }
-      };
-      
-      // Custom abstract shape combining geometries
-      const customShape = (p: p5, size: number) => {
-        p.beginShape();
-        for (let i = 0; i < 24; i++) {
-          const ang = p.map(i, 0, 24, 0, p.TWO_PI);
-          const rad = size * (0.6 + p.sin(ang * 3 + angle) * 0.2);
-          const x = rad * p.cos(ang);
-          const y = rad * p.sin(ang);
-          const z = size * 0.3 * p.sin(ang * 2 + angle);
-          p.vertex(x, y, z);
-        }
-        p.endShape(p.CLOSE);
       };
     };
 
