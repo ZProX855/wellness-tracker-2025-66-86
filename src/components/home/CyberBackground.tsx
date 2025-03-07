@@ -27,7 +27,9 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className, scrollY = 
         
         // Setup canvas
         p.setup = () => {
-          p.createCanvas(window.innerWidth, window.innerHeight, p.WEBGL);
+          console.log("P5 setup is running"); // Debug log
+          const canvas = p.createCanvas(window.innerWidth, window.innerHeight, p.WEBGL);
+          canvas.style('display', 'block'); // Ensure canvas is visible
           p.colorMode(p.HSB, 100);
           p.noStroke();
           p.frameRate(30);
@@ -40,6 +42,7 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className, scrollY = 
 
         // Resize handler
         p.windowResized = () => {
+          console.log("P5 resize event"); // Debug log
           p.resizeCanvas(window.innerWidth, window.innerHeight);
         };
 
@@ -47,8 +50,8 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className, scrollY = 
         p.draw = () => {
           p.clear();
           
-          // Subtle background
-          p.background(70, 10, 10, 0.05);
+          // Subtle background with slightly more opacity
+          p.background(70, 10, 10, 0.15);
           
           // Set light sources - wellness themed colors
           const greenLight = p.color(140, 80, 90); // Green for wellness
@@ -323,12 +326,15 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className, scrollY = 
         }
       };
 
-      // Create the p5 instance
+      // Create the p5 instance with a callback to get the instance
+      console.log("Creating P5 instance"); // Debug log
       sketchRef.current = new p5(sketch, containerRef.current);
+      console.log("P5 instance created:", sketchRef.current); // Debug log
     }
 
     // Cleanup function
     return () => {
+      console.log("Cleaning up P5 instance"); // Debug log
       if (sketchRef.current) {
         sketchRef.current.remove();
         sketchRef.current = null;
@@ -340,6 +346,7 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className, scrollY = 
     <div 
       ref={containerRef} 
       className={`fixed top-0 left-0 w-full h-full -z-10 overflow-hidden ${className || ''}`}
+      style={{ pointerEvents: 'none' }} // Ensure it doesn't block interactions
     />
   );
 };

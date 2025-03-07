@@ -18,9 +18,16 @@ const Index = () => {
 
     const handleScroll = () => {
       setScrollY(window.scrollY);
+      // Debug scroll position
+      console.log("Scroll position:", window.scrollY);
     };
 
     window.addEventListener('scroll', handleScroll);
+    
+    // Trigger initial scroll handler to set initial value
+    handleScroll();
+    
+    console.log("Index component mounted");
     
     return () => {
       clearTimeout(timer);
@@ -29,8 +36,9 @@ const Index = () => {
   }, []);
 
   return (
-    <div className="min-h-screen text-wellness-dark relative">
-      <CyberBackground scrollY={scrollY} />
+    <div className="min-h-screen text-wellness-dark relative overflow-x-hidden">
+      {/* The CyberBackground is rendered with a key to force re-render if needed */}
+      <CyberBackground scrollY={scrollY} key="cyber-bg" />
       
       <div className="relative z-10">
         <Header />
