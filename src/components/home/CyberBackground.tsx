@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from 'react';
 import p5 from 'p5';
 
@@ -29,7 +28,11 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className, scrollY = 
         p.setup = () => {
           console.log("P5 setup is running"); // Debug log
           const canvas = p.createCanvas(window.innerWidth, window.innerHeight, p.WEBGL);
-          canvas.style('display', 'block'); // Ensure canvas is visible
+          canvas.style('display', 'block');
+          canvas.style('position', 'fixed');
+          canvas.style('top', '0');
+          canvas.style('left', '0');
+          canvas.style('z-index', '-1');
           p.colorMode(p.HSB, 100);
           p.noStroke();
           p.frameRate(30);
@@ -50,8 +53,8 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className, scrollY = 
         p.draw = () => {
           p.clear();
           
-          // Subtle background with slightly more opacity
-          p.background(70, 10, 10, 0.15);
+          // Add a more visible background
+          p.background(70, 10, 10, 0.4); // Increased opacity for better visibility
           
           // Set light sources - wellness themed colors
           const greenLight = p.color(140, 80, 90); // Green for wellness
@@ -62,8 +65,8 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className, scrollY = 
           p.pointLight(orangeLight, 300, -200, -300);
           p.pointLight(blueLight, 0, 300, -200);
           
-          // Apply ambient light
-          p.ambientLight(60, 10, 80);
+          // Apply ambient light - increase intensity
+          p.ambientLight(80, 10, 90); // Brighter ambient light
           
           // Handle mouse interaction
           const mouseYRotation = p.map(p.mouseX, 0, p.width, -0.1, 0.1);
@@ -72,8 +75,8 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className, scrollY = 
           // Get scroll position from ref
           const currentScrollY = scrollYRef.current;
           
-          // Scale based on scroll position
-          const scrollScale = p.map(currentScrollY, 0, 1000, 1, 0.8);
+          // Scale based on scroll position - make starting scale larger
+          const scrollScale = p.map(currentScrollY, 0, 1000, 1.5, 1.2); // Larger initial scale
           const scrollRotation = currentScrollY * 0.001;
           
           // Create main transformations
@@ -104,14 +107,14 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className, scrollY = 
         
         // Function to draw the wellness core
         const drawWellnessCore = (p: p5, angle: number, scrollY: number) => {
-          const baseSize = Math.min(p.width, p.height) * 0.12;
+          const baseSize = Math.min(p.width, p.height) * 0.18; // Increased from 0.12
           const scrollEffect = p.map(scrollY, 0, 500, 0, 0.5);
           
           // Inner pulsing core (green)
           p.push();
           const pulseAmount = p.sin(angle * 3) * 0.1 + 1;
           // Green for health and wellness
-          p.fill(140, 90, 90, 0.85); 
+          p.fill(140, 90, 90, 0.95); // Increased opacity 
           p.scale(pulseAmount * 0.6);
           p.rotateX(angle * 0.5 + scrollEffect);
           p.rotateZ(angle * 0.3);
@@ -135,7 +138,7 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className, scrollY = 
           // Middle layer (orange energy)
           p.push();
           // Orange for energy
-          p.fill(25, 95, 95, 0.7); 
+          p.fill(25, 95, 95, 0.8); // Increased opacity
           p.rotateX(angle * -0.4 + scrollEffect * 2);
           p.rotateZ(angle * 0.2);
           const morphSize = p.sin(angle * 2) * 0.15 + 1;
@@ -147,7 +150,7 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className, scrollY = 
           // Outer glow layer (blue)
           p.push();
           // Blue for tranquility
-          p.fill(195, 80, 95, 0.4); 
+          p.fill(195, 80, 95, 0.6); // Increased opacity
           p.rotateY(angle * -0.3 + scrollEffect);
           p.rotateZ(angle * -0.2);
           p.scale(1.2);
@@ -191,7 +194,7 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className, scrollY = 
           type: number;
           
           constructor(p: p5) {
-            const baseSize = Math.min(p.width, p.height) * 0.03;
+            const baseSize = Math.min(p.width, p.height) * 0.05; // Increased from 0.03
             this.size = baseSize * (0.8 + p.random(0.5));
             this.rotSpeed = p.random(0.5, 1.5);
             
@@ -347,6 +350,7 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className, scrollY = 
       ref={containerRef} 
       className={`fixed top-0 left-0 w-full h-full -z-10 overflow-hidden ${className || ''}`}
       style={{ pointerEvents: 'none' }} // Ensure it doesn't block interactions
+      data-testid="cyber-background" // Add a test ID for debugging
     />
   );
 };

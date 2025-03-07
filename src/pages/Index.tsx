@@ -35,10 +35,15 @@ const Index = () => {
     };
   }, []);
 
+  // Force a render of the background component
+  useEffect(() => {
+    console.log("Forcing background render with scrollY:", scrollY);
+  }, [scrollY]);
+
   return (
     <div className="min-h-screen text-wellness-dark relative overflow-x-hidden">
-      {/* The CyberBackground is rendered with a key to force re-render if needed */}
-      <CyberBackground scrollY={scrollY} key="cyber-bg" />
+      {/* The CyberBackground is rendered with a key to force re-render when needed */}
+      <CyberBackground scrollY={scrollY} key={`cyber-bg-${isVisible ? 'visible' : 'hidden'}`} />
       
       <div className="relative z-10">
         <Header />
