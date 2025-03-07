@@ -21,17 +21,17 @@ const ChatModeSelector: React.FC<ChatModeSelectorProps> = ({
   }
   
   return (
-    <div className="mb-6 animate-fade-in">
-      <h3 className="text-sm font-medium text-wellness-darkGreen mb-3">Start Your Timetable Creation</h3>
+    <div className="mb-8 animate-fade-in">
+      <h3 className="text-base font-medium text-wellness-darkGreen mb-4">Start Your Timetable Creation</h3>
       <div className="flex flex-col sm:flex-row gap-4">
         <Button 
           variant={chatMode === 'voice' ? 'default' : 'outline'}
-          className={`hover-scale transition-all ${chatMode === 'voice' 
+          className={`w-full sm:w-auto py-6 hover-scale transition-all ${chatMode === 'voice' 
             ? 'bg-gradient-to-r from-wellness-darkGreen to-wellness-mediumGreen text-white shadow-md' 
             : 'border-wellness-darkGreen text-wellness-darkGreen hover:bg-wellness-softGreen/20'}`}
           onClick={() => setChatMode('voice')}
         >
-          <Mic className="h-4 w-4 mr-2" />
+          <Mic className="h-5 w-5 mr-3" />
           Voice Assistant
         </Button>
       </div>
