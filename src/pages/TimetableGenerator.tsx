@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useMediaQuery } from '@/hooks/use-mobile';
 import TimetableVisualizer from '@/components/TimetableVisualizer';
 import useLocalStorage from '@/hooks/useLocalStorage';
+import useSessionStorage from '@/hooks/useSessionStorage';
 import VoiceAssistant from '@/components/timetable/VoiceAssistant';
 import ConversationSummary from '@/components/timetable/ConversationSummary';
 import TimetableGeneratorComponent from '@/components/timetable/TimetableGenerator';
@@ -61,7 +62,7 @@ const TimetableGenerator = () => {
     answer: string;
   }[]>([]);
   const [chatMode, setChatMode] = useState<'voice' | null>(null);
-  const [showInsights, setShowInsights] = useState(true);
+  const [showInsights, setShowInsights] = useSessionStorage('show-timetable-insights', false);
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const {
     toast
