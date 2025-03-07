@@ -16,6 +16,7 @@ import ConversationSummary from '@/components/timetable/ConversationSummary';
 import TimetableGeneratorComponent from '@/components/timetable/TimetableGenerator';
 import ChatModeSelector from '@/components/timetable/ChatModeSelector';
 import TimetableInsights from '@/components/timetable/TimetableInsights';
+
 interface TimetableEntry {
   time: string;
   activity: string;
@@ -24,10 +25,12 @@ interface TimetableEntry {
   completed?: boolean;
   important?: boolean;
 }
+
 interface ConversationResponse {
   question: string;
   answer: string;
 }
+
 const TimetableGenerator = () => {
   const [isConversationActive, setIsConversationActive] = useState(false);
   const [isTextChatActive, setIsTextChatActive] = useState(false);
@@ -59,36 +62,33 @@ const TimetableGenerator = () => {
     answer: string;
   }[]>([]);
   const [chatMode, setChatMode] = useState<'voice' | 'text' | null>(null);
+  const [showInsights, setShowInsights] = useState(true);
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const {
     toast
   } = useToast();
   const navigate = useNavigate();
+
   useEffect(() => {
     if (timetable && timetable.length > 0) {
       setShowTimetable(true);
     }
 
-    // Setup event listener for speech transcript
     const handleSpeechTranscript = (event: CustomEvent) => {
       if (event.detail && event.detail.transcript) {
         setTranscript(prev => [...prev, event.detail.transcript]);
-        // Also save to localStorage for persistence
         const updatedTranscript = [...transcript, event.detail.transcript];
         localStorage.setItem('lastConversationTranscript', JSON.stringify(updatedTranscript));
       }
     };
 
-    // Setup event listener for complete conversation transcript
     const handleConversationTranscript = (event: CustomEvent) => {
       if (event.detail && event.detail.transcript) {
         setTranscript(event.detail.transcript);
-        // Save to localStorage for persistence
         localStorage.setItem('lastConversationTranscript', JSON.stringify(event.detail.transcript));
       }
     };
 
-    // Try to load saved transcript on mount
     try {
       const savedTranscript = localStorage.getItem('lastConversationTranscript');
       if (savedTranscript) {
@@ -101,6 +101,7 @@ const TimetableGenerator = () => {
     } catch (error) {
       console.error("Error loading saved transcript:", error);
     }
+
     window.addEventListener('speechTranscript', handleSpeechTranscript as EventListener);
     window.addEventListener('conversationTranscript', handleConversationTranscript as EventListener);
     return () => {
@@ -108,6 +109,7 @@ const TimetableGenerator = () => {
       window.removeEventListener('conversationTranscript', handleConversationTranscript as EventListener);
     };
   }, [transcript]);
+
   const handleAddResponse = (question: string, answer: string) => {
     if (question && !answer) {
       setResponses(prev => [...prev, {
@@ -135,21 +137,21 @@ const TimetableGenerator = () => {
       });
     }
   };
+
   const handleConversationComplete = () => {
     setConversationComplete(true);
     setIsGeneratingAfterConversation(true);
     setTimeout(() => {
-      // Skip API calls and just generate from local data
       generateTimetableFromLocalData();
     }, 1000);
   };
+
   const generateTimetableFromLocalData = () => {
     setIsGeneratingAfterConversation(false);
     setShowTimetable(true);
-
-    // Timetable generation will happen through the TimetableGenerator component
-    // which already has access to the transcript data
+    setShowInsights(true);
   };
+
   const handleEditEntry = (entry: TimetableEntry, index: number) => {
     setEditEntry({
       ...entry
@@ -157,6 +159,7 @@ const TimetableGenerator = () => {
     setEditIndex(index);
     setIsDrawerOpen(true);
   };
+
   const saveEditedEntry = () => {
     if (editEntry && editIndex !== null) {
       const updatedTimetable = [...timetable];
@@ -169,6 +172,7 @@ const TimetableGenerator = () => {
       });
     }
   };
+
   const addNewEntry = () => {
     if (newEntry.time && newEntry.activity) {
       setTimetable(prev => [...prev, {
@@ -195,6 +199,7 @@ const TimetableGenerator = () => {
       });
     }
   };
+
   const deleteEntry = (entry: TimetableEntry, index: number) => {
     const updatedTimetable = [...timetable];
     updatedTimetable.splice(index, 1);
@@ -204,16 +209,19 @@ const TimetableGenerator = () => {
       description: "Activity has been removed from your timetable."
     });
   };
+
   const toggleCompleted = (index: number) => {
     const updatedTimetable = [...timetable];
     updatedTimetable[index].completed = !updatedTimetable[index].completed;
     setTimetable(updatedTimetable);
   };
+
   const toggleImportant = (index: number) => {
     const updatedTimetable = [...timetable];
     updatedTimetable[index].important = !updatedTimetable[index].important;
     setTimetable(updatedTimetable);
   };
+
   const shareTimetable = async () => {
     try {
       const timetableText = timetable.map(entry => `${entry.time} - ${entry.activity}${entry.description ? ` (${entry.description})` : ''}`).join('\n');
@@ -242,6 +250,7 @@ const TimetableGenerator = () => {
       });
     }
   };
+
   const downloadTimetable = () => {
     const timetableText = timetable.map(entry => `${entry.time} - ${entry.activity}${entry.description ? ` (${entry.description})` : ''}`).join('\n');
     const blob = new Blob([timetableText], {
@@ -260,14 +269,23 @@ const TimetableGenerator = () => {
       description: "Your timetable has been downloaded as a text file."
     });
   };
+
   const handleStartVoiceConversation = () => {
     setIsConversationActive(true);
     setShowTimetable(false);
+    setShowInsights(false);
   };
+
   const handleStartTextConversation = () => {
     setIsTextChatActive(true);
     setShowTimetable(false);
+    setShowInsights(false);
   };
+
+  const handleHideInsights = () => {
+    setShowInsights(false);
+  };
+
   return <div className="min-h-screen bg-gradient-to-b from-wellness-softBeige to-wellness-softGreen/30">
       <Header />
       
@@ -294,14 +312,26 @@ const TimetableGenerator = () => {
             
             <ChatModeSelector chatMode={chatMode} setChatMode={setChatMode} isConversationActive={isConversationActive} isTextChatActive={isTextChatActive} />
             
-            {chatMode === 'voice' && <VoiceAssistant isConversationActive={isConversationActive} setIsConversationActive={handleStartVoiceConversation} onConversationComplete={handleConversationComplete} onResponses={handleAddResponse} onSetConversationId={setCurrentConversationId} />}
+            {chatMode === 'voice' && <VoiceAssistant 
+              isConversationActive={isConversationActive} 
+              setIsConversationActive={handleStartVoiceConversation} 
+              onConversationComplete={handleConversationComplete} 
+              onResponses={handleAddResponse} 
+              onSetConversationId={setCurrentConversationId}
+              onHideInsights={handleHideInsights}
+            />}
             
-            {chatMode === 'text' && <TextChatAssistant isTextChatActive={isTextChatActive} setIsTextChatActive={handleStartTextConversation} onConversationComplete={handleConversationComplete} onResponses={handleAddResponse} />}
+            {chatMode === 'text' && <TextChatAssistant 
+              isTextChatActive={isTextChatActive} 
+              setIsTextChatActive={handleStartTextConversation} 
+              onConversationComplete={handleConversationComplete} 
+              onResponses={handleAddResponse} 
+            />}
             
             <ConversationSummary responses={responses} showSummary={chatMode === 'voice'} />
           </div>
           
-          {showTimetable && !loadingTimetable && !isGeneratingAfterConversation && timetable.length > 0 && <TimetableInsights timetable={timetable} conversationData={conversationData} localConversation={localConversation} responses={responses} />}
+          {showTimetable && !loadingTimetable && !isGeneratingAfterConversation && timetable.length > 0 && showInsights && <TimetableInsights timetable={timetable} conversationData={conversationData} localConversation={localConversation} responses={responses} />}
           
           {(isGeneratingAfterConversation || loadingTimetable) && <div className="flex flex-col items-center justify-center py-12">
               <div className="rounded-full h-16 w-16 border-b-2 border-t-2 border-wellness-darkGreen animate-spin mb-4"></div>
@@ -480,4 +510,6 @@ const TimetableGenerator = () => {
       </Drawer>
     </div>;
 };
+
 export default TimetableGenerator;
+

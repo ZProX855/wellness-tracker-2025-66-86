@@ -15,6 +15,7 @@ interface VoiceAssistantProps {
   onConversationComplete: () => void;
   onResponses: (question: string, answer: string) => void;
   onSetConversationId: (id: string) => void;
+  onHideInsights: () => void; // Add new prop for hiding insights
 }
 
 const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
@@ -22,7 +23,8 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
   setIsConversationActive,
   onConversationComplete,
   onResponses,
-  onSetConversationId
+  onSetConversationId,
+  onHideInsights
 }) => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isLocalSpeechRecognitionActive, setIsLocalSpeechRecognitionActive] = useState(false);
@@ -216,6 +218,9 @@ const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
       setIsConnecting(true);
       
       setIsConversationActive(true);
+      
+      // Hide insights when conversation starts
+      onHideInsights();
       
       // Check for existing transcript
       try {
