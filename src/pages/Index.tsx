@@ -183,7 +183,7 @@ wellness goals with intelligent, AI-powered tools.</p>
                       <tool.icon className="h-8 w-8 text-wellness-darkGreen" />
                     </div>
                     <h3 className="text-xl font-medium text-wellness-darkGreen mb-3">{tool.title}</h3>
-                    <p className="text-wellness-charcoal/70 text-sm">{tool.description}</p>
+                    <p className="text-wellness-charcoal/70 text-sm px-[8px]">{tool.description}</p>
                     <div className="mt-6 w-12 h-12 rounded-full bg-wellness-softGreen/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform -translate-y-2 group-hover:translate-y-0">
                       <ArrowRight className="h-5 w-5 text-wellness-darkGreen" />
                     </div>
