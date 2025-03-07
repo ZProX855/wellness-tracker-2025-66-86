@@ -240,9 +240,7 @@ wellness goals with intelligent, AI-powered tools.</p>
             <h2 className="text-3xl sm:text-4xl font-medium text-wellness-darkGreen mb-6">
               Begin Your Wellness Journey Today
             </h2>
-            <p className="text-lg text-wellness-charcoal/70 mb-10">
-              Take the first step toward a healthier, more balanced lifestyle with our AI-powered wellness tools.
-            </p>
+            <p className="text-lg text-wellness-charcoal/70 mb-10">Take the first step toward a healthier, more balanced lifestyle with our AI-powered tools.</p>
             <Button onClick={() => navigate('/wellness-journey')} className="glass-morphism bg-wellness-darkGreen hover:bg-wellness-darkGreen/90 text-white font-medium px-8 py-6 text-lg rounded-full">
               Start Now
               <ArrowRight className="ml-2 h-5 w-5" />
