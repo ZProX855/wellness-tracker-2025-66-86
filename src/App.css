@@ -2,6 +2,7 @@
   max-width: 100%;
   margin: 0 auto;
   text-align: center;
+  overflow-x: hidden; /* Prevent horizontal scrolling */
 }
 
 @keyframes logo-spin {
@@ -13,91 +14,25 @@
   }
 }
 
-/* Ensure p5.js canvas is visible with stronger z-index rules */
-canvas {
-  display: block !important;
-  will-change: transform; /* Optimize animation performance */
-  backface-visibility: hidden;
-  perspective: 1000;
-  transform: translateZ(0);
-}
-
 .p5Canvas {
-  position: fixed !important;
+  position: absolute !important;
   top: 0 !important;
   left: 0 !important;
-  z-index: -1 !important;
   width: 100% !important;
   height: 100% !important;
-  pointer-events: none !important; /* Disable interaction with the canvas */
-  touch-action: none !important; /* Prevent touch scroll for mobile */
-  -webkit-tap-highlight-color: transparent !important; /* Remove touch highlight */
-  -webkit-user-select: none !important; /* Prevent text selection */
-  user-select: none !important;
-  /* GPU acceleration for smoother performance */
-  transform: translate3d(0,0,0) !important;
-  -webkit-transform: translate3d(0,0,0) !important;
+  z-index: -5 !important;
 }
 
-/* Enhanced performance optimizations for 3D rendering */
-.webgl-content {
-  transform: translate3d(0,0,0) !important;
-  backface-visibility: hidden !important;
-  perspective: 1000px !important;
-  will-change: transform !important;
-  contain: layout paint size !important;
+.background-container {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  z-index: -10;
+  overflow: hidden;
 }
 
-/* Add high contrast between background and foreground */
-body {
-  overflow-x: hidden; /* Prevent horizontal scrolling */
-  position: relative; /* Create stacking context */
-}
-
-/* Create a gentle floating animation */
-@keyframes float {
-  0% {
-    transform: translateY(0px) translateX(0px);
-  }
-  25% {
-    transform: translateY(-10px) translateX(5px);
-  }
-  50% {
-    transform: translateY(0px) translateX(10px);
-  }
-  75% {
-    transform: translateY(10px) translateX(5px);
-  }
-  100% {
-    transform: translateY(0px) translateX(0px);
-  }
-}
-
-/* Soft pulsing for subtle emphasis */
-@keyframes pulse-soft {
-  0% {
-    opacity: 0.8;
-    transform: scale(0.98);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.02);
-  }
-  100% {
-    opacity: 0.8;
-    transform: scale(0.98);
-  }
-}
-
-.animate-float {
-  animation: float 8s ease-in-out infinite;
-}
-
-.animate-pulse-soft {
-  animation: pulse-soft 4s ease-in-out infinite;
-}
-
-/* Smooth scrolling */
 .apple-scroll {
   scroll-behavior: smooth;
   scrollbar-width: thin;
@@ -193,61 +128,4 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-}
-
-/* Glass morphism effects */
-.glass-card {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-}
-
-.glass-button {
-  background: rgba(104, 166, 136, 0.8);
-  backdrop-filter: blur(4px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  transition: all 0.3s ease;
-}
-
-.glass-button:hover {
-  background: rgba(104, 166, 136, 0.9);
-  box-shadow: 0 5px 15px rgba(104, 166, 136, 0.4);
-  transform: translateY(-2px);
-}
-
-/* Enhanced interactivity styles */
-.interactive-element {
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), 
-              box-shadow 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
-              opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.interactive-element:hover {
-  transform: translateY(-5px) scale(1.03);
-  box-shadow: 0 10px 30px -5px rgba(104, 166, 136, 0.3);
-}
-
-.interactive-element:active {
-  transform: translateY(-2px) scale(0.98);
-}
-
-/* Performance optimizations for animations */
-.gpu-accelerated {
-  transform: translateZ(0);
-  backface-visibility: hidden;
-  perspective: 1000px;
-  will-change: transform, opacity;
-}
-
-/* Green glow effect for text contrast against the background */
-.text-glow {
-  text-shadow: 0 0 10px rgba(150, 255, 180, 0.5);
-}
-
-/* Enhanced contrast for content over the animated background */
-.content-over-bg {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(8px);
-  box-shadow: 0 8px 32px rgba(104, 166, 136, 0.15);
 }
