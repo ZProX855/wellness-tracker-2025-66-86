@@ -44,6 +44,8 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className }) => {
       let canvasWidth = window.innerWidth;
       let canvasHeight = window.innerHeight;
       let canvasElement: HTMLElement | null = null;
+      let glowIntensity = 0;
+      let glowDirection = 1; // 1 for increasing, -1 for decreasing
       
       // Setup canvas
       p.setup = () => {
@@ -85,23 +87,27 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className }) => {
         // Dynamic background color (very subtle)
         p.background(240, 10, 10, 0.05);
         
-        // Enhanced lighting for better visibility of rounded shapes
-        const blueLight = p.color(60, 80, 100); // Blue
-        const purpleLight = p.color(90, 80, 100); // Purple
-        const pinkLight = p.color(320, 80, 100); // Pink
+        // Update glow intensity
+        glowIntensity += 0.01 * glowDirection;
+        if (glowIntensity > 1) {
+          glowIntensity = 1;
+          glowDirection = -1;
+        } else if (glowIntensity < 0.3) {
+          glowIntensity = 0.3;
+          glowDirection = 1;
+        }
         
-        p.pointLight(blueLight, 200, -300, 300);
-        p.pointLight(purpleLight, -200, 300, -300);
-        p.pointLight(pinkLight, 0, 0, 500);
-        p.ambientLight(25, 25, 45); // Increased ambient light for better shape visibility
+        // Enhanced lighting with glow effect
+        const blueLight = p.color(60, 80, 100 * glowIntensity); // Blue with varying intensity
+        const purpleLight = p.color(90, 80, 100 * glowIntensity); // Purple with varying intensity
+        const pinkLight = p.color(320, 80, 100 * glowIntensity); // Pink with varying intensity
         
-        // Handle mouse interaction
-        const mouseYRotation = p.map(p.mouseX, 0, p.width, -0.1, 0.1);
-        const mouseXRotation = p.map(p.mouseY, 0, p.height, -0.1, 0.1);
+        p.pointLight(blueLight, 200 * Math.sin(angle * 0.2), -300 * Math.cos(angle * 0.1), 300);
+        p.pointLight(purpleLight, -200 * Math.cos(angle * 0.15), 300 * Math.sin(angle * 0.1), -300);
+        p.pointLight(pinkLight, 0, 0, 500 * Math.sin(angle * 0.05));
         
-        // Use mouse for rotation if mouse is near center of the screen
-        const distFromCenter = p.dist(p.mouseX, p.mouseY, p.width/2, p.height/2);
-        const isMouseActive = distFromCenter < p.width/3;
+        // Ambient light that changes with glow intensity
+        p.ambientLight(25 * glowIntensity, 25 * glowIntensity, 45 * glowIntensity);
         
         // Create main transformations
         p.push();
@@ -111,65 +117,63 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className }) => {
         p.scale(scale * 1.5); // Increased scale for better visibility
         
         p.translate(0, 0, 0);
-        p.rotateY(angle * 0.5);
-        p.rotateX(angle * 0.3);
         
-        // Apply mouse-based rotation if mouse is active
-        if (isMouseActive) {
-          p.rotateX(mouseXRotation);
-          p.rotateY(mouseYRotation);
-        }
+        // Slow, constant rotation without mouse interaction
+        p.rotateY(angle * 0.1);
+        p.rotateX(angle * 0.07);
+        p.rotateZ(angle * 0.03);
         
-        // Draw all the rounded shapes
-        drawRoundedShapes(p, angle);
+        // Draw all the rounded shapes with glow effect
+        drawRoundedShapes(p, angle, glowIntensity);
         
         p.pop();
         
-        // Update animation values
-        angle += 0.01;
+        // Update animation values - slower rotation for a more gentle effect
+        angle += 0.005;
       };
       
       // Function to draw our collection of rounded 3D shapes
-      const drawRoundedShapes = (p: p5, angle: number) => {
+      const drawRoundedShapes = (p: p5, angle: number, glowIntensity: number) => {
         const baseSize = Math.min(p.width, p.height) * 0.20;
         
-        // Main central sphere with pulsing effect
+        // Main central sphere with smooth pulsing effect
         p.push();
-        const pulseAmount = p.sin(angle * 2) * 0.1 + 0.9;
-        p.fill(280, 70, 90, 0.8);
+        const pulseAmount = p.sin(angle * 0.5) * 0.1 + 0.9;
+        // More vivid color with glow
+        p.fill(280, 70 + (glowIntensity * 20), 90, 0.8);
         p.sphere(baseSize * 0.25 * pulseAmount);
         p.pop();
         
         // Large torus rotating around the center
         p.push();
-        p.fill(220, 80, 90, 0.7);
-        p.rotateX(angle * 0.5);
-        p.rotateY(angle * 0.3);
+        p.fill(220, 80 + (glowIntensity * 10), 90, 0.7);
+        p.rotateX(angle * 0.2);
+        p.rotateY(angle * 0.15);
         p.torus(baseSize * 0.8, baseSize * 0.1);
         p.pop();
         
         // Second torus at different angle
         p.push();
-        p.fill(180, 70, 85, 0.6);
-        p.rotateX(angle * -0.3);
-        p.rotateZ(angle * 0.4);
+        p.fill(180, 70 + (glowIntensity * 15), 85, 0.6);
+        p.rotateX(angle * -0.15);
+        p.rotateZ(angle * 0.18);
         p.torus(baseSize * 0.6, baseSize * 0.08);
         p.pop();
         
         // Third torus at different angle
         p.push();
-        p.fill(320, 60, 95, 0.5);
-        p.rotateY(angle * -0.2);
-        p.rotateZ(angle * -0.5);
+        p.fill(320, 60 + (glowIntensity * 20), 95, 0.5);
+        p.rotateY(angle * -0.1);
+        p.rotateZ(angle * -0.2);
         p.torus(baseSize * 1.0, baseSize * 0.05);
         p.pop();
         
         // Create orbiting spheres
-        const numSpheres = 12; // More orbiting spheres
+        const numSpheres = 12; // Orbital spheres
         for (let i = 0; i < numSpheres; i++) {
           p.push();
-          // Create different orbital paths
-          const orbitAngle = angle + (i * p.TWO_PI / numSpheres);
+          // Create different orbital paths with slower movement
+          const orbitAngle = angle * 0.4 + (i * p.TWO_PI / numSpheres);
           const orbitRadius = baseSize * 1.2;
           
           // Calculate position using sine and cosine for smooth circular motion
@@ -191,17 +195,18 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className }) => {
             // Diagonal orbit
             x = p.sin(orbitAngle) * orbitRadius * 0.7;
             y = p.cos(orbitAngle) * orbitRadius * 0.7;
-            z = p.sin(orbitAngle * 2) * orbitRadius * 0.3;
+            z = p.sin(orbitAngle * 0.8) * orbitRadius * 0.3;
           }
           
           p.translate(x, y, z);
           
-          // Size variation based on position
-          const sphereSize = baseSize * (0.07 + p.sin(orbitAngle * 3) * 0.03);
+          // Size variation based on position and glow
+          const sphereSize = baseSize * (0.07 + p.sin(orbitAngle * 1.2) * 0.03);
           
-          // Color variation
+          // Color variation with glow effect
           const hue = (260 + i * 10) % 360;
-          p.fill(hue, 80, 95, 0.8);
+          // Increased saturation and brightness based on glow intensity
+          p.fill(hue, 80 + (glowIntensity * 10), 95 + (glowIntensity * 5), 0.8);
           
           // Draw the sphere
           p.sphere(sphereSize);
@@ -211,14 +216,15 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className }) => {
         // Add some medium-sized spheres in the middle distance
         for (let i = 0; i < 5; i++) {
           p.push();
-          const medAngle = angle * 0.7 + (i * p.TWO_PI / 5);
+          const medAngle = angle * 0.3 + (i * p.TWO_PI / 5);
           const medRadius = baseSize * 0.6;
           const medX = p.sin(medAngle) * medRadius;
           const medY = p.cos(medAngle) * medRadius;
-          const medZ = p.sin(medAngle * 1.5) * medRadius * 0.5;
+          const medZ = p.sin(medAngle * 0.7) * medRadius * 0.5;
           
           p.translate(medX, medY, medZ);
-          p.fill(200 + i * 30, 70, 85, 0.7);
+          // Enhanced glow effect
+          p.fill(200 + i * 30, 70 + (glowIntensity * 15), 85 + (glowIntensity * 10), 0.7);
           p.sphere(baseSize * 0.12);
           p.pop();
         }
