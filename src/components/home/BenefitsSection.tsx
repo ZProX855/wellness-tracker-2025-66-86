@@ -1,10 +1,8 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { HeartPulse, Target, UtensilsCrossed } from 'lucide-react';
 
 const BenefitsSection: React.FC = () => {
-  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
-
   const benefits = [
     {
       title: 'Personalized Insights',
@@ -27,11 +25,11 @@ const BenefitsSection: React.FC = () => {
   ];
 
   return (
-    <section className="py-20 px-4 sm:px-6 bg-wellness-softBeige/80 backdrop-blur-sm">
+    <section className="py-20 px-4 sm:px-6 bg-wellness-softBeige">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-16">
           <h2 
-            className="text-3xl sm:text-4xl font-medium text-wellness-darkGreen mb-4 opacity-0 animate-fade-in glow-effect" 
+            className="text-3xl sm:text-4xl font-medium text-wellness-darkGreen mb-4 opacity-0 animate-fade-in" 
             style={{ animationDelay: '100ms' }}
           >
             Why Choose Wellness Tracker
@@ -48,29 +46,11 @@ const BenefitsSection: React.FC = () => {
           {benefits.map((benefit, idx) => (
             <div 
               key={idx} 
-              className="opacity-0 animate-fade-in relative" 
+              className="opacity-0 animate-fade-in" 
               style={{ animationDelay: `${300 + idx * 100}ms` }}
-              onMouseEnter={() => setHoveredIndex(idx)}
-              onMouseLeave={() => setHoveredIndex(null)}
             >
-              {/* Background glow effect that appears on hover */}
-              <div 
-                className="absolute inset-0 rounded-lg transition-all duration-500 z-0"
-                style={{
-                  background: hoveredIndex === idx 
-                    ? 'radial-gradient(circle at center, rgba(104, 166, 136, 0.15), transparent 70%)' 
-                    : 'none',
-                  transform: hoveredIndex === idx ? 'scale(1.1)' : 'scale(1)',
-                  opacity: hoveredIndex === idx ? 1 : 0
-                }}
-              />
-              
-              <div className={`glass-panel p-8 h-full transition-all duration-500 backdrop-blur-sm bg-white/80 rounded-lg relative z-10 ${
-                hoveredIndex === idx ? 'shadow-lg shadow-wellness-darkGreen/20' : 'hover:shadow-md'
-              }`}>
-                <div className={`mb-6 w-16 h-16 rounded-full bg-wellness-softGreen/50 flex items-center justify-center transition-transform duration-500 ${
-                  hoveredIndex === idx ? 'scale-110 glow-effect' : ''
-                }`}>
+              <div className="glass-panel p-8 h-full hover:shadow-md transition-all duration-500">
+                <div className="mb-6 w-16 h-16 rounded-full bg-wellness-softGreen/50 flex items-center justify-center">
                   {benefit.icon}
                 </div>
                 <h3 className="text-xl font-medium text-wellness-darkGreen mb-3">{benefit.title}</h3>

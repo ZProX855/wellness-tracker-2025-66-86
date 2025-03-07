@@ -1,376 +1,401 @@
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import p5 from 'p5';
 
 interface CyberBackgroundProps {
   className?: string;
+  scrollY?: number;
 }
 
-const CyberBackground: React.FC<CyberBackgroundProps> = ({ className }) => {
+const CyberBackground: React.FC<CyberBackgroundProps> = ({ className, scrollY = 0 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const sketchRef = useRef<p5 | null>(null);
-  const [canvasCreated, setCanvasCreated] = useState(false);
-  const [debugMessage, setDebugMessage] = useState<string>('');
+  const scrollYRef = useRef(scrollY);
+  const canvasCreatedRef = useRef(false);
 
-  // Helper to log debug messages
-  const debug = (message: string) => {
-    console.log(`CyberBackground: ${message}`);
-    setDebugMessage(prev => `${prev}\n${message}`);
-  };
+  // Update ref when scrollY changes
+  useEffect(() => {
+    scrollYRef.current = scrollY;
+  }, [scrollY]);
 
   useEffect(() => {
-    // Only create the sketch once
-    if (!containerRef.current) {
-      debug('Container ref not available');
-      return;
-    }
-
+    // Clear any previous instances
     if (sketchRef.current) {
-      debug('Sketch already exists, removing');
+      console.log("Removing previous p5 instance");
       sketchRef.current.remove();
       sketchRef.current = null;
+      canvasCreatedRef.current = false;
     }
 
-    debug('Initializing sketch');
-    
-    // Clear container before creating new canvas
-    if (containerRef.current.childNodes.length > 0) {
-      debug(`Container has ${containerRef.current.childNodes.length} children, clearing`);
-      containerRef.current.innerHTML = '';
-    }
-
-    const sketch = (p: p5) => {
-      let angle = 0;
-      let hue = 0;
-      let canvasWidth = window.innerWidth;
-      let canvasHeight = window.innerHeight;
-      let canvasElement: HTMLElement | null = null;
-      let lights: Light[] = [];
-      let birds: Bird[] = [];
-      let mouseInteractive = false;
-      
-      class Light {
-        x: number;
-        y: number;
-        size: number;
-        alpha: number;
-        hue: number;
-        pulse: number;
-        pulseSpeed: number;
-
-        constructor() {
-          this.x = p.random(canvasWidth);
-          this.y = p.random(canvasHeight);
-          this.size = p.random(50, 150);
-          this.alpha = p.random(10, 40);
-          this.hue = p.random(60, 140); // Green hues
-          this.pulse = 0;
-          this.pulseSpeed = p.random(0.02, 0.05);
-        }
-
-        update(mouseX: number, mouseY: number) {
-          this.pulse += this.pulseSpeed;
+    // Only create the sketch once
+    if (containerRef.current) {
+      const sketch = (p: p5) => {
+        let angle = 0;
+        let shapes: Shape[] = [];
+        let numShapes = 15;
+        let canvasElement: HTMLElement | null = null;
+        
+        // Setup canvas
+        p.setup = () => {
+          console.log("P5 setup running - creating canvas...");
           
-          // Add mouse interactivity - lights grow when mouse is near
-          const distToMouse = p.dist(this.x, this.y, mouseX, mouseY);
-          const interactionRadius = 300;
+          // Create canvas with dimensions matched to container
+          const canvas = p.createCanvas(window.innerWidth, window.innerHeight, p.WEBGL);
           
-          if (distToMouse < interactionRadius) {
-            const influence = p.map(distToMouse, 0, interactionRadius, 1.5, 1);
-            this.size = p.lerp(this.size, this.size * influence, 0.1);
-            this.alpha = p.lerp(this.alpha, this.alpha * 1.2, 0.1);
+          // Debug - confirm canvas creation
+          canvasElement = document.querySelector('canvas.p5Canvas');
+          if (canvasElement) {
+            console.log("Canvas successfully created:", canvasElement);
+            canvasCreatedRef.current = true;
+            
+            // Apply additional styles directly to ensure visibility
+            canvasElement.style.display = 'block';
+            canvasElement.style.position = 'fixed';
+            canvasElement.style.top = '0';
+            canvasElement.style.left = '0';
+            canvasElement.style.width = '100%';
+            canvasElement.style.height = '100%';
+            canvasElement.style.zIndex = '-1';
+            canvasElement.style.pointerEvents = 'none';
+          } else {
+            console.error("Failed to find canvas element after creation!");
           }
-        }
-
-        display() {
-          const pulseFactor = p.sin(this.pulse) * 0.3 + 0.7;
-          const size = this.size * pulseFactor;
           
+          p.colorMode(p.HSB, 100);
           p.noStroke();
+          p.frameRate(30);
           
-          // Glow effect with multiple layers
-          for (let i = 3; i > 0; i--) {
-            const layerSize = size * (i / 3);
-            const layerAlpha = this.alpha * (i / 3);
-            p.fill(this.hue, 80, 80, layerAlpha);
-            p.ellipse(this.x, this.y, layerSize, layerSize);
+          // Create shape objects
+          for (let i = 0; i < numShapes; i++) {
+            shapes.push(new Shape(p));
           }
-        }
-      }
-      
-      class Bird {
-        x: number;
-        y: number;
-        z: number;
-        speed: number;
-        size: number;
-        wingAngle: number;
-        wingSpeed: number;
-        hue: number;
-        
-        constructor() {
-          this.z = p.random(0.1, 1); // Z-depth for parallax
-          this.x = p.random(canvasWidth);
-          this.y = p.random(canvasHeight * 0.7); // Higher up in the canvas
-          this.speed = p.map(this.z, 0.1, 1, 0.5, 2);
-          this.size = p.map(this.z, 0.1, 1, 5, 15);
-          this.wingAngle = 0;
-          this.wingSpeed = p.random(0.1, 0.3);
-          this.hue = p.random(60, 140); // Green hues
-        }
-        
-        update() {
-          this.x += this.speed;
-          this.wingAngle += this.wingSpeed;
           
-          // Reset position when bird leaves the screen
-          if (this.x > canvasWidth + 50) {
-            this.x = -50;
-            this.y = p.random(canvasHeight * 0.7);
+          // Debug log
+          console.log("P5 setup complete. Canvas dimensions:", p.width, "x", p.height);
+        };
+
+        // Resize handler
+        p.windowResized = () => {
+          console.log("Window resized. Updating canvas dimensions.");
+          p.resizeCanvas(window.innerWidth, window.innerHeight);
+          
+          // Re-check canvas element after resize
+          if (!canvasElement) {
+            canvasElement = document.querySelector('canvas.p5Canvas');
+            if (canvasElement) {
+              console.log("Canvas found after resize:", canvasElement);
+            }
           }
-        }
-        
-        display() {
+        };
+
+        // Main draw loop
+        p.draw = () => {
+          if (!canvasCreatedRef.current) {
+            console.log("Canvas not yet created, skipping draw");
+            return;
+          }
+          
+          p.clear();
+          
+          // Add a more visible background with higher opacity
+          p.background(70, 10, 10, 0.8); // Significantly increased opacity
+          
+          // Set light sources - wellness themed colors with increased intensity
+          const greenLight = p.color(140, 90, 95); // Brighter green
+          const orangeLight = p.color(25, 95, 98);  // Brighter orange
+          const blueLight = p.color(195, 90, 98);   // Brighter blue
+          
+          p.pointLight(greenLight, -300, 0, 300);
+          p.pointLight(orangeLight, 300, -200, -300);
+          p.pointLight(blueLight, 0, 300, -200);
+          
+          // Apply ambient light - increase intensity
+          p.ambientLight(90, 15, 95); // Brighter ambient light
+          
+          // Handle mouse interaction
+          const mouseYRotation = p.map(p.mouseX, 0, p.width, -0.1, 0.1);
+          const mouseXRotation = p.map(p.mouseY, 0, p.height, -0.1, 0.1);
+          
+          // Get scroll position from ref
+          const currentScrollY = scrollYRef.current;
+          
+          // Scale based on scroll position - make starting scale larger
+          const scrollScale = p.map(currentScrollY, 0, 1000, 2.0, 1.5); // Even larger initial scale
+          const scrollRotation = currentScrollY * 0.001;
+          
+          // Create main transformations
           p.push();
-          p.translate(this.x, this.y);
+          p.translate(0, 0, 0);
           
-          // Bird body color
-          p.fill(this.hue, 70, 90, 0.7);
-          p.noStroke();
+          // Apply mouse-based rotation
+          p.rotateY(mouseYRotation + angle * 0.2);
+          p.rotateX(mouseXRotation + angle * 0.1);
           
-          // Bird body
-          p.ellipse(0, 0, this.size * 2, this.size);
+          // Apply scroll-based transformations
+          p.scale(scrollScale);
+          p.rotateZ(scrollRotation);
           
-          // Wings
-          const wingY = p.sin(this.wingAngle) * this.size * 0.8;
+          // Draw the wellness core
+          drawWellnessCore(p, angle, currentScrollY);
           
-          // Left wing
-          p.beginShape();
-          p.vertex(0, 0);
-          p.vertex(-this.size * 1.5, wingY);
-          p.vertex(-this.size * 0.5, wingY * 0.5);
-          p.endShape(p.CLOSE);
-          
-          // Right wing
-          p.beginShape();
-          p.vertex(0, 0);
-          p.vertex(this.size * 1.5, wingY);
-          p.vertex(this.size * 0.5, wingY * 0.5);
-          p.endShape(p.CLOSE);
-          
-          // Bird head
-          p.ellipse(this.size, 0, this.size * 0.8, this.size * 0.8);
+          // Draw all shapes
+          for (let shape of shapes) {
+            shape.display(p, angle, currentScrollY);
+          }
           
           p.pop();
-        }
-      }
-      
-      // Setup canvas
-      p.setup = () => {
-        debug(`Creating canvas: ${canvasWidth}x${canvasHeight}`);
-        const canvas = p.createCanvas(canvasWidth, canvasHeight, p.WEBGL);
-        p.colorMode(p.HSB, 100);
-        p.noStroke();
-        p.frameRate(30);
-        
-        // Get canvas element to apply styles
-        canvasElement = document.getElementById('defaultCanvas0');
-        if (canvasElement) {
-          debug('Canvas element found, applying styles');
-          canvasElement.style.position = 'absolute';
-          canvasElement.style.top = '0';
-          canvasElement.style.left = '0';
-          canvasElement.style.width = '100%';
-          canvasElement.style.height = '100%';
-          canvasElement.style.zIndex = '-5';
-          canvasElement.classList.add('p5Canvas');
-          setCanvasCreated(true);
-        } else {
-          debug('Canvas element not found after creation');
-        }
-        
-        // Initialize lights
-        for (let i = 0; i < 15; i++) {
-          lights.push(new Light());
-        }
-        
-        // Initialize birds
-        for (let i = 0; i < 12; i++) {
-          birds.push(new Bird());
-        }
-      };
-
-      // Resize handler
-      p.windowResized = () => {
-        canvasWidth = window.innerWidth;
-        canvasHeight = window.innerHeight;
-        debug(`Resizing canvas: ${canvasWidth}x${canvasHeight}`);
-        p.resizeCanvas(canvasWidth, canvasHeight);
-      };
-
-      // Main draw loop
-      p.draw = () => {
-        p.clear();
-        
-        // Dynamic background color (very subtle)
-        p.background(240, 10, 10, 0.05);
-        
-        // Place back in normal 2D mode for drawing birds and lights
-        p.push();
-        p.translate(-p.width/2, -p.height/2, 0);
-        
-        // Draw lights
-        for (const light of lights) {
-          light.update(p.mouseX, p.mouseY);
-          light.display();
-        }
-        
-        // Draw birds
-        for (const bird of birds) {
-          bird.update();
-          bird.display();
-        }
-        p.pop();
-        
-        // Enhanced lighting for better visibility
-        const pointLight = p.color(60, 80, 100); // Blue
-        const pointLight2 = p.color(90, 80, 100); // Purple
-        p.pointLight(pointLight, 0, -300, 300);
-        p.pointLight(pointLight2, 0, 300, -300);
-        p.ambientLight(20, 20, 40); // Increased ambient light
-        
-        // Handle mouse interaction
-        const mouseYRotation = p.map(p.mouseX, 0, p.width, -0.1, 0.1);
-        const mouseXRotation = p.map(p.mouseY, 0, p.height, -0.1, 0.1);
-        
-        // Use mouse for rotation if mouse is near center of the screen
-        const distFromCenter = p.dist(p.mouseX, p.mouseY, p.width/2, p.height/2);
-        const isMouseActive = distFromCenter < p.width/3;
-        
-        // Create main transformations
-        p.push();
-        
-        // Center and scale based on screen size
-        const scale = Math.min(p.width, p.height) / 800; // Responsive scaling
-        p.scale(scale * 1.5); // Increased scale for better visibility
-        
-        p.translate(0, 0, 0);
-        p.rotateY(angle * 0.5);
-        p.rotateX(angle * 0.3);
-        
-        // Apply mouse-based rotation if mouse is active
-        if (isMouseActive) {
-          p.rotateX(mouseXRotation);
-          p.rotateY(mouseYRotation);
-        }
-        
-        // Create the abstract shape with improved opacity
-        drawAbstractShape(p, angle);
-        
-        p.pop();
-        
-        // Update animation values
-        angle += 0.01;
-        hue = (hue + 0.1) % 100;
-      };
-
-      p.mouseMoved = () => {
-        mouseInteractive = true;
-      };
-      
-      // Function to draw our abstract cyberpunk shape
-      const drawAbstractShape = (p: p5, angle: number) => {
-        // Create a series of shapes that form together
-        const baseSize = Math.min(p.width, p.height) * 0.20; // Increased size
-        
-        // Inner core - pulsing effect
-        p.push();
-        const pulseAmount = p.sin(angle * 2) * 0.1 + 0.9;
-        p.fill(280, 70, 90, 0.9); // Increased opacity
-        p.scale(pulseAmount * 0.6);
-        p.rotateX(angle * 0.7);
-        p.rotateY(angle * 0.6);
-        p.torus(baseSize * 0.5, baseSize * 0.1);
-        p.pop();
-        
-        // Middle layer
-        p.push();
-        p.fill(220, 80, 90, 0.9); // Increased opacity
-        p.rotateX(angle * -0.5);
-        p.rotateZ(angle * 0.3);
-        const morphSize = p.sin(angle) * 0.1 + 1;
-        p.scale(0.8 * morphSize);
-        customShape(p, baseSize);
-        p.pop();
-        
-        // Outer layer with glow effect
-        p.push();
-        p.fill(200, 80, 80, 0.6); // Increased opacity
-        p.rotateY(angle * -0.2);
-        p.rotateZ(angle * -0.1);
-        p.scale(1.2);
-        p.torus(baseSize * 0.8, baseSize * 0.1);
-        p.pop();
-        
-        // Create orbiting smaller elements
-        for (let i = 0; i < 5; i++) { // Added more elements
-          p.push();
-          const orbitAngle = angle + (i * p.TWO_PI / 5);
-          const orbitRadius = baseSize * 1.5;
-          const x = p.sin(orbitAngle) * orbitRadius;
-          const y = p.cos(orbitAngle) * orbitRadius * 0.5;
           
-          p.translate(x, y, 0);
-          p.fill(280 + i*15, 90, 90, 0.8); // Increased opacity
-          p.sphere(baseSize * 0.15); // Increased size
+          // Update animation values
+          angle += 0.005; // Slower rotation for a more relaxed feel
+        };
+        
+        // Function to draw the wellness core
+        const drawWellnessCore = (p: p5, angle: number, scrollY: number) => {
+          // Increase base size for better visibility
+          const baseSize = Math.min(p.width, p.height) * 0.25; // Increased from 0.18
+          const scrollEffect = p.map(scrollY, 0, 500, 0, 0.5);
+          
+          // Inner pulsing core (green)
+          p.push();
+          const pulseAmount = p.sin(angle * 3) * 0.1 + 1;
+          // Green for health and wellness
+          p.fill(140, 90, 95, 1.0); // Full opacity
+          p.scale(pulseAmount * 0.6);
+          p.rotateX(angle * 0.5 + scrollEffect);
+          p.rotateZ(angle * 0.3);
+          
+          // Create organic heart-like core shape
+          p.beginShape();
+          for (let i = 0; i < 36; i++) {
+            const ang = p.map(i, 0, 36, 0, p.TWO_PI);
+            // Heart-like shape
+            const rad = baseSize * (0.5 + 
+              p.sin(ang * 2 + angle * 2) * 0.3 * 
+              (1 + p.sin(ang) * 0.2));
+            const x = rad * p.cos(ang);
+            const y = rad * p.sin(ang);
+            const z = baseSize * 0.3 * p.sin(ang * 4 + angle * 1.5);
+            p.vertex(x, y, z);
+          }
+          p.endShape(p.CLOSE);
           p.pop();
+          
+          // Middle layer (orange energy)
+          p.push();
+          // Orange for energy
+          p.fill(25, 95, 95, 1.0); // Full opacity
+          p.rotateX(angle * -0.4 + scrollEffect * 2);
+          p.rotateZ(angle * 0.2);
+          const morphSize = p.sin(angle * 2) * 0.15 + 1;
+          p.scale(0.8 * morphSize);
+          // Draw a wellness symbol
+          drawWellnessSymbol(p, baseSize, angle);
+          p.pop();
+          
+          // Outer glow layer (blue)
+          p.push();
+          // Blue for tranquility
+          p.fill(195, 90, 95, 0.9); // Increased opacity
+          p.rotateY(angle * -0.3 + scrollEffect);
+          p.rotateZ(angle * -0.2);
+          p.scale(1.2);
+          p.torus(baseSize * 0.9, baseSize * 0.1); // Increased thickness
+          p.pop();
+        };
+        
+        // Function to draw a wellness symbol
+        const drawWellnessSymbol = (p: p5, size: number, angle: number) => {
+          p.push();
+          
+          // Draw a balanced symbol representing wellness
+          const sphereSize = size * 0.4; // Increased from 0.3
+          
+          // Draw a circular arrangement of small spheres
+          for (let i = 0; i < 8; i++) {
+            p.push();
+            const ang = i * p.TWO_PI / 8 + angle;
+            const x = size * 0.7 * p.cos(ang);
+            const y = size * 0.7 * p.sin(ang);
+            p.translate(x, y, 0);
+            p.sphere(sphereSize * 0.4);
+            p.pop();
+          }
+          
+          // Central sphere - make it bigger
+          p.sphere(sphereSize);
+          
+          p.pop();
+        };
+        
+        // Shape class for organic elements
+        class Shape {
+          position: p5.Vector;
+          size: number;
+          rotSpeed: number;
+          hue: number;
+          orbitRadius: number;
+          orbitSpeed: number;
+          phase: number;
+          type: number;
+          
+          constructor(p: p5) {
+            // Increase base size for better visibility
+            const baseSize = Math.min(p.width, p.height) * 0.07; // Increased from 0.05
+            this.size = baseSize * (0.8 + p.random(0.5));
+            this.rotSpeed = p.random(0.5, 1.5);
+            
+            // Color variations for wellness theme
+            // Green, blue, orange range for fitness and wellness
+            this.hue = p.random([140, 195, 25, 45]); 
+            
+            // Orbital parameters
+            this.orbitRadius = p.random(1.5, 3) * baseSize * 3;
+            this.orbitSpeed = p.random(0.3, 1.2);
+            this.phase = p.random(p.TWO_PI);
+            
+            // Determine shape type
+            this.type = Math.floor(p.random(3));
+            
+            // Initial position
+            this.position = p5.Vector.random3D().mult(this.orbitRadius);
+          }
+          
+          display(p: p5, globalAngle: number, scrollY: number) {
+            const scrollEffect = p.map(scrollY, 0, 500, 0, 0.5);
+            
+            p.push();
+            
+            // Calculate orbit position with scroll influence
+            const orbitFactor = 1 + scrollEffect * 0.3;
+            const orbitX = Math.cos(this.phase + globalAngle * this.orbitSpeed) * this.orbitRadius * orbitFactor;
+            const orbitY = Math.sin(this.phase + globalAngle * this.orbitSpeed) * this.orbitRadius * 0.6 * orbitFactor;
+            const orbitZ = Math.sin(this.phase * 2 + globalAngle * this.orbitSpeed) * this.orbitRadius * 0.3 * orbitFactor;
+            
+            p.translate(orbitX, orbitY, orbitZ);
+            p.rotateX(globalAngle * this.rotSpeed + scrollEffect);
+            p.rotateZ(globalAngle * this.rotSpeed * 0.7);
+            
+            // Draw shape based on type with full opacity
+            p.fill(this.hue, 85, 90, 1.0); // Full opacity
+            
+            switch(this.type) {
+              case 0:
+                // Leaf/Petal shape
+                this.drawLeafShape(p, this.size);
+                break;
+              case 1:
+                // Water droplet for hydration
+                this.drawDropShape(p, this.size);
+                break;
+              case 2:
+                // Small energy burst
+                this.drawEnergyShape(p, this.size);
+                break;
+            }
+            
+            p.pop();
+          }
+          
+          drawLeafShape(p: p5, size: number) {
+            p.beginShape();
+            // Create a leaf-like shape with gentle curves
+            const leafWidth = size * 0.6;
+            const leafLength = size * 1.5;
+            
+            // Draw the leaf outline using curved vertices
+            p.vertex(0, -leafLength/2, 0); // Tip
+            
+            // Right side curve
+            p.bezierVertex(
+              leafWidth/3, -leafLength/4, 0,
+              leafWidth/2, 0, 0,
+              leafWidth/3, leafLength/4, 0
+            );
+            
+            p.vertex(0, leafLength/2, 0); // Base
+            
+            // Left side curve
+            p.bezierVertex(
+              -leafWidth/3, leafLength/4, 0,
+              -leafWidth/2, 0, 0,
+              -leafWidth/3, -leafLength/4, 0
+            );
+            
+            p.endShape(p.CLOSE);
+            
+            // Add a simple vein down the center
+            p.push();
+            p.fill(this.hue, 60, 70, 0.7);
+            p.translate(0, 0, size * 0.01);
+            p.beginShape();
+            p.vertex(0, -leafLength/2, 0);
+            p.vertex(0, leafLength/2, 0);
+            p.endShape();
+            p.pop();
+          }
+          
+          drawDropShape(p: p5, size: number) {
+            // Water droplet shape for hydration
+            p.push();
+            p.rotateX(p.PI);
+            p.beginShape();
+            
+            for (let angle = 0; angle < p.TWO_PI; angle += 0.1) {
+              let r = size * 0.8 * (1 - Math.sin(angle) * 0.3);
+              let x = r * Math.cos(angle);
+              let y = r * Math.sin(angle);
+              let z = size * Math.sin(angle) * 0.3;
+              p.vertex(x, y, z);
+            }
+            
+            p.endShape(p.CLOSE);
+            p.pop();
+          }
+          
+          drawEnergyShape(p: p5, size: number) {
+            // Energy burst shape
+            p.push();
+            
+            const spikes = 5;
+            const innerRadius = size * 0.4;
+            const outerRadius = size;
+            
+            p.beginShape();
+            for (let i = 0; i < spikes * 2; i++) {
+              const angle = p.map(i, 0, spikes * 2, 0, p.TWO_PI);
+              const radius = i % 2 === 0 ? outerRadius : innerRadius;
+              const x = radius * Math.cos(angle);
+              const y = radius * Math.sin(angle);
+              p.vertex(x, y, 0);
+            }
+            p.endShape(p.CLOSE);
+            
+            p.pop();
+          }
         }
       };
-      
-      // Custom abstract shape combining geometries
-      const customShape = (p: p5, size: number) => {
-        p.beginShape();
-        for (let i = 0; i < 24; i++) {
-          const ang = p.map(i, 0, 24, 0, p.TWO_PI);
-          const rad = size * (0.6 + p.sin(ang * 3 + angle) * 0.2);
-          const x = rad * p.cos(ang);
-          const y = rad * p.sin(ang);
-          const z = size * 0.3 * p.sin(ang * 2 + angle);
-          p.vertex(x, y, z);
-        }
-        p.endShape(p.CLOSE);
-      };
-    };
 
-    // Create the p5 instance
-    try {
-      debug('Creating p5 instance');
+      // Create the p5 instance with a callback to get the instance
+      console.log("Creating new P5 instance in container:", containerRef.current);
       sketchRef.current = new p5(sketch, containerRef.current);
-    } catch (err) {
-      debug(`Error creating p5 instance: ${err}`);
-    }
-
-    // Additional check to ensure canvas is created
-    const checkCanvasTimeout = setTimeout(() => {
-      const canvas = document.getElementById('defaultCanvas0');
-      if (!canvas && containerRef.current) {
-        debug('Canvas not created after timeout, attempting to recreate');
-        // Try to recreate sketch if canvas wasn't created
-        if (sketchRef.current) {
-          sketchRef.current.remove();
-          sketchRef.current = null;
+      
+      // Debug check if p5 instance was created
+      setTimeout(() => {
+        console.log("P5 instance created:", sketchRef.current, "Canvas created:", canvasCreatedRef.current);
+        if (sketchRef.current && !canvasCreatedRef.current) {
+          console.warn("Canvas not created after initialization. Attempting to reinitialize...");
+          if (sketchRef.current) {
+            sketchRef.current.remove();
+            sketchRef.current = new p5(sketch, containerRef.current);
+          }
         }
-        sketchRef.current = new p5(sketch, containerRef.current);
-      } else if (canvas) {
-        debug('Canvas successfully created and found after timeout');
-      }
-    }, 1000);
+      }, 300);
+    }
 
     // Cleanup function
     return () => {
-      clearTimeout(checkCanvasTimeout);
+      console.log("Cleaning up P5 instance");
       if (sketchRef.current) {
-        debug('Removing sketch');
         sketchRef.current.remove();
         sketchRef.current = null;
       }
@@ -378,18 +403,12 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className }) => {
   }, []);
 
   return (
-    <>
-      <div 
-        ref={containerRef} 
-        className={`fixed top-0 left-0 w-full h-full overflow-hidden ${className || ''}`}
-        style={{ zIndex: -10 }}
-      />
-      {debugMessage && process.env.NODE_ENV === 'development' && (
-        <div className="fixed bottom-0 left-0 bg-black/70 text-white p-2 text-xs z-50 max-w-xs max-h-32 overflow-auto">
-          <pre>{debugMessage}</pre>
-        </div>
-      )}
-    </>
+    <div 
+      ref={containerRef} 
+      className={`fixed top-0 left-0 w-full h-full -z-10 overflow-hidden ${className || ''}`}
+      style={{ pointerEvents: 'none' }} // Ensure it doesn't block interactions
+      data-testid="cyber-background" // Add a test ID for debugging
+    />
   );
 };
 
