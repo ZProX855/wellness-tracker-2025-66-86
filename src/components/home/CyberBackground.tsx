@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef } from 'react';
 import p5 from 'p5';
 
@@ -12,6 +13,7 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
     let sketch: p5;
     let circles: Array<Circle> = [];
     let particles: Array<Particle> = [];
+    let lastScrollY = 0;
     
     class Circle {
       position: p5.Vector;
@@ -25,13 +27,15 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
       maxSpeed: number;
       centerAvoidanceRadius: number;
       seed: number;
+      targetPosition: p5.Vector;
+      lerp: number;
 
       constructor(p: p5, x: number, y: number, size: number) {
         this.position = p.createVector(x, y);
-        this.velocity = p5.Vector.random2D().mult(p.random(0.5, 1.5));
+        this.velocity = p5.Vector.random2D().mult(p.random(0.2, 0.8));
         this.acceleration = p.createVector(0, 0);
         this.rotation = p.random(0, p.TWO_PI);
-        this.rotationSpeed = p.random(0.002, 0.01) * (Math.random() > 0.5 ? 1 : -1); // Clockwise or counter-clockwise
+        this.rotationSpeed = p.random(0.001, 0.005) * (Math.random() > 0.5 ? 1 : -1);
         this.size = size;
         
         // Green color palette with transparency
@@ -50,20 +54,28 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
           p.random(100, 200)  // Alpha (transparency)
         );
         
-        this.maxSpeed = p.random(0.5, 1.2);
-        this.centerAvoidanceRadius = p.width / 2.5; // Increased radius to avoid center
+        this.maxSpeed = p.random(0.3, 0.7);
+        this.centerAvoidanceRadius = p.width / 2; // Increased radius to avoid center
         this.seed = p.random(1000); // Random seed for perlin noise
+        this.targetPosition = p.createVector(x, y);
+        this.lerp = 0.05;
       }
 
-      update(p: p5, frameCount: number) {
+      update(p: p5, frameCount: number, scrollDelta: number) {
         // Continuous rotation
         this.rotation += this.rotationSpeed;
         
-        // Autonomous movement using perlin noise
-        const noiseX = p.noise(this.seed + frameCount * 0.001) * 2 - 1;
-        const noiseY = p.noise(this.seed + 500 + frameCount * 0.001) * 2 - 1;
+        // Apply scroll influence to motion with damping
+        const scrollInfluence = p.createVector(0, scrollDelta * 0.1);
+        scrollInfluence.limit(0.5); // Limit the scroll effect
+        this.applyForce(scrollInfluence);
+        
+        // Autonomous movement using perlin noise with less jitter
+        const noiseScale = 0.0008; // Reduced for smoother movement
+        const noiseX = p.map(p.noise(this.seed + frameCount * noiseScale), 0, 1, -1, 1);
+        const noiseY = p.map(p.noise(this.seed + 500 + frameCount * noiseScale), 0, 1, -1, 1);
         const noiseForce = p.createVector(noiseX, noiseY);
-        noiseForce.mult(0.05);
+        noiseForce.mult(0.03); // Gentler force
         this.applyForce(noiseForce);
         
         // Strong center avoidance force
@@ -74,7 +86,7 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
           // Create a force that points away from center
           const avoidForce = p5.Vector.sub(this.position, center);
           // Stronger avoidance as we get closer to center
-          const strength = p.map(distToCenter, 0, this.centerAvoidanceRadius, 0.08, 0);
+          const strength = p.map(distToCenter, 0, this.centerAvoidanceRadius, 0.1, 0);
           avoidForce.normalize().mult(strength);
           this.applyForce(avoidForce);
         }
@@ -82,10 +94,14 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
         // Apply soft bounds to keep circles in view
         this.applyBounds(p);
         
-        // Update velocity and position
+        // Update velocity and position with smoothing
         this.velocity.add(this.acceleration);
         this.velocity.limit(this.maxSpeed);
-        this.position.add(this.velocity);
+        
+        // Create target position and smoothly move towards it
+        this.targetPosition.add(this.velocity);
+        this.position.lerp(this.targetPosition, this.lerp);
+        
         this.acceleration.mult(0); // Reset acceleration
       }
       
@@ -95,22 +111,24 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
       
       applyBounds(p: p5) {
         const padding = this.size;
-        const bound = p.width / 2 - padding;
+        const bound = p.width / 1.8; // Slightly smaller boundary to avoid edges
         
-        if (this.position.x > bound) {
-          const force = p.createVector(-0.05, 0);
-          this.applyForce(force);
-        } else if (this.position.x < -bound) {
-          const force = p.createVector(0.05, 0);
-          this.applyForce(force);
+        // Wrapping behavior for X-axis
+        if (this.targetPosition.x > bound) {
+          this.targetPosition.x = -bound + padding;
+          this.position.x = -bound + padding;
+        } else if (this.targetPosition.x < -bound) {
+          this.targetPosition.x = bound - padding;
+          this.position.x = bound - padding;
         }
         
-        if (this.position.y > bound) {
-          const force = p.createVector(0, -0.05);
-          this.applyForce(force);
-        } else if (this.position.y < -bound) {
-          const force = p.createVector(0, 0.05);
-          this.applyForce(force);
+        // Wrapping behavior for Y-axis
+        if (this.targetPosition.y > bound) {
+          this.targetPosition.y = -bound + padding;
+          this.position.y = -bound + padding;
+        } else if (this.targetPosition.y < -bound) {
+          this.targetPosition.y = bound - padding;
+          this.position.y = bound - padding;
         }
       }
 
@@ -130,7 +148,7 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
         
         // Apply glow effect based on mouse proximity
         p.drawingContext.shadowBlur = 15 * lightInfluence;
-        p.drawingContext.shadowColor = p.color(120, 255, 150, 70);
+        p.drawingContext.shadowColor = p.color(120, 255, 150, 50);
         
         // Draw main circle with subtle gradient
         p.noStroke();
@@ -165,7 +183,7 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
       
       constructor(p: p5, x: number, y: number) {
         this.pos = p.createVector(x, y);
-        this.vel = p5.Vector.random2D().mult(p.random(0.5, 1.5));
+        this.vel = p5.Vector.random2D().mult(p.random(0.2, 0.8));
         this.acc = p.createVector(0, 0);
         this.size = p.random(2, 5);
         // Green/white particles
@@ -182,7 +200,7 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
         this.vel.add(this.acc);
         this.pos.add(this.vel);
         this.acc.mult(0);
-        this.lifespan -= 2;
+        this.lifespan -= 1.5; // Slower fade for smoother transitions
       }
       
       draw(p: p5) {
@@ -198,7 +216,6 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
     }
 
     const createSketch = (p: p5) => {
-      let lastScrollY = 0;
       let mouseXNorm = 0;
       let mouseYNorm = 0;
       
@@ -210,7 +227,7 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
         p.colorMode(p.RGB, 255, 255, 255, 255);
         
         // Create circles away from center
-        for (let i = 0; i < 15; i++) {
+        for (let i = 0; i < 18; i++) {
           // Create positions avoiding the center
           let x, y;
           do {
@@ -224,7 +241,13 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
 
       p.draw = () => {
         p.clear();
-        p.background(245, 248, 250, 5); // Very subtle background
+        
+        // Calculated scroll delta with damping
+        const scrollDelta = scrollY - lastScrollY;
+        lastScrollY = lastScrollY + (scrollY - lastScrollY) * 0.1; // Smooth scrolling
+        
+        // Background with less opacity for better contrast
+        p.background(245, 248, 250, 5);
         
         // Smoothly track mouse position for lighting
         const targetMouseX = p.mouseX;
@@ -235,10 +258,6 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
         // Calculate normalized mouse positions
         const mouseXPos = (mouseXNorm / p.width) * 2 - 1;
         const mouseYPos = (mouseYNorm / p.height) * 2 - 1;
-        
-        // Calculate scroll effect - smoother parallax
-        const scrollEffect = (scrollY - lastScrollY) * 0.05;
-        lastScrollY = lastScrollY + (scrollY - lastScrollY) * 0.1; // Smooth scrolling
         
         // Lighting effects
         p.ambientLight(120, 150, 120);
@@ -260,7 +279,7 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
         );
         
         // Add occasional particles for sparkle effects
-        if (p.random(1) < 0.1) {
+        if (p.random(1) < 0.2) {
           // Generate particles away from center
           let x, y;
           do {
@@ -280,9 +299,9 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
           }
         }
         
-        // Update and draw all circles with the current frame count for perlin noise
+        // Update and draw all circles with the current frame count and scroll delta
         for (const circle of circles) {
-          circle.update(p, p.frameCount);
+          circle.update(p, p.frameCount, scrollDelta);
           circle.draw(p, mouseXNorm - p.width/2, mouseYNorm - p.height/2);
           
           // Add small particles around circles occasionally
@@ -300,13 +319,8 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ scrollY }) => {
         p.resizeCanvas(p.windowWidth, p.windowHeight);
         // Update center avoidance radius for circles
         for (const circle of circles) {
-          circle.centerAvoidanceRadius = p.width / 2.5;
+          circle.centerAvoidanceRadius = p.width / 2;
         }
-      };
-      
-      // Track mouse movement for lighting effects only
-      p.mouseMoved = () => {
-        // Just track the mouse - no direct interaction needed
       };
     };
     

@@ -17,6 +17,9 @@
 canvas {
   display: block !important;
   will-change: transform; /* Optimize animation performance */
+  backface-visibility: hidden;
+  perspective: 1000;
+  transform: translateZ(0);
 }
 
 .p5Canvas {
@@ -31,6 +34,9 @@ canvas {
   -webkit-tap-highlight-color: transparent !important; /* Remove touch highlight */
   -webkit-user-select: none !important; /* Prevent text selection */
   user-select: none !important;
+  /* GPU acceleration for smoother performance */
+  transform: translate3d(0,0,0) !important;
+  -webkit-transform: translate3d(0,0,0) !important;
 }
 
 /* Add high contrast between background and foreground */
