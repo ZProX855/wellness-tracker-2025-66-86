@@ -13,7 +13,7 @@
   }
 }
 
-/* Ensure p5.js canvas is visible */
+/* Ensure p5.js canvas is visible with stronger z-index rules */
 canvas {
   display: block !important;
 }
@@ -23,6 +23,15 @@ canvas {
   top: 0 !important;
   left: 0 !important;
   z-index: -1 !important;
+  width: 100% !important;
+  height: 100% !important;
+  pointer-events: none !important; /* Prevent canvas from blocking interactions */
+}
+
+/* Add high contrast between background and foreground */
+body {
+  overflow-x: hidden; /* Prevent horizontal scrolling */
+  position: relative; /* Create stacking context */
 }
 
 .apple-scroll {

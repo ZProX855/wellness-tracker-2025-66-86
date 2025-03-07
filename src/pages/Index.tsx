@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import Header from '../components/Header';
 import HeroSection from '../components/home/HeroSection';
@@ -10,40 +9,49 @@ import CyberBackground from '../components/home/CyberBackground';
 const Index = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [scrollY, setScrollY] = useState(0);
+  const [forceRender, setForceRender] = useState(0);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsVisible(true);
+      setForceRender(prev => prev + 1);
     }, 100);
 
     const handleScroll = () => {
       setScrollY(window.scrollY);
-      // Debug scroll position
       console.log("Scroll position:", window.scrollY);
     };
 
     window.addEventListener('scroll', handleScroll);
     
-    // Trigger initial scroll handler to set initial value
     handleScroll();
     
     console.log("Index component mounted");
     
+    const renderInterval = setInterval(() => {
+      if (!document.querySelector('canvas.p5Canvas')) {
+        console.log("No canvas found, forcing re-render");
+        setForceRender(prev => prev + 1);
+      }
+    }, 1000);
+    
     return () => {
       clearTimeout(timer);
+      clearInterval(renderInterval);
       window.removeEventListener('scroll', handleScroll);
     };
   }, []);
 
-  // Force a render of the background component
   useEffect(() => {
     console.log("Forcing background render with scrollY:", scrollY);
-  }, [scrollY]);
+  }, [scrollY, forceRender]);
 
   return (
-    <div className="min-h-screen text-wellness-dark relative overflow-x-hidden">
-      {/* The CyberBackground is rendered with a key to force re-render when needed */}
-      <CyberBackground scrollY={scrollY} key={`cyber-bg-${isVisible ? 'visible' : 'hidden'}`} />
+    <div className="min-h-screen text-wellness-dark relative overflow-hidden">
+      <CyberBackground 
+        scrollY={scrollY} 
+        key={`cyber-bg-${isVisible ? 'visible' : 'hidden'}-${forceRender}`}
+      />
       
       <div className="relative z-10">
         <Header />
