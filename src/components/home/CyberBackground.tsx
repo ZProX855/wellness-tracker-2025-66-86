@@ -4,19 +4,26 @@ import p5 from 'p5';
 
 interface CyberBackgroundProps {
   className?: string;
+  scrollY?: number;
 }
 
-const CyberBackground: React.FC<CyberBackgroundProps> = ({ className }) => {
+const CyberBackground: React.FC<CyberBackgroundProps> = ({ className, scrollY = 0 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const sketchRef = useRef<p5 | null>(null);
+  const scrollYRef = useRef(scrollY);
+
+  // Update ref when scrollY changes
+  useEffect(() => {
+    scrollYRef.current = scrollY;
+  }, [scrollY]);
 
   useEffect(() => {
     // Only create the sketch once
     if (containerRef.current && !sketchRef.current) {
       const sketch = (p: p5) => {
         let angle = 0;
-        let leaves: Leaf[] = [];
-        let numLeaves = 12;
+        let shapes: Shape[] = [];
+        let numShapes = 15;
         
         // Setup canvas
         p.setup = () => {
@@ -25,9 +32,9 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className }) => {
           p.noStroke();
           p.frameRate(30);
           
-          // Create leaf objects
-          for (let i = 0; i < numLeaves; i++) {
-            leaves.push(new Leaf(p));
+          // Create shape objects
+          for (let i = 0; i < numShapes; i++) {
+            shapes.push(new Shape(p));
           }
         };
 
@@ -43,14 +50,14 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className }) => {
           // Subtle background
           p.background(70, 10, 10, 0.05);
           
-          // Set light sources
-          const greenLight = p.color(120, 80, 90); // Green
-          const orangeLight = p.color(30, 90, 95); // Orange
-          const yellowLight = p.color(45, 85, 95); // Yellow
+          // Set light sources - wellness themed colors
+          const greenLight = p.color(140, 80, 90); // Green for wellness
+          const orangeLight = p.color(25, 90, 95);  // Orange for energy
+          const blueLight = p.color(195, 85, 95);   // Blue for tranquility
           
           p.pointLight(greenLight, -300, 0, 300);
           p.pointLight(orangeLight, 300, -200, -300);
-          p.pointLight(yellowLight, 0, 300, -200);
+          p.pointLight(blueLight, 0, 300, -200);
           
           // Apply ambient light
           p.ambientLight(60, 10, 80);
@@ -59,53 +66,61 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className }) => {
           const mouseYRotation = p.map(p.mouseX, 0, p.width, -0.1, 0.1);
           const mouseXRotation = p.map(p.mouseY, 0, p.height, -0.1, 0.1);
           
-          // Use mouse for rotation if mouse is near center of the screen
-          const distFromCenter = p.dist(p.mouseX, p.mouseY, p.width/2, p.height/2);
-          const isMouseActive = distFromCenter < p.width/3;
+          // Get scroll position from ref
+          const currentScrollY = scrollYRef.current;
+          
+          // Scale based on scroll position
+          const scrollScale = p.map(currentScrollY, 0, 1000, 1, 0.8);
+          const scrollRotation = currentScrollY * 0.001;
           
           // Create main transformations
           p.push();
           p.translate(0, 0, 0);
-          p.rotateY(angle * 0.2);
-          p.rotateX(angle * 0.1);
           
-          // Apply mouse-based rotation if mouse is active
-          if (isMouseActive) {
-            p.rotateX(mouseXRotation);
-            p.rotateY(mouseYRotation);
-          }
+          // Apply mouse-based rotation
+          p.rotateY(mouseYRotation + angle * 0.2);
+          p.rotateX(mouseXRotation + angle * 0.1);
           
-          // Draw the vitality core
-          drawVitalityCore(p, angle);
+          // Apply scroll-based transformations
+          p.scale(scrollScale);
+          p.rotateZ(scrollRotation);
           
-          // Draw all leaves
-          for (let leaf of leaves) {
-            leaf.display(p, angle);
+          // Draw the wellness core
+          drawWellnessCore(p, angle, currentScrollY);
+          
+          // Draw all shapes
+          for (let shape of shapes) {
+            shape.display(p, angle, currentScrollY);
           }
           
           p.pop();
           
           // Update animation values
-          angle += 0.01;
+          angle += 0.005; // Slower rotation for a more relaxed feel
         };
         
-        // Function to draw the vitality core
-        const drawVitalityCore = (p: p5, angle: number) => {
+        // Function to draw the wellness core
+        const drawWellnessCore = (p: p5, angle: number, scrollY: number) => {
           const baseSize = Math.min(p.width, p.height) * 0.12;
+          const scrollEffect = p.map(scrollY, 0, 500, 0, 0.5);
           
           // Inner pulsing core (green)
           p.push();
           const pulseAmount = p.sin(angle * 3) * 0.1 + 1;
-          p.fill(120, 90, 90, 0.85); // Vibrant green
+          // Green for health and wellness
+          p.fill(140, 90, 90, 0.85); 
           p.scale(pulseAmount * 0.6);
-          p.rotateX(angle * 0.5);
+          p.rotateX(angle * 0.5 + scrollEffect);
           p.rotateZ(angle * 0.3);
           
-          // Create organic core shape
+          // Create organic heart-like core shape
           p.beginShape();
           for (let i = 0; i < 36; i++) {
             const ang = p.map(i, 0, 36, 0, p.TWO_PI);
-            const rad = baseSize * (0.5 + p.sin(ang * 3 + angle * 2) * 0.2);
+            // Heart-like shape
+            const rad = baseSize * (0.5 + 
+              p.sin(ang * 2 + angle * 2) * 0.3 * 
+              (1 + p.sin(ang) * 0.2));
             const x = rad * p.cos(ang);
             const y = rad * p.sin(ang);
             const z = baseSize * 0.3 * p.sin(ang * 4 + angle * 1.5);
@@ -116,46 +131,53 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className }) => {
           
           // Middle layer (orange energy)
           p.push();
-          p.fill(25, 95, 95, 0.7); // Orange
-          p.rotateX(angle * -0.4);
+          // Orange for energy
+          p.fill(25, 95, 95, 0.7); 
+          p.rotateX(angle * -0.4 + scrollEffect * 2);
           p.rotateZ(angle * 0.2);
           const morphSize = p.sin(angle * 2) * 0.15 + 1;
           p.scale(0.8 * morphSize);
-          drawDumbbellShape(p, baseSize, angle);
+          // Draw a wellness symbol
+          drawWellnessSymbol(p, baseSize, angle);
           p.pop();
           
-          // Outer glow layer (yellow)
+          // Outer glow layer (blue)
           p.push();
-          p.fill(40, 80, 95, 0.4); // Yellow with transparency
-          p.rotateY(angle * -0.3);
+          // Blue for tranquility
+          p.fill(195, 80, 95, 0.4); 
+          p.rotateY(angle * -0.3 + scrollEffect);
           p.rotateZ(angle * -0.2);
           p.scale(1.2);
           p.torus(baseSize * 0.9, baseSize * 0.06);
           p.pop();
         };
         
-        // Function to draw a dumbbell-inspired shape
-        const drawDumbbellShape = (p: p5, size: number, angle: number) => {
+        // Function to draw a wellness symbol
+        const drawWellnessSymbol = (p: p5, size: number, angle: number) => {
           p.push();
-          // Left weight
-          p.translate(-size * 0.7, 0, 0);
-          p.sphere(size * 0.3);
           
-          // Bar
-          p.translate(size * 0.7, 0, 0);
-          p.rotateZ(p.PI/2);
-          p.cylinder(size * 0.06, size * 1.4);
+          // Draw a balanced symbol representing wellness
+          const sphereSize = size * 0.3;
           
-          // Right weight
-          p.translate(0, 0, 0);
-          p.rotateZ(-p.PI/2);
-          p.translate(size * 0.7, 0, 0);
-          p.sphere(size * 0.3);
+          // Draw a circular arrangement of small spheres
+          for (let i = 0; i < 8; i++) {
+            p.push();
+            const ang = i * p.TWO_PI / 8 + angle;
+            const x = size * 0.7 * p.cos(ang);
+            const y = size * 0.7 * p.sin(ang);
+            p.translate(x, y, 0);
+            p.sphere(sphereSize * 0.4);
+            p.pop();
+          }
+          
+          // Central sphere
+          p.sphere(sphereSize);
+          
           p.pop();
         };
         
-        // Leaf class to create organic leaf/vine elements
-        class Leaf {
+        // Shape class for organic elements
+        class Shape {
           position: p5.Vector;
           size: number;
           rotSpeed: number;
@@ -163,39 +185,61 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className }) => {
           orbitRadius: number;
           orbitSpeed: number;
           phase: number;
+          type: number;
           
           constructor(p: p5) {
             const baseSize = Math.min(p.width, p.height) * 0.03;
             this.size = baseSize * (0.8 + p.random(0.5));
             this.rotSpeed = p.random(0.5, 1.5);
             
-            // Color variations of green
-            this.hue = p.random(90, 135);
+            // Color variations for wellness theme
+            // Green, blue, orange range for fitness and wellness
+            this.hue = p.random([140, 195, 25, 45]); 
             
             // Orbital parameters
             this.orbitRadius = p.random(1.5, 3) * baseSize * 3;
             this.orbitSpeed = p.random(0.3, 1.2);
             this.phase = p.random(p.TWO_PI);
             
+            // Determine shape type
+            this.type = Math.floor(p.random(3));
+            
             // Initial position
             this.position = p5.Vector.random3D().mult(this.orbitRadius);
           }
           
-          display(p: p5, globalAngle: number) {
+          display(p: p5, globalAngle: number, scrollY: number) {
+            const scrollEffect = p.map(scrollY, 0, 500, 0, 0.5);
+            
             p.push();
             
-            // Calculate orbit position
-            const orbitX = Math.cos(this.phase + globalAngle * this.orbitSpeed) * this.orbitRadius;
-            const orbitY = Math.sin(this.phase + globalAngle * this.orbitSpeed) * this.orbitRadius * 0.6;
-            const orbitZ = Math.sin(this.phase * 2 + globalAngle * this.orbitSpeed) * this.orbitRadius * 0.3;
+            // Calculate orbit position with scroll influence
+            const orbitFactor = 1 + scrollEffect * 0.3;
+            const orbitX = Math.cos(this.phase + globalAngle * this.orbitSpeed) * this.orbitRadius * orbitFactor;
+            const orbitY = Math.sin(this.phase + globalAngle * this.orbitSpeed) * this.orbitRadius * 0.6 * orbitFactor;
+            const orbitZ = Math.sin(this.phase * 2 + globalAngle * this.orbitSpeed) * this.orbitRadius * 0.3 * orbitFactor;
             
             p.translate(orbitX, orbitY, orbitZ);
-            p.rotateX(globalAngle * this.rotSpeed);
+            p.rotateX(globalAngle * this.rotSpeed + scrollEffect);
             p.rotateZ(globalAngle * this.rotSpeed * 0.7);
             
-            // Draw leaf
+            // Draw shape based on type
             p.fill(this.hue, 85, 90, 0.9);
-            this.drawLeafShape(p, this.size);
+            
+            switch(this.type) {
+              case 0:
+                // Leaf/Petal shape
+                this.drawLeafShape(p, this.size);
+                break;
+              case 1:
+                // Water droplet for hydration
+                this.drawDropShape(p, this.size);
+                break;
+              case 2:
+                // Small energy burst
+                this.drawEnergyShape(p, this.size);
+                break;
+            }
             
             p.pop();
           }
@@ -230,15 +274,50 @@ const CyberBackground: React.FC<CyberBackgroundProps> = ({ className }) => {
             // Add a simple vein down the center
             p.push();
             p.fill(this.hue, 60, 70, 0.7);
-            p.translate(0, 0, size * 0.01); // Slight offset to prevent z-fighting
+            p.translate(0, 0, size * 0.01);
             p.beginShape();
             p.vertex(0, -leafLength/2, 0);
             p.vertex(0, leafLength/2, 0);
-            p.vertex(-leafWidth/10, leafLength/2.2, 0);
-            p.vertex(0, leafLength/2.5, 0);
-            p.vertex(leafWidth/10, leafLength/2.2, 0);
-            p.vertex(0, leafLength/2, 0);
             p.endShape();
+            p.pop();
+          }
+          
+          drawDropShape(p: p5, size: number) {
+            // Water droplet shape for hydration
+            p.push();
+            p.rotateX(p.PI);
+            p.beginShape();
+            
+            for (let angle = 0; angle < p.TWO_PI; angle += 0.1) {
+              let r = size * 0.8 * (1 - Math.sin(angle) * 0.3);
+              let x = r * Math.cos(angle);
+              let y = r * Math.sin(angle);
+              let z = size * Math.sin(angle) * 0.3;
+              p.vertex(x, y, z);
+            }
+            
+            p.endShape(p.CLOSE);
+            p.pop();
+          }
+          
+          drawEnergyShape(p: p5, size: number) {
+            // Energy burst shape
+            p.push();
+            
+            const spikes = 5;
+            const innerRadius = size * 0.4;
+            const outerRadius = size;
+            
+            p.beginShape();
+            for (let i = 0; i < spikes * 2; i++) {
+              const angle = p.map(i, 0, spikes * 2, 0, p.TWO_PI);
+              const radius = i % 2 === 0 ? outerRadius : innerRadius;
+              const x = radius * Math.cos(angle);
+              const y = radius * Math.sin(angle);
+              p.vertex(x, y, 0);
+            }
+            p.endShape(p.CLOSE);
+            
             p.pop();
           }
         }

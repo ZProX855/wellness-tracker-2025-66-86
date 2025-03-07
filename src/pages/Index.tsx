@@ -30,7 +30,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen text-wellness-dark relative">
-      <CyberBackground />
+      <CyberBackground scrollY={scrollY} />
       
       <div className="relative z-10">
         <Header />
