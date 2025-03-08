@@ -17,6 +17,7 @@ const Login: React.FC = () => {
   const {
     login,
     loginWithGoogle,
+    loginWithGoogleToken,
     error
   } = useAuth();
   
@@ -43,7 +44,6 @@ const Login: React.FC = () => {
     e.preventDefault();
     
     if (!email || !password) {
-      toast.error('Please enter both email and password');
       return;
     }
     
@@ -51,9 +51,8 @@ const Login: React.FC = () => {
       setIsSubmitting(true);
       await login(email, password, rememberMe);
       navigate(from, { replace: true });
-    } catch (error: any) {
+    } catch (error) {
       console.error('Login failed:', error);
-      toast.error(error.message || 'Login failed. Please try again.');
     } finally {
       setIsSubmitting(false);
     }

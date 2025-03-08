@@ -1,16 +1,14 @@
 
 import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { User } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Logo from './Logo';
 import { useAuth } from '../contexts/AuthContext';
-import { toast } from 'sonner';
 
 const Header: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
-  const navigate = useNavigate();
   const { user, logout } = useAuth();
   
   useEffect(() => {
@@ -24,17 +22,6 @@ const Header: React.FC = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-  
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate('/login');
-      toast.success('Logged out successfully');
-    } catch (error) {
-      console.error('Error logging out:', error);
-      toast.error('Failed to log out. Please try again.');
-    }
-  };
   
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white/80 backdrop-blur-md shadow-sm' : 'bg-transparent'}`}>
@@ -69,7 +56,7 @@ const Header: React.FC = () => {
                       Profile Settings
                     </Link>
                     <button 
-                      onClick={handleLogout}
+                      onClick={() => logout()}
                       className="block w-full text-left px-4 py-2 text-sm text-wellness-charcoal hover:bg-wellness-softGreen/20 hover:text-wellness-darkGreen"
                     >
                       Log Out
