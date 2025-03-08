@@ -61,12 +61,13 @@ export const authService = {
     }
   },
   
-  async login(username: string, password: string): Promise<User> {
+  async login(email: string, password: string): Promise<User> {
     try {
-      const email = `${username.toLowerCase()}@wellness.local`;
+      // Check if the email contains "@" - if not, assume it's a username
+      const loginEmail = email.includes('@') ? email : `${email.toLowerCase()}@wellness.local`;
       
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
+        email: loginEmail,
         password,
       });
       
@@ -93,24 +94,12 @@ export const authService = {
     }
   },
   
-  async loginWithGoogleToken(credential: string): Promise<User> {
+  async loginWithGoogle(): Promise<void> {
     try {
-      const payload = this.decodeJwt(credential);
-      
-      if (!payload) {
-        throw new Error('Invalid Google token');
-      }
-      
-      const { email, name, picture, sub } = payload;
-      
-      if (!email) {
-        throw new Error('Email not provided in Google token');
-      }
-      
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin,
+          redirectTo: `${window.location.origin}/dashboard`,
         }
       });
       
@@ -118,48 +107,7 @@ export const authService = {
         throw new Error(error.message);
       }
       
-      const googleUser: User = {
-        id: sub || uuidv4(),
-        username: name || email.split('@')[0],
-        name: name || email.split('@')[0],
-        avatar: picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(name || email)}&background=random`,
-        createdAt: new Date().toISOString(),
-        googleId: sub,
-      };
-      
-      sessionStorage.setItem(CURRENT_USER_KEY, JSON.stringify(googleUser));
-      
-      return googleUser;
-    } catch (error) {
-      console.error('Google token login error:', error);
-      throw error;
-    }
-  },
-  
-  async loginWithGoogle(): Promise<User> {
-    try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: window.location.origin,
-        }
-      });
-      
-      if (error) {
-        throw new Error(error.message);
-      }
-      
-      const googleUser: User = {
-        id: uuidv4(),
-        username: 'Google User',
-        name: 'Google User',
-        avatar: 'https://ui-avatars.com/api/?name=Google+User&background=random',
-        createdAt: new Date().toISOString(),
-      };
-      
-      sessionStorage.setItem(CURRENT_USER_KEY, JSON.stringify(googleUser));
-      
-      return googleUser;
+      // The redirection happens automatically by Supabase
     } catch (error) {
       console.error('Google login error:', error);
       throw error;

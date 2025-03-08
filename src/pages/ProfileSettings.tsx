@@ -93,8 +93,10 @@ const ProfileSettings: React.FC = () => {
     try {
       await logout();
       navigate('/login');
+      toast.success('Logged out successfully');
     } catch (error) {
       console.error('Error logging out:', error);
+      toast.error('Failed to log out. Please try again.');
     }
   };
   
