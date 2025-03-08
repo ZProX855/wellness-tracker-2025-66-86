@@ -45,19 +45,25 @@ export type Database = {
       dashboard_views: {
         Row: {
           id: string
+          last_interaction: string | null
           sections_viewed: string[] | null
+          time_spent: number | null
           user_id: string
           view_date: string
         }
         Insert: {
           id?: string
+          last_interaction?: string | null
           sections_viewed?: string[] | null
+          time_spent?: number | null
           user_id: string
           view_date?: string
         }
         Update: {
           id?: string
+          last_interaction?: string | null
           sections_viewed?: string[] | null
+          time_spent?: number | null
           user_id?: string
           view_date?: string
         }
@@ -255,6 +261,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_dashboard_preferences: {
+        Row: {
+          created_at: string | null
+          hidden_widgets: string[] | null
+          id: string
+          layout_preference: string | null
+          theme_preference: string | null
+          updated_at: string | null
+          user_id: string
+          widgets_order: Json | null
+        }
+        Insert: {
+          created_at?: string | null
+          hidden_widgets?: string[] | null
+          id?: string
+          layout_preference?: string | null
+          theme_preference?: string | null
+          updated_at?: string | null
+          user_id: string
+          widgets_order?: Json | null
+        }
+        Update: {
+          created_at?: string | null
+          hidden_widgets?: string[] | null
+          id?: string
+          layout_preference?: string | null
+          theme_preference?: string | null
+          updated_at?: string | null
+          user_id?: string
+          widgets_order?: Json | null
+        }
+        Relationships: []
+      }
       user_goals: {
         Row: {
           completed_at: string | null
@@ -318,6 +357,33 @@ export type Database = {
           preferences?: Json | null
           updated_at?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      widget_interaction_log: {
+        Row: {
+          data: Json | null
+          id: string
+          interaction_time: string | null
+          interaction_type: string
+          user_id: string
+          widget_name: string
+        }
+        Insert: {
+          data?: Json | null
+          id?: string
+          interaction_time?: string | null
+          interaction_type: string
+          user_id: string
+          widget_name: string
+        }
+        Update: {
+          data?: Json | null
+          id?: string
+          interaction_time?: string | null
+          interaction_type?: string
+          user_id?: string
+          widget_name?: string
         }
         Relationships: []
       }
