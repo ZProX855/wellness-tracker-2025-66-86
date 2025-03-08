@@ -1,7 +1,6 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-// Replace with your Supabase project URL and anon key
 const supabaseUrl = 'https://ofkxkidehimzoblxmvkj.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ma3hraWRlaGltem9ibHhtdmtqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA3Njg0NzcsImV4cCI6MjA1NjM0NDQ3N30.K8erEb4ZA8NkWy6gk3YNwP0AnWivxjq8FXHTmaU_W1o';
 
@@ -176,90 +175,6 @@ export type Database = {
           goals?: string[];
         };
       };
-      dashboard_views: {
-        Row: {
-          id: string;
-          user_id: string;
-          view_count: number;
-          last_viewed: string;
-          time_spent: number;
-          last_interaction: string;
-        };
-        Insert: {
-          id?: string;
-          user_id: string;
-          view_count?: number;
-          last_viewed?: string;
-          time_spent?: number;
-          last_interaction?: string;
-        };
-        Update: {
-          id?: string;
-          user_id?: string;
-          view_count?: number;
-          last_viewed?: string;
-          time_spent?: number;
-          last_interaction?: string;
-        };
-      };
-      user_dashboard_preferences: {
-        Row: {
-          id: string;
-          user_id: string;
-          layout_preference: string;
-          theme_preference: string;
-          widgets_order: any;
-          hidden_widgets: string[];
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          user_id: string;
-          layout_preference?: string;
-          theme_preference?: string;
-          widgets_order?: any;
-          hidden_widgets?: string[];
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          user_id?: string;
-          layout_preference?: string;
-          theme_preference?: string;
-          widgets_order?: any;
-          hidden_widgets?: string[];
-          created_at?: string;
-          updated_at?: string;
-        };
-      };
-      widget_interaction_log: {
-        Row: {
-          id: string;
-          user_id: string;
-          widget_name: string;
-          interaction_type: string;
-          interaction_time: string;
-          data: any;
-        };
-        Insert: {
-          id?: string;
-          user_id: string;
-          widget_name: string;
-          interaction_type: string;
-          interaction_time?: string;
-          data?: any;
-        };
-        Update: {
-          id?: string;
-          user_id?: string;
-          widget_name?: string;
-          interaction_type?: string;
-          interaction_time?: string;
-          data?: any;
-        };
-      };
     };
   };
 };
@@ -273,7 +188,4 @@ export type UserDataTables = {
   meal_recognitions: DbTables['meal_recognitions']['Row'];
   sleep_data: DbTables['sleep_data']['Row'];
   user_profiles: DbTables['user_profiles']['Row'];
-  dashboard_views: DbTables['dashboard_views']['Row'];
-  user_dashboard_preferences: DbTables['user_dashboard_preferences']['Row'];
-  widget_interaction_log: DbTables['widget_interaction_log']['Row'];
 };
