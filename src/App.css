@@ -1,3 +1,4 @@
+
 #root {
   max-width: 100%;
   margin: 0 auto;
@@ -129,3 +130,73 @@
   right: 0;
   bottom: 0;
 }
+
+/* Circle card styles */
+.circle-card {
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+  background-color: var(--wellness-soft-beige, #F8F4E3);
+  border: 1px solid rgba(104, 166, 136, 0.1);
+}
+
+.circle-card:hover {
+  transform: scale(1.02);
+  box-shadow: 0 8px 24px rgba(104, 166, 136, 0.12);
+}
+
+.circle-card__icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.circle-card__title {
+  font-size: 1.25rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  color: var(--wellness-dark-green, #68A688);
+}
+
+.circle-card__description {
+  font-size: 0.875rem;
+  color: var(--wellness-charcoal, #403E43);
+  opacity: 0.8;
+  line-height: 1.5;
+  max-width: 85%;
+  margin: 0 auto;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .circle-card {
+    width: 250px;
+    height: 250px;
+    padding: 1.25rem;
+  }
+  
+  .circle-card__icon {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 0.75rem;
+  }
+  
+  .circle-card__title {
+    font-size: 1.125rem;
+  }
+  
+  .circle-card__description {
+    font-size: 0.8125rem;
+  }
+}
+
