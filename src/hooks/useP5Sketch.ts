@@ -1,4 +1,3 @@
-
 import { useRef, useState, useEffect } from 'react';
 import p5 from 'p5';
 import { createDebugLogger, setupCanvasElement } from '../utils/p5Utils';
@@ -100,8 +99,7 @@ export const useP5Sketch = ({ containerId, debugPrefix = 'P5Sketch' }: UseP5Sket
       p.draw = () => {
         p.clear();
         
-        // Set background to very transparent (60% opacity overall effect)
-        p.background(120, 10, 10, 0.03);
+        p.background(120, 10, 10, 0.05);
         
         glowIntensity += 0.01 * glowDirection;
         if (glowIntensity > 1) {
@@ -117,17 +115,15 @@ export const useP5Sketch = ({ containerId, debugPrefix = 'P5Sketch' }: UseP5Sket
         if (keys.a) rotationY -= 0.02;
         if (keys.d) rotationY += 0.02;
         
-        // Make lights less intense for more transparency
-        const paleGreenLight = p.color(120, 30, 60 * glowIntensity);
-        const lightGreenLight = p.color(140, 20, 60 * glowIntensity);
-        const softGreenLight = p.color(110, 40, 60 * glowIntensity);
+        const paleGreenLight = p.color(120, 30, 100 * glowIntensity);
+        const lightGreenLight = p.color(140, 20, 100 * glowIntensity);
+        const softGreenLight = p.color(110, 40, 100 * glowIntensity);
         
         p.pointLight(paleGreenLight, 300 * Math.sin(angle * 0.1), 300 * Math.cos(angle * 0.1), 300);
         p.pointLight(lightGreenLight, -300 * Math.cos(angle * 0.15), -300 * Math.sin(angle * 0.15), -300);
         p.pointLight(softGreenLight, 500 * Math.sin(angle * 0.2), -500 * Math.cos(angle * 0.2), 500 * Math.sin(angle * 0.05));
         
-        // Reduced ambient light for more transparency
-        p.ambientLight(15 * glowIntensity, 20 * glowIntensity, 15 * glowIntensity);
+        p.ambientLight(25 * glowIntensity, 35 * glowIntensity, 25 * glowIntensity);
         
         p.push();
         

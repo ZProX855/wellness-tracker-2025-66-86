@@ -14,14 +14,14 @@ export const drawRoundedShapes = (
   // Main central sphere with smooth pulsing effect
   p.push();
   const pulseAmount = p.sin(angle * 0.5) * 0.1 + 0.9;
-  // Pale green color with glow - reduced opacity to 0.6
-  p.fill(120, 40 + (glowIntensity * 20), 90, 0.6);
+  // Pale green color with glow
+  p.fill(120, 40 + (glowIntensity * 20), 90, 0.8);
   p.sphere(baseSize * 0.3 * pulseAmount); // Increased from 0.25 to 0.3
   p.pop();
   
   // Large torus rotating around the center
   p.push();
-  p.fill(140, 50 + (glowIntensity * 10), 90, 0.5); // Reduced opacity
+  p.fill(140, 50 + (glowIntensity * 10), 90, 0.7);
   p.rotateX(angle * 0.2);
   p.rotateY(angle * 0.15);
   p.torus(baseSize * 0.9, baseSize * 0.12); // Increased from 0.8/0.1 to 0.9/0.12
@@ -29,7 +29,7 @@ export const drawRoundedShapes = (
   
   // Second torus at different angle
   p.push();
-  p.fill(110, 45 + (glowIntensity * 15), 85, 0.4); // Reduced opacity
+  p.fill(110, 45 + (glowIntensity * 15), 85, 0.6);
   p.rotateX(angle * -0.15);
   p.rotateZ(angle * 0.18);
   p.torus(baseSize * 0.7, baseSize * 0.1); // Increased from 0.6/0.08 to 0.7/0.1
@@ -37,7 +37,7 @@ export const drawRoundedShapes = (
   
   // Third torus at different angle
   p.push();
-  p.fill(130, 35 + (glowIntensity * 20), 95, 0.3); // Reduced opacity
+  p.fill(130, 35 + (glowIntensity * 20), 95, 0.5);
   p.rotateY(angle * -0.1);
   p.rotateZ(angle * -0.2);
   p.torus(baseSize * 1.1, baseSize * 0.06); // Increased from 1.0/0.05 to 1.1/0.06
@@ -78,10 +78,10 @@ export const drawRoundedShapes = (
     // Size variation based on position and glow
     const sphereSize = baseSize * (0.08 + p.sin(orbitAngle * 1.2) * 0.04); // Increased from 0.07/0.03 to 0.08/0.04
     
-    // Color variation with glow effect - using pale green hues - reduced opacity
+    // Color variation with glow effect - using pale green hues
     const hue = (120 + i * 5) % 360; // Green-based hues
     // Increased saturation and brightness based on glow intensity
-    p.fill(hue, 40 + (glowIntensity * 10), 95 + (glowIntensity * 5), 0.5);
+    p.fill(hue, 40 + (glowIntensity * 10), 95 + (glowIntensity * 5), 0.8);
     
     // Draw the sphere
     p.sphere(sphereSize);
@@ -98,8 +98,8 @@ export const drawRoundedShapes = (
     const medZ = p.sin(medAngle * 0.7) * medRadius * 0.5;
     
     p.translate(medX, medY, medZ);
-    // Enhanced glow effect with pale green color - reduced opacity
-    p.fill(125 + i * 10, 45 + (glowIntensity * 15), 90 + (glowIntensity * 10), 0.5);
+    // Enhanced glow effect with pale green color
+    p.fill(125 + i * 10, 45 + (glowIntensity * 15), 90 + (glowIntensity * 10), 0.7);
     p.sphere(baseSize * 0.15); // Increased from 0.12 to 0.15
     p.pop();
   }
