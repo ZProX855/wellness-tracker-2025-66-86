@@ -1,4 +1,3 @@
-
 import { useRef, useState, useEffect } from 'react';
 import p5 from 'p5';
 import { createDebugLogger, setupCanvasElement } from '../utils/p5Utils';
@@ -51,11 +50,18 @@ export const useP5Sketch = ({ containerId, debugPrefix = 'P5Sketch' }: UseP5Sket
       let glowIntensity = 0;
       let glowDirection = 1; // 1 for increasing, -1 for decreasing
       
-      // Mouse tracking variables
-      let mouseX = canvasWidth / 2;
-      let mouseY = canvasHeight / 2;
-      let targetX = canvasWidth / 2;
-      let targetY = canvasHeight / 2;
+      // Rotation controls
+      let rotationX = 0;
+      let rotationY = 0;
+      let rotationZ = 0;
+      
+      // Key states
+      const keys: { [key: string]: boolean } = {
+        w: false,
+        a: false,
+        s: false,
+        d: false
+      };
       
       // Setup canvas
       p.setup = () => {
@@ -75,10 +81,21 @@ export const useP5Sketch = ({ containerId, debugPrefix = 'P5Sketch' }: UseP5Sket
         }
       };
 
-      // Track mouse movement
-      p.mouseMoved = () => {
-        targetX = p.mouseX - canvasWidth / 2;
-        targetY = p.mouseY - canvasHeight / 2;
+      // Handle key press and release
+      p.keyPressed = () => {
+        const key = p.key.toLowerCase();
+        if (key in keys) {
+          keys[key] = true;
+        }
+        return false; // Prevent default behavior
+      };
+      
+      p.keyReleased = () => {
+        const key = p.key.toLowerCase();
+        if (key in keys) {
+          keys[key] = false;
+        }
+        return false; // Prevent default behavior
       };
 
       // Resize handler
@@ -106,19 +123,21 @@ export const useP5Sketch = ({ containerId, debugPrefix = 'P5Sketch' }: UseP5Sket
           glowDirection = 1;
         }
         
-        // Smooth follow mouse with easing
-        mouseX = p.lerp(mouseX, targetX, 0.05); // Slow follow effect
-        mouseY = p.lerp(mouseY, targetY, 0.05); // Slow follow effect
+        // Update rotation based on WASD keys
+        if (keys.w) rotationX -= 0.02;
+        if (keys.s) rotationX += 0.02;
+        if (keys.a) rotationY -= 0.02;
+        if (keys.d) rotationY += 0.02;
         
-        // Enhanced lighting with glow effect that follows mouse
+        // Enhanced lighting with glow effect at fixed positions
         const blueLight = p.color(60, 80, 100 * glowIntensity); // Blue with varying intensity
         const purpleLight = p.color(90, 80, 100 * glowIntensity); // Purple with varying intensity
         const pinkLight = p.color(320, 80, 100 * glowIntensity); // Pink with varying intensity
         
-        // Lights that follow the cursor position with offset
-        p.pointLight(blueLight, mouseX * 0.8, mouseY * 0.8, 300);
-        p.pointLight(purpleLight, -mouseX * 0.6, -mouseY * 0.6, -300);
-        p.pointLight(pinkLight, mouseY * 0.5, -mouseX * 0.5, 500 * Math.sin(angle * 0.05));
+        // Fixed position lights with slight animation
+        p.pointLight(blueLight, 300 * Math.sin(angle * 0.1), 300 * Math.cos(angle * 0.1), 300);
+        p.pointLight(purpleLight, -300 * Math.cos(angle * 0.15), -300 * Math.sin(angle * 0.15), -300);
+        p.pointLight(pinkLight, 500 * Math.sin(angle * 0.2), -500 * Math.cos(angle * 0.2), 500 * Math.sin(angle * 0.05));
         
         // Ambient light that changes with glow intensity
         p.ambientLight(25 * glowIntensity, 25 * glowIntensity, 45 * glowIntensity);
@@ -126,20 +145,22 @@ export const useP5Sketch = ({ containerId, debugPrefix = 'P5Sketch' }: UseP5Sket
         // Create main transformations
         p.push();
         
-        // Center and scale based on screen size
+        // Center and scale based on screen size - increased scale for bigger appearance
         const scale = Math.min(p.width, p.height) / 800; // Responsive scaling
-        p.scale(scale * 1.5); // Increased scale for better visibility
+        p.scale(scale * 2.0); // Increased scale for better visibility (from 1.5 to 2.0)
         
-        // Translate scene based on mouse position with dampening
-        p.translate(mouseX * 0.1, mouseY * 0.1, 0);
+        // Apply user-controlled rotation
+        p.rotateX(rotationX);
+        p.rotateY(rotationY);
         
-        // Slow, constant rotation with slight mouse influence
-        p.rotateY(angle * 0.1 + mouseX * 0.0002);
-        p.rotateX(angle * 0.07 + mouseY * 0.0002);
+        // Add constant gentle rotation
+        p.rotateY(angle * 0.1);
+        p.rotateX(angle * 0.07);
         p.rotateZ(angle * 0.03);
         
         // Draw all the rounded shapes with glow effect
-        drawRoundedShapes(p, angle, glowIntensity, mouseX, mouseY);
+        // Pass 0, 0 for mouse position to keep it centered/non-interactive
+        drawRoundedShapes(p, angle, glowIntensity, 0, 0);
         
         p.pop();
         
