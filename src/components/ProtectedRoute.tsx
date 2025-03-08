@@ -15,9 +15,26 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const location = useLocation();
   
   useEffect(() => {
+    // First check if we already have a user from context, to avoid unnecessary API calls
+    if (user) {
+      console.log('User already authenticated in context');
+      setHasSession(true);
+      setIsCheckingSession(false);
+      return;
+    }
+    
     const checkSession = async () => {
       try {
+        // Set timeout to prevent infinite loading
+        const timeoutId = setTimeout(() => {
+          console.log('Session check timed out');
+          setIsCheckingSession(false);
+          setHasSession(false);
+        }, 5000);
+        
         const { data, error } = await supabase.auth.getSession();
+        clearTimeout(timeoutId);
+        
         const hasValidSession = !!data.session && !error;
         setHasSession(hasValidSession);
         
@@ -35,16 +52,21 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     };
     
     checkSession();
-  }, []);
+  }, [user]);
   
+  // Return loading state if we're still loading
   if (isLoading || isCheckingSession) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-wellness-softBeige to-wellness-softGreen/30 flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-wellness-mediumGreen border-t-transparent rounded-full animate-spin"></div>
+        <div className="flex flex-col items-center">
+          <div className="w-12 h-12 border-4 border-wellness-mediumGreen border-t-transparent rounded-full animate-spin mb-4"></div>
+          <p className="text-wellness-darkGreen">Loading your account...</p>
+        </div>
       </div>
     );
   }
   
+  // Redirect to login if not authenticated
   if (!user && !hasSession) {
     console.log('No user or session, redirecting to login');
     // Redirect to login page but save the location they were trying to access

@@ -26,6 +26,7 @@ const TimetableHistoryPanel: React.FC<TimetableHistoryPanelProps> = ({
 }) => {
   const [localTimetables, setLocalTimetables] = useState<TimetableRecord[]>([]);
   const [isLocalLoading, setIsLocalLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
   // Use either props or local state
@@ -37,20 +38,32 @@ const TimetableHistoryPanel: React.FC<TimetableHistoryPanelProps> = ({
     if (fetchData && !propTimetables && user) {
       const fetchTimetables = async () => {
         setIsLocalLoading(true);
+        setError(null);
+        
         try {
+          // Set a timeout to prevent hanging requests
+          const timeoutId = setTimeout(() => {
+            setIsLocalLoading(false);
+            setError('Request timed out. Please try again.');
+          }, 5000);
+          
           const { data, error } = await supabase
             .from('timetable_history')
             .select('*')
             .eq('user_id', user.id)
             .order('created_at', { ascending: false });
           
+          clearTimeout(timeoutId);
+          
           if (error) {
             console.error('Error fetching timetable history:', error);
+            setError('Failed to load timetable history.');
           } else {
             setLocalTimetables(data || []);
           }
         } catch (error) {
           console.error('Failed to fetch timetable history:', error);
+          setError('An unexpected error occurred.');
         } finally {
           setIsLocalLoading(false);
         }
@@ -66,10 +79,28 @@ const TimetableHistoryPanel: React.FC<TimetableHistoryPanelProps> = ({
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-medium text-wellness-darkGreen">Timetable History</h3>
         </div>
-        <div className="animate-pulse space-y-3">
-          <div className="h-12 bg-wellness-softGreen/20 rounded"></div>
-          <div className="h-12 bg-wellness-softGreen/20 rounded"></div>
-          <div className="h-12 bg-wellness-softGreen/20 rounded"></div>
+        <div className="flex flex-col items-center justify-center py-8">
+          <Loader className="h-8 w-8 text-wellness-mediumGreen animate-spin mb-3" />
+          <p className="text-wellness-darkGreen">Loading your timetables...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-white bg-opacity-70 rounded-xl p-5 shadow-sm border border-wellness-softGreen/30 h-full">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-medium text-wellness-darkGreen">Timetable History</h3>
+        </div>
+        <div className="flex flex-col items-center justify-center py-8 text-center">
+          <p className="text-red-500 mb-3">{error}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="text-sm bg-wellness-darkGreen text-white px-3 py-1.5 rounded hover:bg-wellness-mediumGreen transition-colors"
+          >
+            Refresh
+          </button>
         </div>
       </div>
     );
@@ -96,7 +127,7 @@ const TimetableHistoryPanel: React.FC<TimetableHistoryPanelProps> = ({
             >
               <div className="flex justify-between items-start">
                 <div>
-                  <h4 className="font-medium text-wellness-darkGreen">{timetable.name}</h4>
+                  <h4 className="font-medium text-wellness-darkGreen">{timetable.name || 'Untitled Timetable'}</h4>
                   {timetable.description && (
                     <p className="text-sm text-wellness-charcoal line-clamp-1">{timetable.description}</p>
                   )}

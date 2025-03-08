@@ -1,3 +1,4 @@
+
 import { supabase } from '../lib/supabase';
 import { AuthState, User, UserData, BMIRecord, FoodComparison, MealRecord, SleepRecord } from '../types/auth';
 
@@ -51,12 +52,17 @@ export const authService = {
         console.error('Error creating user profile:', profileError);
       }
 
-      return {
+      const user = {
         id: data.user.id,
         username: email.split('@')[0],
-        name: name || email.split('@')[0],
+        name: name,
         createdAt: data.user.created_at || new Date().toISOString(),
       };
+      
+      // Cache the user to avoid unnecessary fetches
+      sessionStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
+      
+      return user;
     } catch (error) {
       console.error('Registration error:', error);
       throw error;
@@ -135,23 +141,46 @@ export const authService = {
 
   async getCurrentUser(): Promise<User | null> {
     try {
-      const sessionString = sessionStorage.getItem('currentUser');
+      // First try to get from session storage for faster response
+      const sessionString = sessionStorage.getItem(CURRENT_USER_KEY);
       if (sessionString) {
-        return JSON.parse(sessionString);
+        try {
+          return JSON.parse(sessionString);
+        } catch (e) {
+          console.error('Failed to parse stored user:', e);
+          sessionStorage.removeItem(CURRENT_USER_KEY);
+        }
       }
       
-      const { data } = await supabase.auth.getSession();
-      if (!data.session) {
+      // If not in session storage, check with Supabase
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
         return null;
       }
       
-      const { user } = data.session;
+      const { user } = sessionData.session;
       
-      const { data: profileData } = await supabase
-        .from('user_profiles')
-        .select('name')
-        .eq('user_id', user.id)
-        .single();
+      // Set timeout to prevent hanging requests
+      const profilePromise = new Promise<any>(async (resolve) => {
+        const timeout = setTimeout(() => resolve(null), 3000);
+        
+        try {
+          const { data } = await supabase
+            .from('user_profiles')
+            .select('name, avatar_url')
+            .eq('user_id', user.id)
+            .maybeSingle();
+          
+          clearTimeout(timeout);
+          resolve(data);
+        } catch (e) {
+          console.error('Error fetching profile:', e);
+          clearTimeout(timeout);
+          resolve(null);
+        }
+      });
+      
+      const profileData = await profilePromise;
       
       const mappedUser: User = {
         id: user.id,
@@ -160,11 +189,11 @@ export const authService = {
               user.user_metadata?.name || 
               user.email?.split('@')[0] || 
               'User',
-        avatar: user.user_metadata?.avatar_url,
+        avatar: profileData?.avatar_url || user.user_metadata?.avatar_url,
         createdAt: user.created_at || new Date().toISOString(),
       };
       
-      sessionStorage.setItem('currentUser', JSON.stringify(mappedUser));
+      sessionStorage.setItem(CURRENT_USER_KEY, JSON.stringify(mappedUser));
       
       return mappedUser;
     } catch (error) {
@@ -192,11 +221,15 @@ export const authService = {
         throw new Error('Failed to update profile');
       }
       
-      if (name) {
-        await supabase.from('user_profiles').update({
-          name,
-          avatar_url: avatar
-        }).eq('user_id', userId);
+      if (name || avatar) {
+        const updateData: any = {};
+        if (name) updateData.name = name;
+        if (avatar) updateData.avatar_url = avatar;
+        
+        await supabase
+          .from('user_profiles')
+          .update(updateData)
+          .eq('user_id', userId);
       }
       
       const updatedUser = mapSupabaseUser(data.user);
@@ -205,6 +238,7 @@ export const authService = {
         throw new Error('Failed to get updated user data');
       }
       
+      // Update in session storage to avoid unnecessary fetches
       sessionStorage.setItem(CURRENT_USER_KEY, JSON.stringify(updatedUser));
       
       return updatedUser;
@@ -216,6 +250,8 @@ export const authService = {
 
   async getUserData(userId: string): Promise<UserData> {
     try {
+      console.log('Getting user data for', userId);
+      
       const userData: UserData = {
         bmiHistory: [],
         foodComparisons: [],
@@ -223,16 +259,38 @@ export const authService = {
         sleepData: [],
       };
       
-      const { data: bmiData, error: bmiError } = await supabase
-        .from('bmi_history')
-        .select('*')
-        .eq('user_id', userId)
-        .order('date', { ascending: false });
+      // Use Promise.all to fetch data in parallel
+      const [bmiResult, foodResult, mealResult, sleepResult] = await Promise.all([
+        supabase
+          .from('bmi_history')
+          .select('*')
+          .eq('user_id', userId)
+          .order('date', { ascending: false }),
+          
+        supabase
+          .from('food_comparisons')
+          .select('*')
+          .eq('user_id', userId)
+          .order('date', { ascending: false }),
+          
+        supabase
+          .from('meal_recognitions')
+          .select('*')
+          .eq('user_id', userId)
+          .order('date', { ascending: false }),
+          
+        supabase
+          .from('sleep_data')
+          .select('*')
+          .eq('user_id', userId)
+          .order('date', { ascending: false })
+      ]);
       
-      if (bmiError) {
-        console.error('Error fetching BMI data:', bmiError);
-      } else if (bmiData) {
-        userData.bmiHistory = bmiData.map(item => ({
+      // Process BMI data
+      if (bmiResult.error) {
+        console.error('Error fetching BMI data:', bmiResult.error);
+      } else if (bmiResult.data) {
+        userData.bmiHistory = bmiResult.data.map(item => ({
           id: item.id,
           date: item.date,
           height: item.height,
@@ -242,16 +300,11 @@ export const authService = {
         }));
       }
       
-      const { data: foodData, error: foodError } = await supabase
-        .from('food_comparisons')
-        .select('*')
-        .eq('user_id', userId)
-        .order('date', { ascending: false });
-      
-      if (foodError) {
-        console.error('Error fetching food comparison data:', foodError);
-      } else if (foodData) {
-        userData.foodComparisons = foodData.map(item => {
+      // Process food comparison data
+      if (foodResult.error) {
+        console.error('Error fetching food comparison data:', foodResult.error);
+      } else if (foodResult.data) {
+        userData.foodComparisons = foodResult.data.map(item => {
           const food1 = typeof item.food1 === 'string' ? JSON.parse(item.food1) : item.food1;
           const food2 = typeof item.food2 === 'string' ? JSON.parse(item.food2) : item.food2;
           
@@ -264,16 +317,11 @@ export const authService = {
         });
       }
       
-      const { data: mealData, error: mealError } = await supabase
-        .from('meal_recognitions')
-        .select('*')
-        .eq('user_id', userId)
-        .order('date', { ascending: false });
-      
-      if (mealError) {
-        console.error('Error fetching meal recognition data:', mealError);
-      } else if (mealData) {
-        userData.mealRecognitions = mealData.map(item => ({
+      // Process meal recognition data
+      if (mealResult.error) {
+        console.error('Error fetching meal recognition data:', mealResult.error);
+      } else if (mealResult.data) {
+        userData.mealRecognitions = mealResult.data.map(item => ({
           id: item.id,
           date: item.date,
           foodIdentified: item.meal_name,
@@ -288,16 +336,11 @@ export const authService = {
         }));
       }
       
-      const { data: sleepData, error: sleepError } = await supabase
-        .from('sleep_data')
-        .select('*')
-        .eq('user_id', userId)
-        .order('date', { ascending: false });
-      
-      if (sleepError) {
-        console.error('Error fetching sleep data:', sleepError);
-      } else if (sleepData) {
-        userData.sleepData = sleepData.map(item => ({
+      // Process sleep data
+      if (sleepResult.error) {
+        console.error('Error fetching sleep data:', sleepResult.error);
+      } else if (sleepResult.data) {
+        userData.sleepData = sleepResult.data.map(item => ({
           id: item.id,
           date: item.date,
           bedTime: item.bed_time,
@@ -313,6 +356,7 @@ export const authService = {
         }));
       }
       
+      console.log('User data fetched successfully');
       return userData;
     } catch (error) {
       console.error('Error getting user data:', error);
