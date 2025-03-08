@@ -1,5 +1,21 @@
 import { supabase } from '../lib/supabase';
-import { AuthState, User, UserData } from '../types/auth';
+import { AuthState, User, UserData, BMIRecord, FoodComparison, MealRecord, SleepRecord } from '../types/auth';
+
+const CURRENT_USER_KEY = 'currentUser';
+
+const mapSupabaseUser = (supabaseUser: any): User | null => {
+  if (!supabaseUser) return null;
+  
+  return {
+    id: supabaseUser.id,
+    username: supabaseUser.email?.split('@')[0] || 'User',
+    name: supabaseUser.user_metadata?.name || 
+          supabaseUser.email?.split('@')[0] || 
+          'User',
+    avatar: supabaseUser.user_metadata?.avatar_url,
+    createdAt: supabaseUser.created_at || new Date().toISOString(),
+  };
+};
 
 export const authService = {
   async register(email: string, password: string, name: string): Promise<User> {
