@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useEffect, useContext, useRef } from 'react';
 import { AuthState, User, UserData, BMIRecord } from '../types/auth';
 import { authService } from '../services/authService';
@@ -34,51 +35,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   
   const userDataRef = useRef<UserData | null>(null);
   const subscriptionsRef = useRef<(() => void)[]>([]);
-  const initializingRef = useRef<boolean>(false);
   
   useEffect(() => {
     const initializeAuth = async () => {
-      if (initializingRef.current) return;
-      
       try {
-        initializingRef.current = true;
-        console.log('Initializing auth...');
-        
-        const storedUserJson = sessionStorage.getItem('currentUser');
-        if (storedUserJson) {
-          try {
-            const storedUser = JSON.parse(storedUserJson);
-            setAuthState(prev => ({
-              ...prev,
-              user: storedUser,
-              isLoading: false,
-            }));
-          } catch (e) {
-            console.error('Failed to parse stored user:', e);
-            sessionStorage.removeItem('currentUser');
-          }
-        }
-        
-        const { data } = await supabase.auth.getSession();
-        const session = data?.session;
-        
-        if (!session) {
-          console.log('No active session found');
-          if (!storedUserJson) {
-            setAuthState({
-              user: null,
-              isLoading: false,
-              error: null,
-            });
-          }
-          initializingRef.current = false;
-          return;
-        }
-        
-        console.log('Active session found, getting user data...');
-        
         const currentUser = await authService.getCurrentUser();
-        
         setAuthState({
           user: currentUser,
           isLoading: false,
@@ -95,8 +56,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           isLoading: false,
           error: 'Failed to initialize authentication',
         });
-      } finally {
-        initializingRef.current = false;
       }
     };
     
@@ -106,49 +65,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('Auth state changed:', event, session?.user?.id);
       
       if (event === 'SIGNED_IN' && session?.user) {
-        const currentUserId = authState.user?.id;
-        if (currentUserId === session.user.id && !authState.isLoading) {
-          console.log('User already signed in with same ID, skipping update');
-          return;
-        }
+        const mappedUser: User = {
+          id: session.user.id,
+          username: session.user.email?.split('@')[0] || 'User',
+          name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
+          avatar: session.user.user_metadata?.avatar_url,
+          createdAt: session.user.created_at || new Date().toISOString(),
+        };
         
-        setAuthState(prev => ({ ...prev, isLoading: true }));
+        setAuthState({
+          user: mappedUser,
+          isLoading: false,
+          error: null,
+        });
         
-        try {
-          const { data: profileData } = await supabase
-            .from('user_profiles')
-            .select('name')
-            .eq('user_id', session.user.id)
-            .maybeSingle();
-          
-          const mappedUser: User = {
-            id: session.user.id,
-            username: session.user.email?.split('@')[0] || 'User',
-            name: profileData?.name || 
-                  session.user.user_metadata?.name || 
-                  session.user.email?.split('@')[0] || 
-                  'User',
-            avatar: session.user.user_metadata?.avatar_url,
-            createdAt: session.user.created_at || new Date().toISOString(),
-          };
-          
-          setAuthState({
-            user: mappedUser,
-            isLoading: false,
-            error: null,
-          });
-          
-          sessionStorage.setItem('currentUser', JSON.stringify(mappedUser));
-          
-          await initializeUserData(mappedUser.id);
-        } catch (error) {
-          console.error('Error handling sign in:', error);
-          setAuthState({
-            user: null,
-            isLoading: false,
-            error: 'Failed to process sign in',
-          });
-        }
+        sessionStorage.setItem('currentUser', JSON.stringify(mappedUser));
+        
+        await initializeUserData(mappedUser.id);
       } else if (event === 'SIGNED_OUT') {
         clearSubscriptions();
         userDataRef.current = null;
@@ -174,12 +107,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   
   const initializeUserData = async (userId: string) => {
     try {
-      if (userDataRef.current) {
-        console.log('Using cached user data');
-        return userDataRef.current;
-      }
-      
-      console.log('Fetching user data for', userId);
       const initialData = await authService.getUserData(userId);
       userDataRef.current = initialData;
       
@@ -224,7 +151,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             
             const updatedHistory = [...userDataRef.current.bmiHistory];
             const existingIndex = updatedHistory.findIndex(
-              item => item.id === newItem.id
+              item => item.date === newItem.date
             );
             
             if (existingIndex >= 0) {
@@ -242,7 +169,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             userDataRef.current = {
               ...userDataRef.current,
               bmiHistory: userDataRef.current.bmiHistory.filter(
-                item => item.id !== deletedItem.id
+                item => item.date !== deletedItem.date
               ),
             };
           }
@@ -251,72 +178,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .subscribe();
     
     subscriptionsRef.current.push(() => bmiSubscription.unsubscribe());
-    
-    const foodComparisonSubscription = supabase
-      .channel('food_comparisons_changes')
-      .on(
-        'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'food_comparisons',
-          filter: `user_id=eq.${userId}`
-        },
-        () => {
-          authService.getUserData(userId).then(data => {
-            if (data) userDataRef.current = data;
-          });
-        }
-      )
-      .subscribe();
-    
-    subscriptionsRef.current.push(() => foodComparisonSubscription.unsubscribe());
-    
-    const mealRecognitionSubscription = supabase
-      .channel('meal_recognitions_changes')
-      .on(
-        'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'meal_recognitions',
-          filter: `user_id=eq.${userId}`
-        },
-        () => {
-          authService.getUserData(userId).then(data => {
-            if (data) userDataRef.current = data;
-          });
-        }
-      )
-      .subscribe();
-    
-    subscriptionsRef.current.push(() => mealRecognitionSubscription.unsubscribe());
-    
-    const sleepDataSubscription = supabase
-      .channel('sleep_data_changes')
-      .on(
-        'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'sleep_data',
-          filter: `user_id=eq.${userId}`
-        },
-        () => {
-          authService.getUserData(userId).then(data => {
-            if (data) userDataRef.current = data;
-          });
-        }
-      )
-      .subscribe();
-    
-    subscriptionsRef.current.push(() => sleepDataSubscription.unsubscribe());
   };
   
   const register = async (email: string, password: string, name: string) => {
     try {
       setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
-      const user = await authService.register(email, password, name);
+      const user = await authService.register(email, password);
       setAuthState({
         user,
         isLoading: false,
@@ -423,11 +290,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       if (userDataRef.current) {
-        console.log('Returning cached user data');
         return userDataRef.current;
       }
       
-      console.log('Fetching fresh user data');
       const data = await authService.getUserData(authState.user.id);
       userDataRef.current = data;
       return data;

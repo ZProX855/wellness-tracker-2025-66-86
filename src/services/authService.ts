@@ -1,65 +1,59 @@
-
+import { User, UserData, BMIRecord, FoodComparison, MealRecord, SleepRecord } from '../types/auth';
+import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../lib/supabase';
-import { AuthState, User, UserData, BMIRecord, FoodComparison, MealRecord, SleepRecord } from '../types/auth';
-
-const CURRENT_USER_KEY = 'currentUser';
 
 const mapSupabaseUser = (supabaseUser: any): User | null => {
   if (!supabaseUser) return null;
   
   return {
     id: supabaseUser.id,
-    username: supabaseUser.email?.split('@')[0] || 'User',
-    name: supabaseUser.user_metadata?.name || 
-          supabaseUser.email?.split('@')[0] || 
-          'User',
-    avatar: supabaseUser.user_metadata?.avatar_url,
+    username: supabaseUser.user_metadata?.name || supabaseUser.email?.split('@')[0] || 'User',
+    name: supabaseUser.user_metadata?.name || supabaseUser.email?.split('@')[0] || 'User',
+    avatar: supabaseUser.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(supabaseUser.user_metadata?.name || supabaseUser.email || 'User')}&background=random`,
     createdAt: supabaseUser.created_at || new Date().toISOString(),
+    googleId: supabaseUser.app_metadata?.provider === 'google' ? supabaseUser.id : undefined,
   };
 };
 
+const CURRENT_USER_KEY = 'currentUser';
+
 export const authService = {
-  async register(email: string, password: string, name: string): Promise<User> {
+  async register(email: string, password: string): Promise<User> {
     try {
+      if (!email.includes('@')) {
+        email = `${email.toLowerCase()}@wellness.local`;
+      }
+      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
-            name: name,
+            name: email.split('@')[0],
           },
         },
       });
-
+      
       if (error) {
         throw new Error(error.message);
       }
-
-      if (!data?.user) {
+      
+      if (!data.user) {
         throw new Error('Registration failed');
       }
-
-      const { error: profileError } = await supabase
-        .from('user_profiles')
-        .upsert({
-          user_id: data.user.id,
-          name: name,
-        }, {
-          onConflict: 'user_id'
-        });
-
-      if (profileError) {
-        console.error('Error creating user profile:', profileError);
-      }
-
-      const user = {
-        id: data.user.id,
-        username: email.split('@')[0],
-        name: name,
-        createdAt: data.user.created_at || new Date().toISOString(),
-      };
       
-      // Cache the user to avoid unnecessary fetches
+      const user = mapSupabaseUser(data.user);
+      
+      if (!user) {
+        throw new Error('Failed to create user');
+      }
+      
+      await supabase.from('user_profiles').insert({
+        user_id: user.id,
+        name: user.name,
+        created_at: new Date().toISOString(),
+      });
+      
       sessionStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
       
       return user;
@@ -68,7 +62,7 @@ export const authService = {
       throw error;
     }
   },
-
+  
   async login(username: string, password: string): Promise<User> {
     try {
       let email = username;
@@ -103,7 +97,7 @@ export const authService = {
       throw error;
     }
   },
-
+  
   async loginWithGoogle(): Promise<void> {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
@@ -123,7 +117,7 @@ export const authService = {
       throw error;
     }
   },
-
+  
   async logout(): Promise<void> {
     try {
       const { error } = await supabase.auth.signOut();
@@ -138,70 +132,33 @@ export const authService = {
       throw error;
     }
   },
-
+  
   async getCurrentUser(): Promise<User | null> {
     try {
-      // First try to get from session storage for faster response
-      const sessionString = sessionStorage.getItem(CURRENT_USER_KEY);
-      if (sessionString) {
-        try {
-          return JSON.parse(sessionString);
-        } catch (e) {
-          console.error('Failed to parse stored user:', e);
-          sessionStorage.removeItem(CURRENT_USER_KEY);
-        }
+      const cachedUser = sessionStorage.getItem(CURRENT_USER_KEY);
+      if (cachedUser) {
+        return JSON.parse(cachedUser);
       }
       
-      // If not in session storage, check with Supabase
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session) {
+      const { data, error } = await supabase.auth.getUser();
+      
+      if (error || !data.user) {
         return null;
       }
       
-      const { user } = sessionData.session;
+      const user = mapSupabaseUser(data.user);
       
-      // Set timeout to prevent hanging requests
-      const profilePromise = new Promise<any>(async (resolve) => {
-        const timeout = setTimeout(() => resolve(null), 3000);
-        
-        try {
-          const { data } = await supabase
-            .from('user_profiles')
-            .select('name, avatar_url')
-            .eq('user_id', user.id)
-            .maybeSingle();
-          
-          clearTimeout(timeout);
-          resolve(data);
-        } catch (e) {
-          console.error('Error fetching profile:', e);
-          clearTimeout(timeout);
-          resolve(null);
-        }
-      });
+      if (user) {
+        sessionStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
+      }
       
-      const profileData = await profilePromise;
-      
-      const mappedUser: User = {
-        id: user.id,
-        username: user.email?.split('@')[0] || 'User',
-        name: profileData?.name || 
-              user.user_metadata?.name || 
-              user.email?.split('@')[0] || 
-              'User',
-        avatar: profileData?.avatar_url || user.user_metadata?.avatar_url,
-        createdAt: user.created_at || new Date().toISOString(),
-      };
-      
-      sessionStorage.setItem(CURRENT_USER_KEY, JSON.stringify(mappedUser));
-      
-      return mappedUser;
+      return user;
     } catch (error) {
       console.error('Error getting current user:', error);
       return null;
     }
   },
-
+  
   async updateProfile(userId: string, updates: Partial<User>): Promise<User> {
     try {
       const { name, avatar } = updates;
@@ -221,15 +178,11 @@ export const authService = {
         throw new Error('Failed to update profile');
       }
       
-      if (name || avatar) {
-        const updateData: any = {};
-        if (name) updateData.name = name;
-        if (avatar) updateData.avatar_url = avatar;
-        
-        await supabase
-          .from('user_profiles')
-          .update(updateData)
-          .eq('user_id', userId);
+      if (name) {
+        await supabase.from('user_profiles').update({
+          name,
+          avatar_url: avatar
+        }).eq('user_id', userId);
       }
       
       const updatedUser = mapSupabaseUser(data.user);
@@ -238,7 +191,6 @@ export const authService = {
         throw new Error('Failed to get updated user data');
       }
       
-      // Update in session storage to avoid unnecessary fetches
       sessionStorage.setItem(CURRENT_USER_KEY, JSON.stringify(updatedUser));
       
       return updatedUser;
@@ -247,11 +199,9 @@ export const authService = {
       throw error;
     }
   },
-
+  
   async getUserData(userId: string): Promise<UserData> {
     try {
-      console.log('Getting user data for', userId);
-      
       const userData: UserData = {
         bmiHistory: [],
         foodComparisons: [],
@@ -259,38 +209,16 @@ export const authService = {
         sleepData: [],
       };
       
-      // Use Promise.all to fetch data in parallel
-      const [bmiResult, foodResult, mealResult, sleepResult] = await Promise.all([
-        supabase
-          .from('bmi_history')
-          .select('*')
-          .eq('user_id', userId)
-          .order('date', { ascending: false }),
-          
-        supabase
-          .from('food_comparisons')
-          .select('*')
-          .eq('user_id', userId)
-          .order('date', { ascending: false }),
-          
-        supabase
-          .from('meal_recognitions')
-          .select('*')
-          .eq('user_id', userId)
-          .order('date', { ascending: false }),
-          
-        supabase
-          .from('sleep_data')
-          .select('*')
-          .eq('user_id', userId)
-          .order('date', { ascending: false })
-      ]);
+      const { data: bmiData, error: bmiError } = await supabase
+        .from('bmi_history')
+        .select('*')
+        .eq('user_id', userId)
+        .order('date', { ascending: false });
       
-      // Process BMI data
-      if (bmiResult.error) {
-        console.error('Error fetching BMI data:', bmiResult.error);
-      } else if (bmiResult.data) {
-        userData.bmiHistory = bmiResult.data.map(item => ({
+      if (bmiError) {
+        console.error('Error fetching BMI data:', bmiError);
+      } else if (bmiData) {
+        userData.bmiHistory = bmiData.map(item => ({
           id: item.id,
           date: item.date,
           height: item.height,
@@ -300,11 +228,16 @@ export const authService = {
         }));
       }
       
-      // Process food comparison data
-      if (foodResult.error) {
-        console.error('Error fetching food comparison data:', foodResult.error);
-      } else if (foodResult.data) {
-        userData.foodComparisons = foodResult.data.map(item => {
+      const { data: foodData, error: foodError } = await supabase
+        .from('food_comparisons')
+        .select('*')
+        .eq('user_id', userId)
+        .order('date', { ascending: false });
+      
+      if (foodError) {
+        console.error('Error fetching food comparison data:', foodError);
+      } else if (foodData) {
+        userData.foodComparisons = foodData.map(item => {
           const food1 = typeof item.food1 === 'string' ? JSON.parse(item.food1) : item.food1;
           const food2 = typeof item.food2 === 'string' ? JSON.parse(item.food2) : item.food2;
           
@@ -317,11 +250,16 @@ export const authService = {
         });
       }
       
-      // Process meal recognition data
-      if (mealResult.error) {
-        console.error('Error fetching meal recognition data:', mealResult.error);
-      } else if (mealResult.data) {
-        userData.mealRecognitions = mealResult.data.map(item => ({
+      const { data: mealData, error: mealError } = await supabase
+        .from('meal_recognitions')
+        .select('*')
+        .eq('user_id', userId)
+        .order('date', { ascending: false });
+      
+      if (mealError) {
+        console.error('Error fetching meal recognition data:', mealError);
+      } else if (mealData) {
+        userData.mealRecognitions = mealData.map(item => ({
           id: item.id,
           date: item.date,
           foodIdentified: item.meal_name,
@@ -336,11 +274,16 @@ export const authService = {
         }));
       }
       
-      // Process sleep data
-      if (sleepResult.error) {
-        console.error('Error fetching sleep data:', sleepResult.error);
-      } else if (sleepResult.data) {
-        userData.sleepData = sleepResult.data.map(item => ({
+      const { data: sleepData, error: sleepError } = await supabase
+        .from('sleep_data')
+        .select('*')
+        .eq('user_id', userId)
+        .order('date', { ascending: false });
+      
+      if (sleepError) {
+        console.error('Error fetching sleep data:', sleepError);
+      } else if (sleepData) {
+        userData.sleepData = sleepData.map(item => ({
           id: item.id,
           date: item.date,
           bedTime: item.bed_time,
@@ -356,14 +299,13 @@ export const authService = {
         }));
       }
       
-      console.log('User data fetched successfully');
       return userData;
     } catch (error) {
       console.error('Error getting user data:', error);
       throw error;
     }
   },
-
+  
   async updateUserData(userId: string, newData: Partial<UserData>): Promise<UserData> {
     try {
       if (newData.bmiHistory) {
@@ -461,7 +403,7 @@ export const authService = {
       throw error;
     }
   },
-
+  
   async addBMIRecord(userId: string, data: Omit<BMIRecord, 'id'>): Promise<BMIRecord> {
     try {
       const { data: insertData, error } = await supabase
@@ -494,7 +436,7 @@ export const authService = {
       throw error;
     }
   },
-
+  
   async addFoodComparison(userId: string, data: Omit<FoodComparison, 'id'>): Promise<FoodComparison> {
     try {
       const { data: insertData, error } = await supabase
@@ -523,7 +465,7 @@ export const authService = {
       throw error;
     }
   },
-
+  
   async addMealRecognition(userId: string, data: Omit<MealRecord, 'id'>): Promise<MealRecord> {
     try {
       const { data: insertData, error } = await supabase
@@ -563,7 +505,7 @@ export const authService = {
       throw error;
     }
   },
-
+  
   async addSleepRecord(userId: string, data: Omit<SleepRecord, 'id'>): Promise<SleepRecord> {
     try {
       const qualityNumber = 
@@ -611,7 +553,7 @@ export const authService = {
       throw error;
     }
   },
-
+  
   async resetUserProgress(userId: string): Promise<void> {
     try {
       const promises = [
@@ -629,7 +571,7 @@ export const authService = {
       throw error;
     }
   },
-
+  
   decodeJwt(token: string) {
     try {
       const base64Url = token.split('.')[1];
