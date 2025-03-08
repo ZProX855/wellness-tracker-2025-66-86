@@ -1,7 +1,9 @@
 
-import React from 'react';
-import { Calendar, Clock, ArrowRight } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Calendar, Clock, ArrowRight, Loader } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 
 type TimetableRecord = {
   id: string;
@@ -12,11 +14,52 @@ type TimetableRecord = {
 };
 
 interface TimetableHistoryPanelProps {
-  timetables: TimetableRecord[];
-  isLoading: boolean;
+  timetables?: TimetableRecord[];
+  isLoading?: boolean;
+  fetchData?: boolean;
 }
 
-const TimetableHistoryPanel: React.FC<TimetableHistoryPanelProps> = ({ timetables, isLoading }) => {
+const TimetableHistoryPanel: React.FC<TimetableHistoryPanelProps> = ({ 
+  timetables: propTimetables, 
+  isLoading: propIsLoading,
+  fetchData = true
+}) => {
+  const [localTimetables, setLocalTimetables] = useState<TimetableRecord[]>([]);
+  const [isLocalLoading, setIsLocalLoading] = useState(false);
+  const { user } = useAuth();
+
+  // Use either props or local state
+  const timetables = propTimetables || localTimetables;
+  const isLoading = propIsLoading !== undefined ? propIsLoading : isLocalLoading;
+
+  useEffect(() => {
+    // Only fetch if we're told to fetch and don't have prop data
+    if (fetchData && !propTimetables && user) {
+      const fetchTimetables = async () => {
+        setIsLocalLoading(true);
+        try {
+          const { data, error } = await supabase
+            .from('timetable_history')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false });
+          
+          if (error) {
+            console.error('Error fetching timetable history:', error);
+          } else {
+            setLocalTimetables(data || []);
+          }
+        } catch (error) {
+          console.error('Failed to fetch timetable history:', error);
+        } finally {
+          setIsLocalLoading(false);
+        }
+      };
+      
+      fetchTimetables();
+    }
+  }, [user, fetchData, propTimetables]);
+
   if (isLoading) {
     return (
       <div className="bg-white bg-opacity-70 rounded-xl p-5 shadow-sm border border-wellness-softGreen/30 h-full">
@@ -67,7 +110,7 @@ const TimetableHistoryPanel: React.FC<TimetableHistoryPanelProps> = ({ timetable
               <div className="mt-2 flex items-center justify-between">
                 <span className="text-xs text-wellness-charcoal flex items-center">
                   <Clock className="h-3 w-3 mr-1" />
-                  {Object.keys(timetable.schedule).length} activities
+                  {Object.keys(timetable.schedule || {}).length} activities
                 </span>
                 <Link
                   to={`/timetable-generator?id=${timetable.id}`}

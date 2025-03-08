@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useEffect, useContext, useRef } from 'react';
 import { AuthState, User, UserData, BMIRecord } from '../types/auth';
 import { authService } from '../services/authService';
@@ -65,10 +64,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('Auth state changed:', event, session?.user?.id);
       
       if (event === 'SIGNED_IN' && session?.user) {
+        const { data: profileData } = await supabase
+          .from('user_profiles')
+          .select('name')
+          .eq('user_id', session.user.id)
+          .single();
+        
         const mappedUser: User = {
           id: session.user.id,
           username: session.user.email?.split('@')[0] || 'User',
-          name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
+          name: profileData?.name || 
+                session.user.user_metadata?.name || 
+                session.user.email?.split('@')[0] || 
+                'User',
           avatar: session.user.user_metadata?.avatar_url,
           createdAt: session.user.created_at || new Date().toISOString(),
         };
@@ -183,7 +191,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = async (email: string, password: string, name: string) => {
     try {
       setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
-      const user = await authService.register(email, password);
+      const user = await authService.register(email, password, name);
       setAuthState({
         user,
         isLoading: false,

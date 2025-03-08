@@ -2,6 +2,8 @@ import React, { useState, useRef } from 'react';
 import { Upload, Camera, Image as ImageIcon, X, CheckCircle, EggIcon, Loader, AlertCircle, InfoIcon } from 'lucide-react';
 import { recognizeMeal } from '../services/api';
 import { toast } from 'sonner';
+import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
 
 interface MealData {
   mealDescription: string;
@@ -25,7 +27,9 @@ const MealRecognition: React.FC = () => {
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const [isSaving, setIsSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { user } = useAuth();
   
   const resizeImage = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -190,6 +194,63 @@ const MealRecognition: React.FC = () => {
     setRetryCount(0);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+    }
+  };
+
+  const saveMealToHistory = async () => {
+    if (!result || !user) {
+      toast.error('Cannot save meal data. Please try again or log in.');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      let imageUrl = null;
+      if (selectedImage) {
+        const base64Response = await fetch(selectedImage);
+        const blob = await base64Response.blob();
+        
+        const file = new File([blob], `meal-${Date.now()}.jpg`, { type: 'image/jpeg' });
+        
+        const { data: storageData, error: storageError } = await supabase.storage
+          .from('meal-images')
+          .upload(`${user.id}/${file.name}`, file);
+          
+        if (storageError) {
+          console.error('Error uploading image:', storageError);
+        } else if (storageData) {
+          const { data: urlData } = supabase.storage
+            .from('meal-images')
+            .getPublicUrl(`${user.id}/${file.name}`);
+            
+          if (urlData) {
+            imageUrl = urlData.publicUrl;
+          }
+        }
+      }
+      
+      const { error } = await supabase.from('meal_recognitions').insert({
+        user_id: user.id,
+        meal_name: result.foodIdentified,
+        calories: result.nutritionInfo.calories,
+        proteins: result.nutritionInfo.protein,
+        carbs: result.nutritionInfo.carbs,
+        fats: result.nutritionInfo.fats,
+        date: new Date().toISOString().split('T')[0],
+        image_url: imageUrl
+      });
+      
+      if (error) {
+        console.error('Error saving meal data:', error);
+        toast.error('Failed to save meal data to your history.');
+      } else {
+        toast.success('Meal saved to your history!');
+      }
+    } catch (error) {
+      console.error('Error saving meal:', error);
+      toast.error('An unexpected error occurred while saving.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -467,12 +528,18 @@ const MealRecognition: React.FC = () => {
                     Analyze Another Meal
                   </button>
                   <button
-                    onClick={() => {
-                      toast.success('Meal saved to your history!');
-                    }}
-                    className="flex-1 py-2 px-4 bg-wellness-darkGreen text-white rounded-lg hover:bg-wellness-darkGreen/90 transition-colors"
+                    onClick={saveMealToHistory}
+                    disabled={isSaving || !user}
+                    className="flex-1 py-2 px-4 bg-wellness-darkGreen text-white rounded-lg hover:bg-wellness-darkGreen/90 transition-colors disabled:opacity-60"
                   >
-                    Save to History
+                    {isSaving ? (
+                      <>
+                        <span className="mr-2">Saving...</span>
+                        <Loader className="h-4 w-4 animate-spin inline" />
+                      </>
+                    ) : (
+                      'Save to History'
+                    )}
                   </button>
                 </div>
               </div>

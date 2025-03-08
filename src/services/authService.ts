@@ -1,68 +1,52 @@
-import { User, UserData, BMIRecord, FoodComparison, MealRecord, SleepRecord } from '../types/auth';
-import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../lib/supabase';
-
-const mapSupabaseUser = (supabaseUser: any): User | null => {
-  if (!supabaseUser) return null;
-  
-  return {
-    id: supabaseUser.id,
-    username: supabaseUser.user_metadata?.name || supabaseUser.email?.split('@')[0] || 'User',
-    name: supabaseUser.user_metadata?.name || supabaseUser.email?.split('@')[0] || 'User',
-    avatar: supabaseUser.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(supabaseUser.user_metadata?.name || supabaseUser.email || 'User')}&background=random`,
-    createdAt: supabaseUser.created_at || new Date().toISOString(),
-    googleId: supabaseUser.app_metadata?.provider === 'google' ? supabaseUser.id : undefined,
-  };
-};
-
-const CURRENT_USER_KEY = 'currentUser';
+import { AuthState, User, UserData } from '../types/auth';
 
 export const authService = {
-  async register(email: string, password: string): Promise<User> {
+  async register(email: string, password: string, name: string): Promise<User> {
     try {
-      if (!email.includes('@')) {
-        email = `${email.toLowerCase()}@wellness.local`;
-      }
-      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
-            name: email.split('@')[0],
+            name: name,
           },
         },
       });
-      
+
       if (error) {
         throw new Error(error.message);
       }
-      
-      if (!data.user) {
+
+      if (!data?.user) {
         throw new Error('Registration failed');
       }
-      
-      const user = mapSupabaseUser(data.user);
-      
-      if (!user) {
-        throw new Error('Failed to create user');
+
+      const { error: profileError } = await supabase
+        .from('user_profiles')
+        .upsert({
+          user_id: data.user.id,
+          name: name,
+        }, {
+          onConflict: 'user_id'
+        });
+
+      if (profileError) {
+        console.error('Error creating user profile:', profileError);
       }
-      
-      await supabase.from('user_profiles').insert({
-        user_id: user.id,
-        name: user.name,
-        created_at: new Date().toISOString(),
-      });
-      
-      sessionStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
-      
-      return user;
+
+      return {
+        id: data.user.id,
+        username: email.split('@')[0],
+        name: name || email.split('@')[0],
+        createdAt: data.user.created_at || new Date().toISOString(),
+      };
     } catch (error) {
       console.error('Registration error:', error);
       throw error;
     }
   },
-  
+
   async login(username: string, password: string): Promise<User> {
     try {
       let email = username;
@@ -97,7 +81,7 @@ export const authService = {
       throw error;
     }
   },
-  
+
   async loginWithGoogle(): Promise<void> {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
@@ -117,7 +101,7 @@ export const authService = {
       throw error;
     }
   },
-  
+
   async logout(): Promise<void> {
     try {
       const { error } = await supabase.auth.signOut();
@@ -132,33 +116,47 @@ export const authService = {
       throw error;
     }
   },
-  
+
   async getCurrentUser(): Promise<User | null> {
     try {
-      const cachedUser = sessionStorage.getItem(CURRENT_USER_KEY);
-      if (cachedUser) {
-        return JSON.parse(cachedUser);
+      const sessionString = sessionStorage.getItem('currentUser');
+      if (sessionString) {
+        return JSON.parse(sessionString);
       }
       
-      const { data, error } = await supabase.auth.getUser();
-      
-      if (error || !data.user) {
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) {
         return null;
       }
       
-      const user = mapSupabaseUser(data.user);
+      const { user } = data.session;
       
-      if (user) {
-        sessionStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
-      }
+      const { data: profileData } = await supabase
+        .from('user_profiles')
+        .select('name')
+        .eq('user_id', user.id)
+        .single();
       
-      return user;
+      const mappedUser: User = {
+        id: user.id,
+        username: user.email?.split('@')[0] || 'User',
+        name: profileData?.name || 
+              user.user_metadata?.name || 
+              user.email?.split('@')[0] || 
+              'User',
+        avatar: user.user_metadata?.avatar_url,
+        createdAt: user.created_at || new Date().toISOString(),
+      };
+      
+      sessionStorage.setItem('currentUser', JSON.stringify(mappedUser));
+      
+      return mappedUser;
     } catch (error) {
       console.error('Error getting current user:', error);
       return null;
     }
   },
-  
+
   async updateProfile(userId: string, updates: Partial<User>): Promise<User> {
     try {
       const { name, avatar } = updates;
@@ -199,7 +197,7 @@ export const authService = {
       throw error;
     }
   },
-  
+
   async getUserData(userId: string): Promise<UserData> {
     try {
       const userData: UserData = {
@@ -305,7 +303,7 @@ export const authService = {
       throw error;
     }
   },
-  
+
   async updateUserData(userId: string, newData: Partial<UserData>): Promise<UserData> {
     try {
       if (newData.bmiHistory) {
@@ -403,7 +401,7 @@ export const authService = {
       throw error;
     }
   },
-  
+
   async addBMIRecord(userId: string, data: Omit<BMIRecord, 'id'>): Promise<BMIRecord> {
     try {
       const { data: insertData, error } = await supabase
@@ -436,7 +434,7 @@ export const authService = {
       throw error;
     }
   },
-  
+
   async addFoodComparison(userId: string, data: Omit<FoodComparison, 'id'>): Promise<FoodComparison> {
     try {
       const { data: insertData, error } = await supabase
@@ -465,7 +463,7 @@ export const authService = {
       throw error;
     }
   },
-  
+
   async addMealRecognition(userId: string, data: Omit<MealRecord, 'id'>): Promise<MealRecord> {
     try {
       const { data: insertData, error } = await supabase
@@ -505,7 +503,7 @@ export const authService = {
       throw error;
     }
   },
-  
+
   async addSleepRecord(userId: string, data: Omit<SleepRecord, 'id'>): Promise<SleepRecord> {
     try {
       const qualityNumber = 
@@ -553,7 +551,7 @@ export const authService = {
       throw error;
     }
   },
-  
+
   async resetUserProgress(userId: string): Promise<void> {
     try {
       const promises = [
@@ -571,7 +569,7 @@ export const authService = {
       throw error;
     }
   },
-  
+
   decodeJwt(token: string) {
     try {
       const base64Url = token.split('.')[1];
