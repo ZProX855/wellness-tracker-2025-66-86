@@ -18,16 +18,18 @@ const mapSupabaseUser = (supabaseUser: any): User | null => {
 const CURRENT_USER_KEY = 'currentUser';
 
 export const authService = {
-  async register(username: string, password: string): Promise<User> {
+  async register(email: string, password: string): Promise<User> {
     try {
-      const email = `${username.toLowerCase()}@wellness.local`;
+      if (!email.includes('@')) {
+        email = `${email.toLowerCase()}@wellness.local`;
+      }
       
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
-            name: username,
+            name: email.split('@')[0],
           },
         },
       });
@@ -48,7 +50,7 @@ export const authService = {
       
       await supabase.from('user_profiles').insert({
         user_id: user.id,
-        name: username,
+        name: user.name,
         created_at: new Date().toISOString(),
       });
       
@@ -63,7 +65,10 @@ export const authService = {
   
   async login(username: string, password: string): Promise<User> {
     try {
-      const email = `${username.toLowerCase()}@wellness.local`;
+      let email = username;
+      if (!email.includes('@')) {
+        email = `${email.toLowerCase()}@wellness.local`;
+      }
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -93,24 +98,12 @@ export const authService = {
     }
   },
   
-  async loginWithGoogleToken(credential: string): Promise<User> {
+  async loginWithGoogle(): Promise<void> {
     try {
-      const payload = this.decodeJwt(credential);
-      
-      if (!payload) {
-        throw new Error('Invalid Google token');
-      }
-      
-      const { email, name, picture, sub } = payload;
-      
-      if (!email) {
-        throw new Error('Email not provided in Google token');
-      }
-      
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin,
+          redirectTo: `${window.location.origin}/dashboard`,
         }
       });
       
@@ -118,48 +111,7 @@ export const authService = {
         throw new Error(error.message);
       }
       
-      const googleUser: User = {
-        id: sub || uuidv4(),
-        username: name || email.split('@')[0],
-        name: name || email.split('@')[0],
-        avatar: picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(name || email)}&background=random`,
-        createdAt: new Date().toISOString(),
-        googleId: sub,
-      };
-      
-      sessionStorage.setItem(CURRENT_USER_KEY, JSON.stringify(googleUser));
-      
-      return googleUser;
-    } catch (error) {
-      console.error('Google token login error:', error);
-      throw error;
-    }
-  },
-  
-  async loginWithGoogle(): Promise<User> {
-    try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: window.location.origin,
-        }
-      });
-      
-      if (error) {
-        throw new Error(error.message);
-      }
-      
-      const googleUser: User = {
-        id: uuidv4(),
-        username: 'Google User',
-        name: 'Google User',
-        avatar: 'https://ui-avatars.com/api/?name=Google+User&background=random',
-        createdAt: new Date().toISOString(),
-      };
-      
-      sessionStorage.setItem(CURRENT_USER_KEY, JSON.stringify(googleUser));
-      
-      return googleUser;
+      // This will redirect to Google's OAuth page
     } catch (error) {
       console.error('Google login error:', error);
       throw error;
@@ -244,104 +196,6 @@ export const authService = {
       return updatedUser;
     } catch (error) {
       console.error('Error updating profile:', error);
-      throw error;
-    }
-  },
-  
-  async updateUserData(userId: string, newData: Partial<UserData>): Promise<UserData> {
-    try {
-      if (newData.bmiHistory) {
-        for (const record of newData.bmiHistory) {
-          if (!record.id) {
-            await this.addBMIRecord(userId, record);
-          } else {
-            await supabase
-              .from('bmi_history')
-              .update({
-                height: record.height,
-                weight: record.weight,
-                bmi: record.bmi,
-                category: record.category,
-                date: record.date
-              })
-              .eq('id', record.id)
-              .eq('user_id', userId);
-          }
-        }
-      }
-      
-      if (newData.foodComparisons) {
-        for (const comparison of newData.foodComparisons) {
-          if (!comparison.id) {
-            await this.addFoodComparison(userId, comparison);
-          } else {
-            await supabase
-              .from('food_comparisons')
-              .update({
-                food1: JSON.stringify(comparison.food1),
-                food2: JSON.stringify(comparison.food2),
-                date: comparison.date
-              })
-              .eq('id', comparison.id)
-              .eq('user_id', userId);
-          }
-        }
-      }
-      
-      if (newData.mealRecognitions) {
-        for (const meal of newData.mealRecognitions) {
-          if (!meal.id) {
-            await this.addMealRecognition(userId, meal);
-          } else {
-            await supabase
-              .from('meal_recognitions')
-              .update({
-                meal_name: meal.foodIdentified,
-                calories: meal.nutritionInfo.calories,
-                proteins: meal.nutritionInfo.protein,
-                carbs: meal.nutritionInfo.carbs,
-                fats: meal.nutritionInfo.fats,
-                date: meal.date,
-                image_url: meal.imageUrl
-              })
-              .eq('id', meal.id)
-              .eq('user_id', userId);
-          }
-        }
-      }
-      
-      if (newData.sleepData) {
-        for (const sleep of newData.sleepData) {
-          if (!sleep.id) {
-            await this.addSleepRecord(userId, sleep);
-          } else {
-            const qualityNumber = 
-              sleep.quality === 'Restful' ? 5 : 
-              sleep.quality === 'Good' ? 4 : 
-              sleep.quality === 'Average' ? 3 : 
-              sleep.quality === 'Light' ? 2 : 
-              sleep.quality === 'Disturbed' ? 1 : 0;
-            
-            await supabase
-              .from('sleep_data')
-              .update({
-                duration: sleep.duration,
-                quality: qualityNumber,
-                date: sleep.date,
-                bed_time: sleep.bedTime,
-                wake_time: sleep.wakeTime,
-                factors: sleep.factors,
-                notes: sleep.notes
-              })
-              .eq('id', sleep.id)
-              .eq('user_id', userId);
-          }
-        }
-      }
-      
-      return await this.getUserData(userId);
-    } catch (error) {
-      console.error('Error updating user data:', error);
       throw error;
     }
   },
@@ -448,6 +302,104 @@ export const authService = {
       return userData;
     } catch (error) {
       console.error('Error getting user data:', error);
+      throw error;
+    }
+  },
+  
+  async updateUserData(userId: string, newData: Partial<UserData>): Promise<UserData> {
+    try {
+      if (newData.bmiHistory) {
+        for (const record of newData.bmiHistory) {
+          if (!record.id) {
+            await this.addBMIRecord(userId, record);
+          } else {
+            await supabase
+              .from('bmi_history')
+              .update({
+                height: record.height,
+                weight: record.weight,
+                bmi: record.bmi,
+                category: record.category,
+                date: record.date
+              })
+              .eq('id', record.id)
+              .eq('user_id', userId);
+          }
+        }
+      }
+      
+      if (newData.foodComparisons) {
+        for (const comparison of newData.foodComparisons) {
+          if (!comparison.id) {
+            await this.addFoodComparison(userId, comparison);
+          } else {
+            await supabase
+              .from('food_comparisons')
+              .update({
+                food1: JSON.stringify(comparison.food1),
+                food2: JSON.stringify(comparison.food2),
+                date: comparison.date
+              })
+              .eq('id', comparison.id)
+              .eq('user_id', userId);
+          }
+        }
+      }
+      
+      if (newData.mealRecognitions) {
+        for (const meal of newData.mealRecognitions) {
+          if (!meal.id) {
+            await this.addMealRecognition(userId, meal);
+          } else {
+            await supabase
+              .from('meal_recognitions')
+              .update({
+                meal_name: meal.foodIdentified,
+                calories: meal.nutritionInfo.calories,
+                proteins: meal.nutritionInfo.protein,
+                carbs: meal.nutritionInfo.carbs,
+                fats: meal.nutritionInfo.fats,
+                date: meal.date,
+                image_url: meal.imageUrl
+              })
+              .eq('id', meal.id)
+              .eq('user_id', userId);
+          }
+        }
+      }
+      
+      if (newData.sleepData) {
+        for (const sleep of newData.sleepData) {
+          if (!sleep.id) {
+            await this.addSleepRecord(userId, sleep);
+          } else {
+            const qualityNumber = 
+              sleep.quality === 'Restful' ? 5 : 
+              sleep.quality === 'Good' ? 4 : 
+              sleep.quality === 'Average' ? 3 : 
+              sleep.quality === 'Light' ? 2 : 
+              sleep.quality === 'Disturbed' ? 1 : 0;
+            
+            await supabase
+              .from('sleep_data')
+              .update({
+                duration: sleep.duration,
+                quality: qualityNumber,
+                date: sleep.date,
+                bed_time: sleep.bedTime,
+                wake_time: sleep.wakeTime,
+                factors: sleep.factors,
+                notes: sleep.notes
+              })
+              .eq('id', sleep.id)
+              .eq('user_id', userId);
+          }
+        }
+      }
+      
+      return await this.getUserData(userId);
+    } catch (error) {
+      console.error('Error updating user data:', error);
       throw error;
     }
   },
