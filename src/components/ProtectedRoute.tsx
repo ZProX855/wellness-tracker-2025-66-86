@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
+import { Loader } from 'lucide-react';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -23,15 +24,36 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
       return;
     }
     
+    // If we're already loading in the auth context, don't duplicate the check
+    if (isLoading) {
+      return;
+    }
+    
     const checkSession = async () => {
       try {
-        // Set timeout to prevent infinite loading
+        // Set a reasonable timeout (3 seconds instead of 5)
         const timeoutId = setTimeout(() => {
           console.log('Session check timed out');
           setIsCheckingSession(false);
           setHasSession(false);
-        }, 5000);
+        }, 3000);
         
+        // Try to get session from localStorage first for faster response
+        const storedUser = sessionStorage.getItem('currentUser');
+        if (storedUser) {
+          try {
+            JSON.parse(storedUser);
+            clearTimeout(timeoutId);
+            setHasSession(true);
+            setIsCheckingSession(false);
+            return;
+          } catch (e) {
+            console.error('Failed to parse stored user:', e);
+            sessionStorage.removeItem('currentUser');
+          }
+        }
+        
+        // If no stored user, check Supabase
         const { data, error } = await supabase.auth.getSession();
         clearTimeout(timeoutId);
         
@@ -52,7 +74,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     };
     
     checkSession();
-  }, [user]);
+  }, [user, isLoading]);
   
   // Return loading state if we're still loading
   if (isLoading || isCheckingSession) {
