@@ -9,7 +9,7 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, logout } = useAuth();
   const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [hasSession, setHasSession] = useState(false);
   const location = useLocation();
@@ -34,7 +34,14 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
       }
     };
     
+    // Set timeout to prevent infinite loading state
+    const sessionTimeout = setTimeout(() => {
+      setIsCheckingSession(false);
+    }, 5000);
+    
     checkSession();
+    
+    return () => clearTimeout(sessionTimeout);
   }, []);
   
   if (isLoading || isCheckingSession) {

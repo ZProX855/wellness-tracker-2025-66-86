@@ -14,6 +14,7 @@ const ProfileSettings: React.FC = () => {
   const [avatar, setAvatar] = useState<string | undefined>(user?.avatar);
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -21,8 +22,11 @@ const ProfileSettings: React.FC = () => {
     if (user) {
       setName(user.name);
       setAvatar(user.avatar);
+    } else {
+      // Redirect to login if no user is found
+      navigate('/login');
     }
-  }, [user]);
+  }, [user, navigate]);
   
   const handleAvatarClick = () => {
     if (fileInputRef.current) {
@@ -84,6 +88,7 @@ const ProfileSettings: React.FC = () => {
       toast.success('Profile updated successfully');
     } catch (error) {
       console.error('Error updating profile:', error);
+      toast.error('Failed to update profile. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -91,10 +96,16 @@ const ProfileSettings: React.FC = () => {
   
   const handleLogout = async () => {
     try {
+      setIsLoggingOut(true);
       await logout();
       navigate('/login');
     } catch (error) {
       console.error('Error logging out:', error);
+      toast.error('An issue occurred during logout. Please try again.');
+      // Force navigation to login page even if logout fails
+      navigate('/login');
+    } finally {
+      setIsLoggingOut(false);
     }
   };
   
@@ -218,9 +229,17 @@ const ProfileSettings: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="w-full mt-4 bg-red-100 hover:bg-red-200 text-red-700 py-2 px-4 rounded-lg transition-colors duration-200"
+                  disabled={isLoggingOut}
+                  className="w-full mt-4 bg-red-100 hover:bg-red-200 text-red-700 py-2 px-4 rounded-lg transition-colors duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
                 >
-                  Log Out
+                  {isLoggingOut ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-red-700 border-t-transparent rounded-full animate-spin mr-2 inline-block"></div>
+                      Logging Out...
+                    </>
+                  ) : (
+                    'Log Out'
+                  )}
                 </button>
               </div>
             </form>

@@ -22,15 +22,25 @@ const Login: React.FC = () => {
 
   // Check for OAuth redirects
   useEffect(() => {
+    let isMounted = true;
+    
     const checkForOAuthRedirect = async () => {
-      const { data, error } = await supabase.auth.getSession();
-      if (data?.session && !error) {
-        // If we have a session but no error, we might have just completed an OAuth flow
-        navigate('/dashboard', { replace: true });
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (data?.session && !error && isMounted) {
+          // If we have a session but no error, we might have just completed an OAuth flow
+          navigate('/dashboard', { replace: true });
+        }
+      } catch (err) {
+        console.error('Error checking for OAuth redirect:', err);
       }
     };
     
     checkForOAuthRedirect();
+    
+    return () => {
+      isMounted = false;
+    };
   }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -48,7 +58,7 @@ const Login: React.FC = () => {
       navigate(from, { replace: true });
     } catch (error) {
       console.error('Login failed:', error);
-      toast.error(error instanceof Error ? error.message : 'Login failed. Please try again.');
+      // Error is already displayed via the useAuth hook
     } finally {
       setIsSubmitting(false);
     }

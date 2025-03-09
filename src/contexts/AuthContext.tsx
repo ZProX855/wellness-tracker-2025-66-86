@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useEffect, useContext, useRef } from 'react';
 import { AuthState, User, UserData, BMIRecord } from '../types/auth';
 import { authService } from '../services/authService';
@@ -37,25 +36,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const subscriptionsRef = useRef<(() => void)[]>([]);
   
   useEffect(() => {
+    let mounted = true;
+    
     const initializeAuth = async () => {
       try {
         const currentUser = await authService.getCurrentUser();
-        setAuthState({
-          user: currentUser,
-          isLoading: false,
-          error: null,
-        });
         
-        if (currentUser) {
-          await initializeUserData(currentUser.id);
+        if (mounted) {
+          setAuthState({
+            user: currentUser,
+            isLoading: false,
+            error: null,
+          });
+          
+          if (currentUser) {
+            await initializeUserData(currentUser.id);
+          }
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
-        setAuthState({
-          user: null,
-          isLoading: false,
-          error: 'Failed to initialize authentication',
-        });
+        
+        if (mounted) {
+          setAuthState({
+            user: null,
+            isLoading: false,
+            error: 'Failed to initialize authentication',
+          });
+        }
       }
     };
     
@@ -73,11 +80,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           createdAt: session.user.created_at || new Date().toISOString(),
         };
         
-        setAuthState({
-          user: mappedUser,
-          isLoading: false,
-          error: null,
-        });
+        if (mounted) {
+          setAuthState({
+            user: mappedUser,
+            isLoading: false,
+            error: null,
+          });
+        }
         
         sessionStorage.setItem('currentUser', JSON.stringify(mappedUser));
         
@@ -85,16 +94,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else if (event === 'SIGNED_OUT') {
         clearSubscriptions();
         userDataRef.current = null;
-        setAuthState({
-          user: null,
-          isLoading: false,
-          error: null,
-        });
+        
+        if (mounted) {
+          setAuthState({
+            user: null,
+            isLoading: false,
+            error: null,
+          });
+        }
+        
         sessionStorage.removeItem('currentUser');
       }
     });
     
     return () => {
+      mounted = false;
       subscription.unsubscribe();
       clearSubscriptions();
     };
@@ -242,18 +256,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   
   const logout = async () => {
     try {
+      setAuthState(prev => ({ ...prev, isLoading: true }));
+      
       clearSubscriptions();
       userDataRef.current = null;
+      
       await authService.logout();
+      
+      sessionStorage.removeItem('currentUser');
+      
       setAuthState({
         user: null,
         isLoading: false,
         error: null,
       });
+      
       toast.success('Logged out successfully!');
     } catch (error) {
+      console.error('Logout error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Logout failed';
-      toast.error(errorMessage);
+      
+      setAuthState({
+        user: null,
+        isLoading: false,
+        error: errorMessage,
+      });
+      
+      sessionStorage.removeItem('currentUser');
+      
+      toast.error('Logout encountered an issue, but you have been signed out locally.');
     }
   };
   
