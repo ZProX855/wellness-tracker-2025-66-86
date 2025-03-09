@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useEffect, useContext, useRef } from 'react';
 import { AuthState, User, UserData, BMIRecord } from '../types/auth';
 import { authService } from '../services/authService';
@@ -242,18 +241,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   
   const logout = async () => {
     try {
+      setAuthState(prev => ({ ...prev, isLoading: true }));
+      
       clearSubscriptions();
       userDataRef.current = null;
-      await authService.logout();
+      
+      sessionStorage.removeItem('currentUser');
+      
+      const logoutPromise = authService.logout();
+      const timeoutPromise = new Promise<void>((_, reject) => {
+        setTimeout(() => {
+          console.log('Logout timed out, forcing logout state');
+          reject(new Error('Logout timed out'));
+        }, 3000);
+      });
+      
+      await Promise.race([logoutPromise, timeoutPromise]);
+      
       setAuthState({
         user: null,
         isLoading: false,
         error: null,
       });
+      
       toast.success('Logged out successfully!');
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Logout failed';
-      toast.error(errorMessage);
+      console.error('Logout error:', error);
+      
+      setAuthState({
+        user: null,
+        isLoading: false,
+        error: error instanceof Error ? error.message : 'Logout failed',
+      });
+      
+      toast.error('There was an issue during logout, but you have been signed out.');
     }
   };
   

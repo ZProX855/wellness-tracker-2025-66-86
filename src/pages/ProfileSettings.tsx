@@ -14,6 +14,7 @@ const ProfileSettings: React.FC = () => {
   const [avatar, setAvatar] = useState<string | undefined>(user?.avatar);
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -84,6 +85,7 @@ const ProfileSettings: React.FC = () => {
       toast.success('Profile updated successfully');
     } catch (error) {
       console.error('Error updating profile:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to update profile');
     } finally {
       setIsSubmitting(false);
     }
@@ -91,43 +93,48 @@ const ProfileSettings: React.FC = () => {
   
   const handleLogout = async () => {
     try {
+      setIsLoggingOut(true);
       await logout();
       navigate('/login');
     } catch (error) {
       console.error('Error logging out:', error);
+      // Even if there's an error, we want to redirect to login
+      navigate('/login');
+    } finally {
+      setIsLoggingOut(false);
     }
   };
   
   return (
-    <div className="min-h-screen bg-gradient-to-b from-wellness-softBeige to-wellness-softGreen/30">
+    <div className="min-h-screen bg-white">
       <Header />
       
       <main className="pt-24 pb-16 px-4 sm:px-6">
         <div className="max-w-2xl mx-auto">
           <Link
             to="/dashboard"
-            className="inline-flex items-center text-wellness-darkGreen hover:text-wellness-mediumGreen transition-colors mb-8"
+            className="inline-flex items-center text-gray-700 hover:text-gray-900 transition-colors mb-8"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Dashboard
           </Link>
           
-          <div className="bg-white bg-opacity-70 backdrop-blur-sm rounded-2xl p-8 border border-wellness-softGreen/30 shadow-sm">
-            <h1 className="text-2xl font-medium text-wellness-darkGreen mb-6">Profile Settings</h1>
+          <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm">
+            <h1 className="text-2xl font-medium text-gray-800 mb-6">Profile Settings</h1>
             
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="flex flex-col items-center">
                 <div className="relative">
                   {isUploading ? (
-                    <div className="w-32 h-32 rounded-full bg-wellness-softGreen/20 flex items-center justify-center">
-                      <div className="w-8 h-8 border-4 border-wellness-mediumGreen border-t-transparent rounded-full animate-spin"></div>
+                    <div className="w-32 h-32 rounded-full bg-gray-100 flex items-center justify-center">
+                      <div className="w-8 h-8 border-4 border-gray-500 border-t-transparent rounded-full animate-spin"></div>
                     </div>
                   ) : avatar ? (
                     <div className="relative group">
                       <img
                         src={avatar}
                         alt={name}
-                        className="w-32 h-32 rounded-full object-cover border-4 border-wellness-softGreen cursor-pointer"
+                        className="w-32 h-32 rounded-full object-cover border-4 border-gray-200 cursor-pointer"
                         onClick={handleAvatarClick}
                       />
                       <button
@@ -140,17 +147,17 @@ const ProfileSettings: React.FC = () => {
                     </div>
                   ) : (
                     <div
-                      className="w-32 h-32 rounded-full bg-wellness-softGreen flex items-center justify-center cursor-pointer hover:bg-wellness-softGreen/80 transition-colors"
+                      className="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center cursor-pointer hover:bg-gray-300 transition-colors"
                       onClick={handleAvatarClick}
                     >
-                      <User className="h-16 w-16 text-wellness-darkGreen" />
+                      <User className="h-16 w-16 text-gray-700" />
                     </div>
                   )}
                   
                   <button
                     type="button"
                     onClick={handleAvatarClick}
-                    className={`absolute bottom-0 right-0 bg-wellness-darkGreen hover:bg-wellness-mediumGreen text-white rounded-full p-2 shadow-md ${avatar ? 'opacity-100' : 'opacity-0'}`}
+                    className={`absolute bottom-0 right-0 bg-gray-800 hover:bg-gray-700 text-white rounded-full p-2 shadow-md ${avatar ? 'opacity-100' : 'opacity-0'}`}
                   >
                     <Camera className="h-4 w-4" />
                   </button>
@@ -164,13 +171,13 @@ const ProfileSettings: React.FC = () => {
                   />
                 </div>
                 
-                <p className="mt-2 text-sm text-wellness-charcoal">
+                <p className="mt-2 text-sm text-gray-600">
                   Click to upload a profile picture
                 </p>
               </div>
               
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-wellness-charcoal mb-1">
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
                   Full Name
                 </label>
                 <input
@@ -178,13 +185,13 @@ const ProfileSettings: React.FC = () => {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="block w-full px-4 py-2 border border-wellness-softGreen/40 rounded-lg bg-white/50 focus:outline-none focus:ring-2 focus:ring-wellness-mediumGreen text-wellness-darkGreen"
+                  className="block w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-800"
                   required
                 />
               </div>
               
               <div>
-                <label htmlFor="username" className="block text-sm font-medium text-wellness-charcoal mb-1">
+                <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
                   Username
                 </label>
                 <input
@@ -192,17 +199,17 @@ const ProfileSettings: React.FC = () => {
                   type="text"
                   value={user?.username || ''}
                   disabled
-                  className="block w-full px-4 py-2 border border-wellness-softGreen/40 rounded-lg bg-gray-100 text-wellness-charcoal cursor-not-allowed"
+                  className="block w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed"
                 />
-                <p className="mt-1 text-xs text-wellness-charcoal">
+                <p className="mt-1 text-xs text-gray-500">
                   Username cannot be changed
                 </p>
               </div>
               
-              <div className="pt-4 border-t border-wellness-softGreen/30">
+              <div className="pt-4 border-t border-gray-200">
                 <button
                   type="submit"
-                  className="w-full bg-wellness-darkGreen hover:bg-wellness-mediumGreen text-white py-2 px-4 rounded-lg transition-colors duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
+                  className="w-full bg-gray-800 hover:bg-gray-700 text-white py-2 px-4 rounded-lg transition-colors duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? (
@@ -218,9 +225,17 @@ const ProfileSettings: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="w-full mt-4 bg-red-100 hover:bg-red-200 text-red-700 py-2 px-4 rounded-lg transition-colors duration-200"
+                  disabled={isLoggingOut}
+                  className="w-full mt-4 bg-red-100 hover:bg-red-200 text-red-700 py-2 px-4 rounded-lg transition-colors duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
                 >
-                  Log Out
+                  {isLoggingOut ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-red-700 border-t-transparent rounded-full animate-spin mr-2 inline-block"></div>
+                      Logging out...
+                    </>
+                  ) : (
+                    'Log Out'
+                  )}
                 </button>
               </div>
             </form>
