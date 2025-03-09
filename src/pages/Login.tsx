@@ -76,7 +76,7 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gradient-to-b from-wellness-softBeige to-wellness-softGreen/30">
       <Header />
       
       <main className="pt-24 pb-16 px-4 sm:px-6">
@@ -86,7 +86,7 @@ const Login: React.FC = () => {
             Back to Home
           </Link>
           
-          <div className="bg-white rounded-2xl p-8 border border-wellness-softGreen/30 shadow-sm">
+          <div className="bg-white bg-opacity-70 backdrop-blur-sm rounded-2xl p-8 border border-wellness-softGreen/30 shadow-sm">
             <div className="text-center mb-8">
               <h1 className="text-2xl font-medium text-wellness-darkGreen mb-2">Welcome Back!</h1>
               <p className="text-wellness-charcoal">Sign in to access your wellness dashboard</p>
@@ -168,7 +168,7 @@ const Login: React.FC = () => {
               <div>
                 <button 
                   type="submit" 
-                  className="w-full flex justify-center items-center bg-wellness-darkGreen hover:bg-wellness-darkGreen/90 text-white py-2 px-4 rounded-lg transition-colors duration-200 disabled:opacity-70 disabled:cursor-not-allowed" 
+                  className="w-full flex justify-center items-center bg-wellness-darkGreen hover:bg-wellness-mediumGreen text-white py-2 px-4 rounded-lg transition-colors duration-200 disabled:opacity-70 disabled:cursor-not-allowed" 
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? (
@@ -181,8 +181,8 @@ const Login: React.FC = () => {
               </div>
               
               <div className="relative flex items-center justify-center">
-                <div className="border-t border-wellness-softGreen/30 absolute w-full"></div>
-                <span className="relative px-2 bg-white text-sm text-wellness-charcoal/70">or continue with</span>
+                <div className="border-t border-wellness-softGreen/40 absolute w-full"></div>
+                <span className="relative px-2 bg-white bg-opacity-80 text-sm text-wellness-charcoal">or continue with</span>
               </div>
               
               <div className="flex justify-center">
@@ -190,7 +190,7 @@ const Login: React.FC = () => {
                   type="button"
                   onClick={handleGoogleLogin}
                   disabled={isSubmitting}
-                  className="flex items-center justify-center w-full py-2 px-4 border border-wellness-softGreen/40 rounded-lg bg-white hover:bg-wellness-softGreen/10 transition-colors duration-200"
+                  className="flex items-center justify-center w-full py-2 px-4 border border-wellness-softGreen/40 rounded-lg bg-white hover:bg-gray-50 transition-colors duration-200"
                 >
                   <svg viewBox="0 0 24 24" width="16" height="16" className="mr-2">
                     <g transform="matrix(1, 0, 0, 1, 27.009001, -39.238998)">
@@ -206,7 +206,7 @@ const Login: React.FC = () => {
             </form>
             
             <div className="mt-6 text-center">
-              <p className="text-sm text-wellness-charcoal/70">
+              <p className="text-sm text-wellness-charcoal">
                 Don't have an account?{' '}
                 <Link to="/register" className="text-wellness-darkGreen hover:text-wellness-mediumGreen font-medium">
                   Sign up

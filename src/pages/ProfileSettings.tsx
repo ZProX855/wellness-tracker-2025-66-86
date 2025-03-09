@@ -14,7 +14,6 @@ const ProfileSettings: React.FC = () => {
   const [avatar, setAvatar] = useState<string | undefined>(user?.avatar);
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -85,7 +84,6 @@ const ProfileSettings: React.FC = () => {
       toast.success('Profile updated successfully');
     } catch (error) {
       console.error('Error updating profile:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to update profile');
     } finally {
       setIsSubmitting(false);
     }
@@ -93,20 +91,15 @@ const ProfileSettings: React.FC = () => {
   
   const handleLogout = async () => {
     try {
-      setIsLoggingOut(true);
       await logout();
       navigate('/login');
     } catch (error) {
       console.error('Error logging out:', error);
-      // Even if there's an error, we want to redirect to login
-      navigate('/login');
-    } finally {
-      setIsLoggingOut(false);
     }
   };
   
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gradient-to-b from-wellness-softBeige to-wellness-softGreen/30">
       <Header />
       
       <main className="pt-24 pb-16 px-4 sm:px-6">
@@ -119,7 +112,7 @@ const ProfileSettings: React.FC = () => {
             Back to Dashboard
           </Link>
           
-          <div className="bg-white rounded-2xl p-8 border border-wellness-softGreen/30 shadow-sm">
+          <div className="bg-white bg-opacity-70 backdrop-blur-sm rounded-2xl p-8 border border-wellness-softGreen/30 shadow-sm">
             <h1 className="text-2xl font-medium text-wellness-darkGreen mb-6">Profile Settings</h1>
             
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -134,7 +127,7 @@ const ProfileSettings: React.FC = () => {
                       <img
                         src={avatar}
                         alt={name}
-                        className="w-32 h-32 rounded-full object-cover border-4 border-wellness-softGreen/30 cursor-pointer"
+                        className="w-32 h-32 rounded-full object-cover border-4 border-wellness-softGreen cursor-pointer"
                         onClick={handleAvatarClick}
                       />
                       <button
@@ -147,17 +140,17 @@ const ProfileSettings: React.FC = () => {
                     </div>
                   ) : (
                     <div
-                      className="w-32 h-32 rounded-full bg-wellness-softGreen/20 flex items-center justify-center cursor-pointer hover:bg-wellness-softGreen/30 transition-colors"
+                      className="w-32 h-32 rounded-full bg-wellness-softGreen flex items-center justify-center cursor-pointer hover:bg-wellness-softGreen/80 transition-colors"
                       onClick={handleAvatarClick}
                     >
-                      <User className="h-16 w-16 text-wellness-darkGreen/70" />
+                      <User className="h-16 w-16 text-wellness-darkGreen" />
                     </div>
                   )}
                   
                   <button
                     type="button"
                     onClick={handleAvatarClick}
-                    className={`absolute bottom-0 right-0 bg-wellness-darkGreen hover:bg-wellness-darkGreen/90 text-white rounded-full p-2 shadow-md ${avatar ? 'opacity-100' : 'opacity-0'}`}
+                    className={`absolute bottom-0 right-0 bg-wellness-darkGreen hover:bg-wellness-mediumGreen text-white rounded-full p-2 shadow-md ${avatar ? 'opacity-100' : 'opacity-0'}`}
                   >
                     <Camera className="h-4 w-4" />
                   </button>
@@ -171,7 +164,7 @@ const ProfileSettings: React.FC = () => {
                   />
                 </div>
                 
-                <p className="mt-2 text-sm text-wellness-charcoal/70">
+                <p className="mt-2 text-sm text-wellness-charcoal">
                   Click to upload a profile picture
                 </p>
               </div>
@@ -185,7 +178,7 @@ const ProfileSettings: React.FC = () => {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="block w-full px-4 py-2 border border-wellness-softGreen/40 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-wellness-mediumGreen text-wellness-darkGreen"
+                  className="block w-full px-4 py-2 border border-wellness-softGreen/40 rounded-lg bg-white/50 focus:outline-none focus:ring-2 focus:ring-wellness-mediumGreen text-wellness-darkGreen"
                   required
                 />
               </div>
@@ -199,9 +192,9 @@ const ProfileSettings: React.FC = () => {
                   type="text"
                   value={user?.username || ''}
                   disabled
-                  className="block w-full px-4 py-2 border border-wellness-softGreen/40 rounded-lg bg-wellness-softGreen/10 text-wellness-charcoal/70 cursor-not-allowed"
+                  className="block w-full px-4 py-2 border border-wellness-softGreen/40 rounded-lg bg-gray-100 text-wellness-charcoal cursor-not-allowed"
                 />
-                <p className="mt-1 text-xs text-wellness-charcoal/50">
+                <p className="mt-1 text-xs text-wellness-charcoal">
                   Username cannot be changed
                 </p>
               </div>
@@ -209,7 +202,7 @@ const ProfileSettings: React.FC = () => {
               <div className="pt-4 border-t border-wellness-softGreen/30">
                 <button
                   type="submit"
-                  className="w-full bg-wellness-darkGreen hover:bg-wellness-darkGreen/90 text-white py-2 px-4 rounded-lg transition-colors duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
+                  className="w-full bg-wellness-darkGreen hover:bg-wellness-mediumGreen text-white py-2 px-4 rounded-lg transition-colors duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? (
@@ -225,17 +218,9 @@ const ProfileSettings: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleLogout}
-                  disabled={isLoggingOut}
-                  className="w-full mt-4 bg-red-100 hover:bg-red-200 text-red-700 py-2 px-4 rounded-lg transition-colors duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
+                  className="w-full mt-4 bg-red-100 hover:bg-red-200 text-red-700 py-2 px-4 rounded-lg transition-colors duration-200"
                 >
-                  {isLoggingOut ? (
-                    <>
-                      <div className="w-5 h-5 border-2 border-red-700 border-t-transparent rounded-full animate-spin mr-2 inline-block"></div>
-                      Logging out...
-                    </>
-                  ) : (
-                    'Log Out'
-                  )}
+                  Log Out
                 </button>
               </div>
             </form>

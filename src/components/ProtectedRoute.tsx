@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { toast } from 'sonner';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -18,19 +17,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        // Set a timeout to prevent infinite loading
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Session check timed out')), 5000)
-        );
-        
-        const sessionPromise = supabase.auth.getSession();
-        
-        // Race between the actual request and the timeout
-        const { data, error } = await Promise.race([
-          sessionPromise,
-          timeoutPromise.then(() => ({ data: { session: null }, error: null }))
-        ]) as any;
-        
+        const { data, error } = await supabase.auth.getSession();
         const hasValidSession = !!data.session && !error;
         setHasSession(hasValidSession);
         
@@ -52,7 +39,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   
   if (isLoading || isCheckingSession) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-wellness-softBeige to-wellness-softGreen/30 flex items-center justify-center">
         <div className="w-12 h-12 border-4 border-wellness-mediumGreen border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
