@@ -81,15 +81,15 @@ const Login: React.FC = () => {
       
       <main className="pt-24 pb-16 px-4 sm:px-6">
         <div className="max-w-md mx-auto">
-          <Link to="/" className="inline-flex items-center text-gray-700 hover:text-gray-900 transition-colors mb-8">
+          <Link to="/" className="inline-flex items-center text-wellness-darkGreen hover:text-wellness-mediumGreen transition-colors mb-8">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Home
           </Link>
           
-          <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm">
+          <div className="bg-white rounded-2xl p-8 border border-wellness-softGreen/30 shadow-sm">
             <div className="text-center mb-8">
-              <h1 className="text-2xl font-medium text-gray-800 mb-2">Welcome Back!</h1>
-              <p className="text-gray-600">Sign in to access your wellness dashboard</p>
+              <h1 className="text-2xl font-medium text-wellness-darkGreen mb-2">Welcome Back!</h1>
+              <p className="text-wellness-charcoal">Sign in to access your wellness dashboard</p>
             </div>
             
             {error && (
@@ -168,7 +168,7 @@ const Login: React.FC = () => {
               <div>
                 <button 
                   type="submit" 
-                  className="w-full flex justify-center items-center bg-gray-800 hover:bg-gray-700 text-white py-2 px-4 rounded-lg transition-colors duration-200 disabled:opacity-70 disabled:cursor-not-allowed" 
+                  className="w-full flex justify-center items-center bg-wellness-darkGreen hover:bg-wellness-darkGreen/90 text-white py-2 px-4 rounded-lg transition-colors duration-200 disabled:opacity-70 disabled:cursor-not-allowed" 
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? (
@@ -181,8 +181,8 @@ const Login: React.FC = () => {
               </div>
               
               <div className="relative flex items-center justify-center">
-                <div className="border-t border-gray-200 absolute w-full"></div>
-                <span className="relative px-2 bg-white text-sm text-gray-500">or continue with</span>
+                <div className="border-t border-wellness-softGreen/30 absolute w-full"></div>
+                <span className="relative px-2 bg-white text-sm text-wellness-charcoal/70">or continue with</span>
               </div>
               
               <div className="flex justify-center">
@@ -190,7 +190,7 @@ const Login: React.FC = () => {
                   type="button"
                   onClick={handleGoogleLogin}
                   disabled={isSubmitting}
-                  className="flex items-center justify-center w-full py-2 px-4 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 transition-colors duration-200"
+                  className="flex items-center justify-center w-full py-2 px-4 border border-wellness-softGreen/40 rounded-lg bg-white hover:bg-wellness-softGreen/10 transition-colors duration-200"
                 >
                   <svg viewBox="0 0 24 24" width="16" height="16" className="mr-2">
                     <g transform="matrix(1, 0, 0, 1, 27.009001, -39.238998)">
@@ -206,9 +206,9 @@ const Login: React.FC = () => {
             </form>
             
             <div className="mt-6 text-center">
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-wellness-charcoal/70">
                 Don't have an account?{' '}
-                <Link to="/register" className="text-gray-800 hover:text-gray-600 font-medium">
+                <Link to="/register" className="text-wellness-darkGreen hover:text-wellness-mediumGreen font-medium">
                   Sign up
                 </Link>
               </p>
