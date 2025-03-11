@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { 
-  Plus, X, Save, Trash2, MoveUp, MoveDown, Clock, CheckCircle, PlusCircle
+  Plus, X, Save, Trash2, MoveUp, MoveDown, Clock, CheckCircle, PlusCircle, Check
 } from 'lucide-react';
 import { 
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue 

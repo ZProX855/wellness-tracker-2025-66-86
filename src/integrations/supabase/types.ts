@@ -360,6 +360,45 @@ export type Database = {
         }
         Relationships: []
       }
+      user_routines: {
+        Row: {
+          category_list: string[] | null
+          created_at: string
+          dates: string[]
+          description: string | null
+          id: string
+          name: string
+          tasks: Json
+          theme: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          category_list?: string[] | null
+          created_at?: string
+          dates: string[]
+          description?: string | null
+          id?: string
+          name: string
+          tasks: Json
+          theme?: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          category_list?: string[] | null
+          created_at?: string
+          dates?: string[]
+          description?: string | null
+          id?: string
+          name?: string
+          tasks?: Json
+          theme?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       widget_interaction_log: {
         Row: {
           data: Json | null
