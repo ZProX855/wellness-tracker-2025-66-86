@@ -9,6 +9,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Plus, Edit, Trash2, Clock, Info, CalendarIcon } from 'lucide-react';
 import { RoutineData, Task } from '../../types/routine';
 import { v4 as uuidv4 } from 'uuid';
+
 interface RoutineBuilderProps {
   routineData: RoutineData;
   updateRoutineData: (data: Partial<RoutineData>) => void;
@@ -16,6 +17,7 @@ interface RoutineBuilderProps {
   updateTask: (taskId: string, task: Task) => void;
   removeTask: (taskId: string) => void;
 }
+
 const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
   routineData,
   updateRoutineData,
@@ -32,7 +34,6 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
     timeOfDay: 'anytime'
   });
 
-  // Reset the task form
   const resetTaskForm = () => {
     setNewTask({
       title: '',
@@ -44,7 +45,6 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
     setEditingTaskId(null);
   };
 
-  // Handle task form submission
   const handleTaskSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTask.title) return;
@@ -64,7 +64,6 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
     resetTaskForm();
   };
 
-  // Start editing a task
   const startEditTask = (task: Task) => {
     setNewTask({
       title: task.title,
@@ -75,6 +74,7 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
     setEditingTaskId(task.id);
     setShowNewTaskForm(true);
   };
+
   return <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <Card className="bg-white/80 backdrop-blur-sm border-wellness-softGreen/30 shadow-sm hover:shadow transition-all">
         <CardHeader className="pb-3">
@@ -150,10 +150,17 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="task-priority">Priority</Label>
-                  <Select value={newTask.priority as 'low' | 'medium' | 'high'} onValueChange={(value: 'low' | 'medium' | 'high') => setNewTask({
-                ...newTask,
-                priority: value
-              })}>
+                  <Select 
+                    value={newTask.priority as 'low' | 'medium' | 'high'} 
+                    onValueChange={(value: string) => {
+                      if (value === 'low' || value === 'medium' || value === 'high') {
+                        setNewTask({
+                          ...newTask,
+                          priority: value
+                        });
+                      }
+                    }}
+                  >
                     <SelectTrigger id="task-priority" className="border-wellness-softGreen/30 focus:ring-wellness-mediumGreen/20">
                       <SelectValue placeholder="Select priority" />
                     </SelectTrigger>
@@ -167,10 +174,17 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
                 
                 <div className="space-y-2">
                   <Label htmlFor="task-time">Preferred Time</Label>
-                  <Select value={newTask.timeOfDay as 'morning' | 'afternoon' | 'evening' | 'anytime'} onValueChange={(value: 'morning' | 'afternoon' | 'evening' | 'anytime') => setNewTask({
-                ...newTask,
-                timeOfDay: value
-              })}>
+                  <Select 
+                    value={newTask.timeOfDay as 'morning' | 'afternoon' | 'evening' | 'anytime'} 
+                    onValueChange={(value: string) => {
+                      if (value === 'morning' || value === 'afternoon' || value === 'evening' || value === 'anytime') {
+                        setNewTask({
+                          ...newTask,
+                          timeOfDay: value
+                        });
+                      }
+                    }}
+                  >
                     <SelectTrigger id="task-time" className="border-wellness-softGreen/30 focus:ring-wellness-mediumGreen/20">
                       <SelectValue placeholder="Select time" />
                     </SelectTrigger>
@@ -243,4 +257,5 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
       </Card>
     </div>;
 };
+
 export default RoutineBuilder;
