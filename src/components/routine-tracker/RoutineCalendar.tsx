@@ -11,7 +11,7 @@ import {
   isToday,
   isSunday
 } from 'date-fns';
-import { ChevronLeft, ChevronRight, CheckCircle2, XCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, Calendar as CalendarIcon } from 'lucide-react';
 import { Button } from '../ui/button';
 import { RoutineData } from '../../types/routine';
 import { cn } from '@/lib/utils';

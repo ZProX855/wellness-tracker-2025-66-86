@@ -30,7 +30,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '../ui/alert-dialog';
-import { Plus, Edit, Trash2, Clock, Info } from 'lucide-react';
+import { Plus, Edit, Trash2, Clock, Info, CalendarIcon } from 'lucide-react';
 import { RoutineData, Task } from '../../types/routine';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -80,8 +80,8 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
       id: editingTaskId || uuidv4(),
       title: newTask.title || '',
       description: newTask.description || '',
-      priority: newTask.priority as 'low' | 'medium' | 'high' || 'medium',
-      timeOfDay: newTask.timeOfDay as 'morning' | 'afternoon' | 'evening' | 'anytime' || 'anytime',
+      priority: (newTask.priority as 'low' | 'medium' | 'high') || 'medium',
+      timeOfDay: (newTask.timeOfDay as 'morning' | 'afternoon' | 'evening' | 'anytime') || 'anytime',
       createdAt: editingTaskId ? undefined : new Date().toISOString()
     };
     
@@ -108,9 +108,9 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Routine Settings</CardTitle>
+      <Card className="bg-white/80 backdrop-blur-sm border-wellness-softGreen/30 shadow-sm hover:shadow transition-all">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-wellness-darkGreen">Routine Settings</CardTitle>
           <CardDescription>
             Configure your routine tracker settings
           </CardDescription>
@@ -123,6 +123,7 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
               value={routineData.title}
               onChange={(e) => updateRoutineData({ title: e.target.value })}
               placeholder="My Daily Routine"
+              className="border-wellness-softGreen/30 focus:border-wellness-mediumGreen focus-visible:ring-wellness-mediumGreen/20"
             />
           </div>
           
@@ -134,6 +135,7 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
               onChange={(e) => updateRoutineData({ description: e.target.value })}
               placeholder="Personal daily tasks and habits"
               rows={3}
+              className="border-wellness-softGreen/30 focus:border-wellness-mediumGreen focus-visible:ring-wellness-mediumGreen/20"
             />
           </div>
           
@@ -143,7 +145,10 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
               value={routineData.timeFrame}
               onValueChange={(value) => updateRoutineData({ timeFrame: value as 'daily' | 'weekly' | 'monthly' })}
             >
-              <SelectTrigger id="time-frame">
+              <SelectTrigger 
+                id="time-frame"
+                className="border-wellness-softGreen/30 focus:ring-wellness-mediumGreen/20"
+              >
                 <SelectValue placeholder="Select time frame" />
               </SelectTrigger>
               <SelectContent>
@@ -156,30 +161,34 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
         </CardContent>
       </Card>
       
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+      <Card className="bg-white/80 backdrop-blur-sm border-wellness-softGreen/30 shadow-sm hover:shadow transition-all">
+        <CardHeader className="flex flex-row items-center justify-between pb-3">
           <div>
-            <CardTitle>Tasks</CardTitle>
+            <CardTitle className="text-wellness-darkGreen">Tasks</CardTitle>
             <CardDescription>
               Manage tasks for your routine
             </CardDescription>
           </div>
-          <Button onClick={() => setShowNewTaskForm(true)} className="bg-wellness-darkGreen hover:bg-wellness-darkGreen/90">
+          <Button 
+            onClick={() => setShowNewTaskForm(true)} 
+            className="bg-wellness-darkGreen hover:bg-wellness-darkGreen/90"
+          >
             <Plus className="h-4 w-4 mr-1" />
             Add Task
           </Button>
         </CardHeader>
         <CardContent>
           {showNewTaskForm ? (
-            <form onSubmit={handleTaskSubmit} className="space-y-4 border rounded-md p-4">
+            <form onSubmit={handleTaskSubmit} className="space-y-4 border rounded-md p-4 bg-white shadow-sm">
               <div className="space-y-2">
                 <Label htmlFor="task-title">Task Title</Label>
                 <Input
                   id="task-title"
-                  value={newTask.title}
+                  value={newTask.title || ''}
                   onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
                   placeholder="Exercise"
                   required
+                  className="border-wellness-softGreen/30 focus:border-wellness-mediumGreen focus-visible:ring-wellness-mediumGreen/20"
                 />
               </div>
               
@@ -187,10 +196,11 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
                 <Label htmlFor="task-description">Description (Optional)</Label>
                 <Textarea
                   id="task-description"
-                  value={newTask.description}
+                  value={newTask.description || ''}
                   onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
                   placeholder="30 minutes of cardio"
                   rows={2}
+                  className="border-wellness-softGreen/30 focus:border-wellness-mediumGreen focus-visible:ring-wellness-mediumGreen/20"
                 />
               </div>
               
@@ -198,10 +208,13 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
                 <div className="space-y-2">
                   <Label htmlFor="task-priority">Priority</Label>
                   <Select
-                    value={newTask.priority}
-                    onValueChange={(value) => setNewTask({ ...newTask, priority: value })}
+                    value={newTask.priority as 'low' | 'medium' | 'high'}
+                    onValueChange={(value: 'low' | 'medium' | 'high') => setNewTask({ ...newTask, priority: value })}
                   >
-                    <SelectTrigger id="task-priority">
+                    <SelectTrigger 
+                      id="task-priority"
+                      className="border-wellness-softGreen/30 focus:ring-wellness-mediumGreen/20"
+                    >
                       <SelectValue placeholder="Select priority" />
                     </SelectTrigger>
                     <SelectContent>
@@ -215,10 +228,14 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
                 <div className="space-y-2">
                   <Label htmlFor="task-time">Preferred Time</Label>
                   <Select
-                    value={newTask.timeOfDay}
-                    onValueChange={(value) => setNewTask({ ...newTask, timeOfDay: value })}
+                    value={newTask.timeOfDay as 'morning' | 'afternoon' | 'evening' | 'anytime'}
+                    onValueChange={(value: 'morning' | 'afternoon' | 'evening' | 'anytime') => 
+                      setNewTask({ ...newTask, timeOfDay: value })}
                   >
-                    <SelectTrigger id="task-time">
+                    <SelectTrigger 
+                      id="task-time"
+                      className="border-wellness-softGreen/30 focus:ring-wellness-mediumGreen/20"
+                    >
                       <SelectValue placeholder="Select time" />
                     </SelectTrigger>
                     <SelectContent>
@@ -236,10 +253,14 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
                   type="button" 
                   variant="outline" 
                   onClick={resetTaskForm}
+                  className="border-wellness-mediumGreen/30 hover:bg-wellness-softGreen/20 text-wellness-darkGreen"
                 >
                   Cancel
                 </Button>
-                <Button type="submit" className="bg-wellness-darkGreen hover:bg-wellness-darkGreen/90">
+                <Button 
+                  type="submit" 
+                  className="bg-wellness-darkGreen hover:bg-wellness-darkGreen/90"
+                >
                   {editingTaskId ? 'Update Task' : 'Add Task'}
                 </Button>
               </div>
@@ -247,24 +268,27 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
           ) : (
             <div className="space-y-3">
               {routineData.tasks.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-10 text-gray-500 flex flex-col items-center gap-3">
+                  <div className="w-16 h-16 rounded-full bg-wellness-softGreen/30 flex items-center justify-center">
+                    <Plus className="h-8 w-8 text-wellness-darkGreen" />
+                  </div>
                   <p>No tasks created yet. Click "Add Task" to get started.</p>
                 </div>
               ) : (
                 routineData.tasks.map((task) => (
                   <div 
                     key={task.id}
-                    className="flex items-center justify-between p-3 border rounded-md hover:bg-gray-50"
+                    className="flex items-center justify-between p-3 border border-wellness-softGreen/30 rounded-md hover:bg-wellness-softGreen/10 transition-colors"
                   >
                     <div className="space-y-1">
-                      <div className="font-medium">{task.title}</div>
+                      <div className="font-medium text-wellness-charcoal">{task.title}</div>
                       {task.description && (
                         <div className="text-sm text-gray-500">{task.description}</div>
                       )}
                       <div className="flex items-center gap-2 text-xs text-gray-500">
                         <span className={`px-2 py-0.5 rounded-full text-xs ${
                           task.priority === 'high' ? 'bg-red-100 text-red-800' :
-                          task.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                          task.priority === 'medium' ? 'bg-amber-100 text-amber-800' :
                           'bg-blue-100 text-blue-800'
                         }`}>
                           {task.priority}
@@ -280,13 +304,18 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
                         variant="ghost" 
                         size="icon"
                         onClick={() => startEditTask(task)}
+                        className="hover:bg-wellness-softGreen/20 text-wellness-darkGreen"
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
                       
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                          >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </AlertDialogTrigger>

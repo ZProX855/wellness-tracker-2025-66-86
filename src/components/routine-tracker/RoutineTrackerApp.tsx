@@ -107,10 +107,12 @@ const RoutineTrackerApp: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-wellness-darkGreen">Ultimate Daily Routine Tracker</h1>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-wellness-darkGreen to-wellness-mediumGreen bg-clip-text text-transparent">
+            Ultimate Daily Routine Tracker
+          </h1>
           <p className="text-wellness-charcoal/70 mt-1">
             Track your habits, stay disciplined, and achieve your goals effortlessly.
           </p>
@@ -118,7 +120,7 @@ const RoutineTrackerApp: React.FC = () => {
         <div className="flex gap-2">
           <Button 
             variant="outline" 
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 border-wellness-mediumGreen/30 hover:bg-wellness-softGreen/20 text-wellness-darkGreen"
             onClick={resetData}
           >
             <RefreshCcw className="h-4 w-4" />
@@ -135,16 +137,25 @@ const RoutineTrackerApp: React.FC = () => {
       </div>
 
       <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
-        <TabsList className="w-full max-w-md mx-auto grid grid-cols-3">
-          <TabsTrigger value="calendar" className="flex items-center gap-2">
+        <TabsList className="w-full max-w-md mx-auto grid grid-cols-3 bg-wellness-softGreen/30 p-1">
+          <TabsTrigger 
+            value="calendar" 
+            className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-wellness-darkGreen"
+          >
             <CalendarIcon className="h-4 w-4" />
             Calendar
           </TabsTrigger>
-          <TabsTrigger value="settings" className="flex items-center gap-2">
+          <TabsTrigger 
+            value="settings" 
+            className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-wellness-darkGreen"
+          >
             <Settings2 className="h-4 w-4" />
             Settings
           </TabsTrigger>
-          <TabsTrigger value="insights" className="flex items-center gap-2">
+          <TabsTrigger 
+            value="insights" 
+            className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-wellness-darkGreen"
+          >
             <BarChart3 className="h-4 w-4" />
             Insights
           </TabsTrigger>
@@ -161,7 +172,7 @@ const RoutineTrackerApp: React.FC = () => {
               />
             </div>
             <div className="lg:col-span-4">
-              <div className="bg-white p-4 rounded-lg shadow-sm">
+              <div className="bg-white/80 backdrop-blur-sm p-5 rounded-lg shadow-sm border border-wellness-softGreen/30">
                 <h3 className="text-lg font-medium mb-3 text-wellness-darkGreen">Select Date</h3>
                 <Calendar
                   mode="single"
