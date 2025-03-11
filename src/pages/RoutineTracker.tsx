@@ -1,17 +1,15 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import Header from '@/components/Header';
 import RoutineBuilder from '@/components/routine/RoutineBuilder';
 import RoutineList from '@/components/routine/RoutineList';
 import RoutineProgress from '@/components/routine/RoutineProgress';
-import { useAuth } from '@/contexts/AuthContext';
 import { Toaster } from '@/components/ui/sonner';
-import { Shield, ClipboardCheck } from 'lucide-react';
+import { ClipboardCheck } from 'lucide-react';
 
 const RoutineTracker = () => {
-  const { user } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("build");
 
@@ -36,53 +34,37 @@ const RoutineTracker = () => {
             </p>
           </div>
           
-          {!user ? (
-            <div className="bg-white rounded-xl shadow-sm p-8 text-center">
-              <Shield className="h-12 w-12 mx-auto mb-4 text-wellness-darkGreen/30" />
-              <h2 className="text-xl font-medium text-wellness-darkGreen mb-2">Sign in to use this feature</h2>
-              <p className="mb-6 text-wellness-charcoal/70">
-                You need to be logged in to create and track your routines.
-              </p>
-              <button 
-                onClick={() => navigate('/login', { state: { from: '/routine-tracker' } })}
-                className="px-6 py-2 bg-wellness-mediumGreen text-white rounded-full hover:bg-wellness-darkGreen transition-colors"
-              >
-                Sign In
-              </button>
-            </div>
-          ) : (
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-              <Tabs defaultValue="build" value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <div className="px-6 pt-4 bg-wellness-softGreen/30 border-b border-wellness-softGreen">
-                  <TabsList className="bg-wellness-softBeige/50 p-1">
-                    <TabsTrigger value="build" className="data-[state=active]:bg-white data-[state=active]:text-wellness-darkGreen">
-                      Create Routine
-                    </TabsTrigger>
-                    <TabsTrigger value="routines" className="data-[state=active]:bg-white data-[state=active]:text-wellness-darkGreen">
-                      My Routines
-                    </TabsTrigger>
-                    <TabsTrigger value="progress" className="data-[state=active]:bg-white data-[state=active]:text-wellness-darkGreen">
-                      Progress Tracker
-                    </TabsTrigger>
-                  </TabsList>
-                </div>
+          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+            <Tabs defaultValue="build" value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <div className="px-6 pt-4 bg-wellness-softGreen/30 border-b border-wellness-softGreen">
+                <TabsList className="bg-wellness-softBeige/50 p-1">
+                  <TabsTrigger value="build" className="data-[state=active]:bg-white data-[state=active]:text-wellness-darkGreen">
+                    Create Routine
+                  </TabsTrigger>
+                  <TabsTrigger value="routines" className="data-[state=active]:bg-white data-[state=active]:text-wellness-darkGreen">
+                    My Routines
+                  </TabsTrigger>
+                  <TabsTrigger value="progress" className="data-[state=active]:bg-white data-[state=active]:text-wellness-darkGreen">
+                    Progress Tracker
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+              
+              <div className="p-6">
+                <TabsContent value="build" className="mt-0">
+                  <RoutineBuilder />
+                </TabsContent>
                 
-                <div className="p-6">
-                  <TabsContent value="build" className="mt-0">
-                    <RoutineBuilder />
-                  </TabsContent>
-                  
-                  <TabsContent value="routines" className="mt-0">
-                    <RoutineList setActiveTab={setActiveTab} />
-                  </TabsContent>
-                  
-                  <TabsContent value="progress" className="mt-0">
-                    <RoutineProgress />
-                  </TabsContent>
-                </div>
-              </Tabs>
-            </div>
-          )}
+                <TabsContent value="routines" className="mt-0">
+                  <RoutineList setActiveTab={setActiveTab} />
+                </TabsContent>
+                
+                <TabsContent value="progress" className="mt-0">
+                  <RoutineProgress />
+                </TabsContent>
+              </div>
+            </Tabs>
+          </div>
         </div>
       </main>
     </div>
