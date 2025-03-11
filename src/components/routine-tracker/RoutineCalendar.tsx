@@ -74,13 +74,13 @@ const RoutineCalendar: React.FC<RoutineCalendarProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-      <div className="p-4 bg-red-600 text-white flex justify-between items-center">
+    <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-wellness-softGreen/30 transition-all duration-300 hover:shadow-md">
+      <div className="p-4 bg-gradient-to-r from-wellness-darkGreen to-wellness-mediumGreen text-white flex justify-between items-center rounded-t-lg">
         <Button
           variant="ghost"
           size="icon"
           onClick={goToPreviousMonth}
-          className="text-white hover:bg-red-700 hover:text-white"
+          className="text-white hover:bg-white/10 hover:text-white transition-colors duration-200"
         >
           <ChevronLeft className="h-5 w-5" />
         </Button>
@@ -91,7 +91,7 @@ const RoutineCalendar: React.FC<RoutineCalendarProps> = ({
           variant="ghost"
           size="icon"
           onClick={goToNextMonth}
-          className="text-white hover:bg-red-700 hover:text-white"
+          className="text-white hover:bg-white/10 hover:text-white transition-colors duration-200"
         >
           <ChevronRight className="h-5 w-5" />
         </Button>
@@ -99,19 +99,21 @@ const RoutineCalendar: React.FC<RoutineCalendarProps> = ({
 
       <div className="p-4">
         {routineData.tasks.length === 0 ? (
-          <div className="text-center py-10 text-gray-500">
-            <p>No tasks created yet. Add tasks in the Settings tab.</p>
+          <div className="text-center py-10 px-4">
+            <CalendarIcon className="mx-auto h-12 w-12 text-wellness-mediumGreen/30 mb-3" />
+            <p className="text-wellness-charcoal/70 mb-2">No tasks created yet.</p>
+            <p className="text-sm text-wellness-charcoal/50">Add tasks in the Settings tab to get started with your routine tracking.</p>
           </div>
         ) : (
-          <div className="border rounded-lg overflow-hidden">
+          <div className="border rounded-lg overflow-hidden border-wellness-softGreen/30">
             {/* Calendar days header */}
-            <div className="grid grid-cols-7 text-center bg-gray-100">
+            <div className="grid grid-cols-7 text-center bg-wellness-softGreen/20">
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => (
                 <div 
                   key={day} 
                   className={cn(
-                    "py-2 font-medium text-sm border-b",
-                    index === 0 ? "text-red-600" : "text-gray-700"
+                    "py-2 font-medium text-sm border-b border-wellness-softGreen/30",
+                    index === 0 ? "text-wellness-darkGreen/70" : "text-wellness-charcoal/80"
                   )}
                 >
                   {day}
@@ -123,7 +125,7 @@ const RoutineCalendar: React.FC<RoutineCalendarProps> = ({
             <div className="grid grid-cols-7">
               {/* Empty cells for days before the start of the month */}
               {Array.from({ length: monthStart.getDay() }).map((_, index) => (
-                <div key={`empty-start-${index}`} className="aspect-square p-1 border border-gray-100"></div>
+                <div key={`empty-start-${index}`} className="aspect-square p-1 border border-wellness-softGreen/10 bg-wellness-softGreen/5"></div>
               ))}
 
               {/* Calendar days */}
@@ -136,16 +138,17 @@ const RoutineCalendar: React.FC<RoutineCalendarProps> = ({
                   <div 
                     key={day.toString()}
                     className={cn(
-                      "aspect-square p-1 border border-gray-100 relative",
-                      isSelected ? "bg-blue-50" : "",
-                      !isCurrentMonth ? "opacity-50" : ""
+                      "aspect-square p-1 border border-wellness-softGreen/20 relative transition-all duration-200",
+                      isSelected ? "bg-wellness-softGreen/30" : "",
+                      !isCurrentMonth ? "opacity-50" : "",
+                      "hover:bg-wellness-softGreen/10 cursor-pointer"
                     )}
                     onClick={() => setCurrentDate(day)}
                   >
                     <div className={cn(
                       "absolute top-1 right-1 text-xs font-medium rounded-full h-5 w-5 flex items-center justify-center",
-                      isSunday(day) ? "text-red-600" : "",
-                      isToday(day) ? "bg-blue-100" : ""
+                      isSunday(day) ? "text-wellness-darkGreen" : "",
+                      isToday(day) ? "bg-wellness-mediumGreen text-white" : ""
                     )}>
                       {format(day, 'd')}
                     </div>
@@ -157,20 +160,20 @@ const RoutineCalendar: React.FC<RoutineCalendarProps> = ({
                           return (
                             <div 
                               key={task.id} 
-                              className="flex items-center gap-1 cursor-pointer hover:bg-gray-50 p-0.5 rounded"
+                              className="flex items-center gap-1 cursor-pointer hover:bg-wellness-softGreen/20 p-0.5 rounded transition-colors duration-200"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 toggleTaskCompletion(task.id, day);
                               }}
                             >
                               {completed ? (
-                                <XCircle className="h-3 w-3 text-red-500" />
+                                <CheckCircle2 className="h-3 w-3 text-wellness-darkGreen" />
                               ) : (
-                                <div className="h-3 w-3 border border-gray-300 rounded-sm" />
+                                <div className="h-3 w-3 border border-wellness-mediumGreen/50 rounded-sm" />
                               )}
                               <span className={cn(
                                 "truncate",
-                                completed ? "line-through text-gray-400" : ""
+                                completed ? "line-through text-wellness-charcoal/40" : "text-wellness-charcoal/80"
                               )}>
                                 {task.title}
                               </span>
@@ -182,13 +185,13 @@ const RoutineCalendar: React.FC<RoutineCalendarProps> = ({
                     
                     {completionPercentage > 0 && (
                       <div 
-                        className="absolute bottom-0 left-0 right-0 h-1 bg-gray-200"
+                        className="absolute bottom-0 left-0 right-0 h-1 bg-wellness-softGreen/30"
                         title={`${completionPercentage}% completed`}
                       >
                         <div 
                           className={cn(
-                            "h-full",
-                            completionPercentage === 100 ? "bg-green-500" : "bg-blue-500"
+                            "h-full transition-all duration-300",
+                            completionPercentage === 100 ? "bg-wellness-darkGreen" : "bg-wellness-mediumGreen"
                           )}
                           style={{ width: `${completionPercentage}%` }}
                         />
@@ -200,7 +203,7 @@ const RoutineCalendar: React.FC<RoutineCalendarProps> = ({
               
               {/* Empty cells for days after the end of the month */}
               {Array.from({ length: 6 - endOfMonth(currentDate).getDay() }).map((_, index) => (
-                <div key={`empty-end-${index}`} className="aspect-square p-1 border border-gray-100"></div>
+                <div key={`empty-end-${index}`} className="aspect-square p-1 border border-wellness-softGreen/10 bg-wellness-softGreen/5"></div>
               ))}
             </div>
           </div>
@@ -208,13 +211,13 @@ const RoutineCalendar: React.FC<RoutineCalendarProps> = ({
       </div>
 
       {isSameDay(currentDate, new Date()) && (
-        <div className="p-4 bg-blue-50 border-t border-blue-100">
-          <h3 className="font-medium text-blue-800">Today's Tasks</h3>
+        <div className="p-4 bg-wellness-softGreen/20 border-t border-wellness-softGreen/30">
+          <h3 className="font-medium text-wellness-darkGreen mb-2">Today's Tasks</h3>
           <div className="mt-2 space-y-2">
             {routineData.tasks.map(task => (
               <div 
                 key={task.id}
-                className="flex items-center justify-between p-2 bg-white rounded border border-gray-200"
+                className="flex items-center justify-between p-2 bg-white rounded-lg border border-wellness-softGreen/30 transition-all duration-200 hover:border-wellness-softGreen/60 hover:shadow-sm"
               >
                 <div className="flex items-center gap-2">
                   <Button
@@ -223,19 +226,19 @@ const RoutineCalendar: React.FC<RoutineCalendarProps> = ({
                     className={cn(
                       "h-6 w-6 rounded-full",
                       isTaskCompleted(task.id, currentDate) 
-                        ? "text-red-500 hover:text-red-600" 
-                        : "text-gray-400 hover:text-gray-500"
+                        ? "text-wellness-darkGreen hover:text-wellness-darkGreen/80" 
+                        : "text-wellness-charcoal/30 hover:text-wellness-charcoal/50"
                     )}
                     onClick={() => toggleTaskCompletion(task.id, currentDate)}
                   >
                     {isTaskCompleted(task.id, currentDate) ? (
-                      <XCircle className="h-5 w-5" />
-                    ) : (
                       <CheckCircle2 className="h-5 w-5" />
+                    ) : (
+                      <div className="h-4 w-4 rounded-full border-2 border-wellness-charcoal/30" />
                     )}
                   </Button>
                   <span className={cn(
-                    isTaskCompleted(task.id, currentDate) ? "line-through text-gray-400" : ""
+                    isTaskCompleted(task.id, currentDate) ? "line-through text-wellness-charcoal/40" : "text-wellness-charcoal"
                   )}>
                     {task.title}
                   </span>
@@ -243,9 +246,9 @@ const RoutineCalendar: React.FC<RoutineCalendarProps> = ({
                 {task.priority && (
                   <span className={cn(
                     "text-xs px-2 py-1 rounded-full",
-                    task.priority === "high" ? "bg-red-100 text-red-800" :
-                    task.priority === "medium" ? "bg-yellow-100 text-yellow-800" :
-                    "bg-blue-100 text-blue-800"
+                    task.priority === "high" ? "bg-wellness-darkGreen/10 text-wellness-darkGreen" :
+                    task.priority === "medium" ? "bg-wellness-mediumGreen/10 text-wellness-mediumGreen" :
+                    "bg-wellness-softGreen/30 text-wellness-darkGreen/70"
                   )}>
                     {task.priority}
                   </span>
@@ -253,7 +256,7 @@ const RoutineCalendar: React.FC<RoutineCalendarProps> = ({
               </div>
             ))}
             {routineData.tasks.length === 0 && (
-              <p className="text-sm text-gray-500">No tasks created yet.</p>
+              <p className="text-sm text-wellness-charcoal/50 text-center py-3">No tasks created yet.</p>
             )}
           </div>
         </div>
