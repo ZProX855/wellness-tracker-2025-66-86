@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   addDays, 
@@ -14,7 +15,7 @@ import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, Calendar as CalendarI
 import { Button } from '../ui/button';
 import { RoutineData } from '../../types/routine';
 import { cn } from '@/lib/utils';
-import { shouldShowTaskForDate, getCompletionForDate } from '../../utils/calendarUtils';
+import { shouldShowTaskForDate, getCompletionForDate, formatTimeFrameTitle } from '../../utils/calendarUtils';
 
 interface RoutineCalendarProps {
   routineData: RoutineData;
@@ -209,9 +210,7 @@ const RoutineCalendar: React.FC<RoutineCalendarProps> = ({
       {isSameDay(currentDate, new Date()) && (
         <div className="p-4 bg-wellness-softGreen/20 border-t border-wellness-softGreen/30">
           <h3 className="font-medium text-wellness-darkGreen mb-2">
-            {routineData.timeFrame === 'daily' ? "Today's Tasks" :
-             routineData.timeFrame === 'weekly' ? "This Week's Tasks" :
-             "This Month's Tasks"}
+            {formatTimeFrameTitle(currentDate, routineData.timeFrame)}
           </h3>
           <div className="mt-2 space-y-2">
             {routineData.tasks
@@ -245,6 +244,11 @@ const RoutineCalendar: React.FC<RoutineCalendarProps> = ({
                       {task.title}
                     </span>
                   </div>
+                  {task.repeatDay && task.repeatDay !== 'any' && (
+                    <span className="text-xs px-2 py-1 rounded-full bg-wellness-softGreen/20 text-wellness-darkGreen/70 mr-2">
+                      {task.repeatDay.charAt(0).toUpperCase() + task.repeatDay.slice(1)}
+                    </span>
+                  )}
                   {task.priority && (
                     <span className={cn(
                       "text-xs px-2 py-1 rounded-full",

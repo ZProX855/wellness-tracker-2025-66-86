@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Calendar } from '../ui/calendar';
 import RoutineBuilder from './RoutineBuilder';
@@ -193,6 +192,7 @@ const RoutineTrackerApp: React.FC = () => {
             addTask={addTask}
             updateTask={updateTask}
             removeTask={removeTask}
+            setSelectedTab={setSelectedTab}
           />
         </TabsContent>
 

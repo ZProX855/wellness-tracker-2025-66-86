@@ -1,6 +1,5 @@
-
 import { RoutineData, Task, CompletionStatus } from '../types/routine';
-import { startOfWeek, endOfWeek, isSameWeek, startOfMonth, endOfMonth, isSameMonth, isSameDay, isWithinInterval } from 'date-fns';
+import { startOfWeek, endOfWeek, isSameWeek, startOfMonth, endOfMonth, isSameMonth, isSameDay, isWithinInterval, format } from 'date-fns';
 
 export const getTasksForTimeframe = (task: Task, date: Date, timeFrame: 'daily' | 'weekly' | 'monthly'): boolean => {
   const taskDate = new Date(task.createdAt || Date.now());
@@ -8,12 +7,40 @@ export const getTasksForTimeframe = (task: Task, date: Date, timeFrame: 'daily' 
   switch (timeFrame) {
     case 'daily':
       return true; // Show task every day
-    case 'weekly':
-      // Only show tasks on the same day of week as when they were created
+    case 'weekly': {
+      // If repeatDay is specified, only show on that day of week
+      if (task.repeatDay && task.repeatDay !== 'any') {
+        const dayMap = {
+          monday: 1,
+          tuesday: 2,
+          wednesday: 3,
+          thursday: 4,
+          friday: 5,
+          saturday: 6,
+          sunday: 0
+        };
+        return date.getDay() === dayMap[task.repeatDay];
+      }
+      // Otherwise, show on the same day of week as when created
       return taskDate.getDay() === date.getDay();
-    case 'monthly':
-      // Only show tasks on the same date of month as when they were created
+    }
+    case 'monthly': {
+      // If repeatDay is specified, show on that day of week each week of the month
+      if (task.repeatDay && task.repeatDay !== 'any') {
+        const dayMap = {
+          monday: 1,
+          tuesday: 2,
+          wednesday: 3,
+          thursday: 4,
+          friday: 5,
+          saturday: 6,
+          sunday: 0
+        };
+        return date.getDay() === dayMap[task.repeatDay];
+      }
+      // Otherwise, show on the same date of month as when created
       return taskDate.getDate() === date.getDate();
+    }
     default:
       return true;
   }
@@ -78,4 +105,20 @@ export const shouldShowTaskForDate = (
   const interval = getDateInterval(date, timeFrame);
   
   return isWithinInterval(date, interval) && getTasksForTimeframe(task, date, timeFrame);
+};
+
+export const getDayName = (day: number): string => {
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  return days[day];
+};
+
+export const formatTimeFrameTitle = (date: Date, timeFrame: 'daily' | 'weekly' | 'monthly'): string => {
+  switch (timeFrame) {
+    case 'daily':
+      return "Today's Tasks";
+    case 'weekly':
+      return `This Week's Tasks (${format(date, 'MMM d')} - ${format(endOfWeek(date), 'MMM d')})`;
+    case 'monthly':
+      return `This Month's Tasks (${format(date, 'MMMM yyyy')})`;
+  }
 };

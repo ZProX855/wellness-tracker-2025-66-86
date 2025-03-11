@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
@@ -17,6 +17,7 @@ interface RoutineBuilderProps {
   addTask: (task: Task) => void;
   updateTask: (taskId: string, task: Task) => void;
   removeTask: (taskId: string) => void;
+  setSelectedTab: (tab: string) => void;
 }
 
 const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
@@ -24,7 +25,8 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
   updateRoutineData,
   addTask,
   updateTask,
-  removeTask
+  removeTask,
+  setSelectedTab
 }) => {
   const [showNewTaskForm, setShowNewTaskForm] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
@@ -32,15 +34,23 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
     title: '',
     description: '',
     priority: 'medium',
-    timeOfDay: 'anytime'
+    timeOfDay: 'anytime',
+    repeatDay: 'any'
   });
+  
+  const [showRepeatDayField, setShowRepeatDayField] = useState(routineData.timeFrame !== 'daily');
+
+  useEffect(() => {
+    setShowRepeatDayField(routineData.timeFrame !== 'daily');
+  }, [routineData.timeFrame]);
 
   const resetTaskForm = () => {
     setNewTask({
       title: '',
       description: '',
       priority: 'medium',
-      timeOfDay: 'anytime'
+      timeOfDay: 'anytime',
+      repeatDay: 'any'
     });
     setShowNewTaskForm(false);
     setEditingTaskId(null);
@@ -58,12 +68,20 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
       newTask.timeOfDay = 'anytime';
     }
     
+    const validRepeatDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday', 'any'];
+    if (typeof newTask.repeatDay !== 'string' || !validRepeatDays.includes(newTask.repeatDay)) {
+      newTask.repeatDay = 'any';
+    }
+    
     const taskToSave: Task = {
       id: editingTaskId || uuidv4(),
       title: newTask.title || '',
       description: newTask.description || '',
       priority: newTask.priority as 'low' | 'medium' | 'high',
       timeOfDay: newTask.timeOfDay as 'morning' | 'afternoon' | 'evening' | 'anytime',
+      repeatDay: showRepeatDayField ? 
+        (newTask.repeatDay as 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday' | 'any') : 
+        undefined,
       createdAt: editingTaskId ? undefined : new Date().toISOString()
     };
     
@@ -80,7 +98,8 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
       title: task.title,
       description: task.description,
       priority: task.priority,
-      timeOfDay: task.timeOfDay
+      timeOfDay: task.timeOfDay,
+      repeatDay: task.repeatDay || 'any'
     });
     setEditingTaskId(task.id);
     setShowNewTaskForm(true);
@@ -103,6 +122,10 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
       case 'anytime': return '⏱️';
       default: return '⏱️';
     }
+  };
+  
+  const goToCalendarView = () => {
+    setSelectedTab('calendar');
   };
 
   return (
@@ -154,6 +177,7 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
               onValueChange={value => {
                 if (value === 'daily' || value === 'weekly' || value === 'monthly') {
                   updateRoutineData({ timeFrame: value });
+                  setShowRepeatDayField(value !== 'daily');
                 }
               }}
             >
@@ -266,6 +290,43 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
                 </div>
               </div>
               
+              {showRepeatDayField && (
+                <div className="space-y-2">
+                  <Label htmlFor="repeat-day">Repeat on Day</Label>
+                  <Select 
+                    value={newTask.repeatDay as 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday' | 'any'} 
+                    onValueChange={(value: string) => {
+                      const validValues = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday', 'any'];
+                      if (validValues.includes(value)) {
+                        setNewTask({
+                          ...newTask,
+                          repeatDay: value as 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday' | 'any'
+                        });
+                      }
+                    }}
+                  >
+                    <SelectTrigger id="repeat-day" className="border-wellness-softGreen/30 focus:ring-wellness-mediumGreen/20">
+                      <SelectValue placeholder="Select repeat day" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="any">Any day (default)</SelectItem>
+                      <SelectItem value="monday">Monday</SelectItem>
+                      <SelectItem value="tuesday">Tuesday</SelectItem>
+                      <SelectItem value="wednesday">Wednesday</SelectItem>
+                      <SelectItem value="thursday">Thursday</SelectItem>
+                      <SelectItem value="friday">Friday</SelectItem>
+                      <SelectItem value="saturday">Saturday</SelectItem>
+                      <SelectItem value="sunday">Sunday</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {routineData.timeFrame === 'weekly' 
+                      ? "Task will repeat on this day every week" 
+                      : "Task will repeat on this day every week of the month"}
+                  </p>
+                </div>
+              )}
+              
               <div className="flex justify-end gap-2 pt-2">
                 <Button 
                   type="button" 
@@ -313,7 +374,7 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
                         )}
                       </div>
                       {task.description && <div className="text-sm text-gray-500">{task.description}</div>}
-                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
                         <span className={`px-2 py-0.5 rounded-full text-xs ${getPriorityColor(task.priority)}`}>
                           {task.priority}
                         </span>
@@ -321,6 +382,11 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
                           <span className="mr-1">{getTimeOfDayIcon(task.timeOfDay)}</span>
                           {task.timeOfDay}
                         </span>
+                        {task.repeatDay && task.repeatDay !== 'any' && (
+                          <span className="px-2 py-0.5 rounded-full bg-wellness-softGreen/30 text-wellness-darkGreen">
+                            {task.repeatDay.charAt(0).toUpperCase() + task.repeatDay.slice(1)}
+                          </span>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
@@ -380,7 +446,10 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
             <p className="text-gray-500 mb-4">
               You've set up your routine. Switch to the Calendar tab to start tracking your daily progress.
             </p>
-            <Button className="bg-wellness-darkGreen hover:bg-wellness-darkGreen/90">
+            <Button 
+              className="bg-wellness-darkGreen hover:bg-wellness-darkGreen/90"
+              onClick={goToCalendarView}
+            >
               <Calendar className="h-4 w-4 mr-2" />
               Go to Calendar View
             </Button>
