@@ -49,16 +49,14 @@ const RoutineTracker = () => {
                 Create fully customizable routines, track your progress, and achieve your goals consistently.
               </p>
             </div>
-            {user && (
-              <Button
-                variant="outline"
-                className="flex items-center gap-2 text-wellness-darkGreen hover:text-wellness-mediumGreen"
-                onClick={handleLogout}
-              >
-                <LogOut className="w-4 h-4" />
-                Sign Out
-              </Button>
-            )}
+            <Button
+              variant="outline"
+              className="flex items-center gap-2 text-wellness-darkGreen hover:text-wellness-mediumGreen"
+              onClick={handleLogout}
+            >
+              <LogOut className="w-4 h-4" />
+              Sign Out
+            </Button>
           </div>
           
           <div className="bg-white rounded-xl shadow-sm overflow-hidden">
