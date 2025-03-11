@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   addDays, 
@@ -15,6 +14,7 @@ import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, Calendar as CalendarI
 import { Button } from '../ui/button';
 import { RoutineData } from '../../types/routine';
 import { cn } from '@/lib/utils';
+import { shouldShowTaskForDate, getCompletionForDate } from '../../utils/calendarUtils';
 
 interface RoutineCalendarProps {
   routineData: RoutineData;
@@ -32,45 +32,43 @@ const RoutineCalendar: React.FC<RoutineCalendarProps> = ({
   const [calendarDays, setCalendarDays] = useState<Date[]>([]);
   const [monthStart, setMonthStart] = useState<Date>(startOfMonth(currentDate));
 
-  // Update calendar days when the month changes
   useEffect(() => {
     const start = startOfMonth(currentDate);
     const end = endOfMonth(currentDate);
     setMonthStart(start);
     
-    // Generate all days in the month
     const days = eachDayOfInterval({ start, end });
     setCalendarDays(days);
   }, [currentDate]);
 
-  // Navigate to previous month
   const goToPreviousMonth = () => {
     const previousMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
     setCurrentDate(previousMonth);
   };
 
-  // Navigate to next month
   const goToNextMonth = () => {
     const nextMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
     setCurrentDate(nextMonth);
   };
 
-  // Check if a task is completed for a specific date
   const isTaskCompleted = (taskId: string, date: Date): boolean => {
-    const dateKey = date.toISOString().split('T')[0];
-    return !!routineData.completionStatus[dateKey]?.[taskId];
+    const completions = getCompletionForDate(routineData.completionStatus, date, routineData.timeFrame);
+    return !!completions[taskId];
   };
 
-  // Calculate completion percentage for a date
   const getCompletionPercentage = (date: Date): number => {
-    if (routineData.tasks.length === 0) return 0;
+    const relevantTasks = routineData.tasks.filter(task => 
+      shouldShowTaskForDate(task, date, routineData.timeFrame)
+    );
     
-    const dateKey = date.toISOString().split('T')[0];
-    const completedCount = routineData.tasks.reduce((count, task) => {
-      return count + (routineData.completionStatus[dateKey]?.[task.id] ? 1 : 0);
+    if (relevantTasks.length === 0) return 0;
+    
+    const completions = getCompletionForDate(routineData.completionStatus, date, routineData.timeFrame);
+    const completedCount = relevantTasks.reduce((count, task) => {
+      return count + (completions[task.id] ? 1 : 0);
     }, 0);
     
-    return Math.round((completedCount / routineData.tasks.length) * 100);
+    return Math.round((completedCount / relevantTasks.length) * 100);
   };
 
   return (
@@ -106,7 +104,6 @@ const RoutineCalendar: React.FC<RoutineCalendarProps> = ({
           </div>
         ) : (
           <div className="border rounded-lg overflow-hidden border-wellness-softGreen/30">
-            {/* Calendar days header */}
             <div className="grid grid-cols-7 text-center bg-wellness-softGreen/20">
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => (
                 <div 
@@ -121,18 +118,18 @@ const RoutineCalendar: React.FC<RoutineCalendarProps> = ({
               ))}
             </div>
 
-            {/* Calendar grid */}
             <div className="grid grid-cols-7">
-              {/* Empty cells for days before the start of the month */}
               {Array.from({ length: monthStart.getDay() }).map((_, index) => (
                 <div key={`empty-start-${index}`} className="aspect-square p-1 border border-wellness-softGreen/10 bg-wellness-softGreen/5"></div>
               ))}
 
-              {/* Calendar days */}
               {calendarDays.map((day) => {
                 const isSelected = isSameDay(day, currentDate);
                 const isCurrentMonth = isSameMonth(day, currentDate);
                 const completionPercentage = getCompletionPercentage(day);
+                const relevantTasks = routineData.tasks.filter(task => 
+                  shouldShowTaskForDate(task, day, routineData.timeFrame)
+                );
                 
                 return (
                   <div 
@@ -153,9 +150,9 @@ const RoutineCalendar: React.FC<RoutineCalendarProps> = ({
                       {format(day, 'd')}
                     </div>
                     
-                    {routineData.tasks.length > 0 && (
+                    {relevantTasks.length > 0 && (
                       <div className="mt-5 space-y-1 overflow-y-auto max-h-[80%] text-xs">
-                        {routineData.tasks.map(task => {
+                        {relevantTasks.map(task => {
                           const completed = isTaskCompleted(task.id, day);
                           return (
                             <div 
@@ -201,7 +198,6 @@ const RoutineCalendar: React.FC<RoutineCalendarProps> = ({
                 );
               })}
               
-              {/* Empty cells for days after the end of the month */}
               {Array.from({ length: 6 - endOfMonth(currentDate).getDay() }).map((_, index) => (
                 <div key={`empty-end-${index}`} className="aspect-square p-1 border border-wellness-softGreen/10 bg-wellness-softGreen/5"></div>
               ))}
@@ -212,52 +208,55 @@ const RoutineCalendar: React.FC<RoutineCalendarProps> = ({
 
       {isSameDay(currentDate, new Date()) && (
         <div className="p-4 bg-wellness-softGreen/20 border-t border-wellness-softGreen/30">
-          <h3 className="font-medium text-wellness-darkGreen mb-2">Today's Tasks</h3>
+          <h3 className="font-medium text-wellness-darkGreen mb-2">
+            {routineData.timeFrame === 'daily' ? "Today's Tasks" :
+             routineData.timeFrame === 'weekly' ? "This Week's Tasks" :
+             "This Month's Tasks"}
+          </h3>
           <div className="mt-2 space-y-2">
-            {routineData.tasks.map(task => (
-              <div 
-                key={task.id}
-                className="flex items-center justify-between p-2 bg-white rounded-lg border border-wellness-softGreen/30 transition-all duration-200 hover:border-wellness-softGreen/60 hover:shadow-sm"
-              >
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={cn(
-                      "h-6 w-6 rounded-full",
-                      isTaskCompleted(task.id, currentDate) 
-                        ? "text-wellness-darkGreen hover:text-wellness-darkGreen/80" 
-                        : "text-wellness-charcoal/30 hover:text-wellness-charcoal/50"
-                    )}
-                    onClick={() => toggleTaskCompletion(task.id, currentDate)}
-                  >
-                    {isTaskCompleted(task.id, currentDate) ? (
-                      <CheckCircle2 className="h-5 w-5" />
-                    ) : (
-                      <div className="h-4 w-4 rounded-full border-2 border-wellness-charcoal/30" />
-                    )}
-                  </Button>
-                  <span className={cn(
-                    isTaskCompleted(task.id, currentDate) ? "line-through text-wellness-charcoal/40" : "text-wellness-charcoal"
-                  )}>
-                    {task.title}
-                  </span>
+            {routineData.tasks
+              .filter(task => shouldShowTaskForDate(task, currentDate, routineData.timeFrame))
+              .map(task => (
+                <div 
+                  key={task.id}
+                  className="flex items-center justify-between p-2 bg-white rounded-lg border border-wellness-softGreen/30 transition-all duration-200 hover:border-wellness-softGreen/60 hover:shadow-sm"
+                >
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={cn(
+                        "h-6 w-6 rounded-full",
+                        isTaskCompleted(task.id, currentDate) 
+                          ? "text-wellness-darkGreen hover:text-wellness-darkGreen/80" 
+                          : "text-wellness-charcoal/30 hover:text-wellness-charcoal/50"
+                      )}
+                      onClick={() => toggleTaskCompletion(task.id, currentDate)}
+                    >
+                      {isTaskCompleted(task.id, currentDate) ? (
+                        <CheckCircle2 className="h-5 w-5" />
+                      ) : (
+                        <div className="h-4 w-4 rounded-full border-2 border-wellness-charcoal/30" />
+                      )}
+                    </Button>
+                    <span className={cn(
+                      isTaskCompleted(task.id, currentDate) ? "line-through text-wellness-charcoal/40" : "text-wellness-charcoal"
+                    )}>
+                      {task.title}
+                    </span>
+                  </div>
+                  {task.priority && (
+                    <span className={cn(
+                      "text-xs px-2 py-1 rounded-full",
+                      task.priority === "high" ? "bg-wellness-darkGreen/10 text-wellness-darkGreen" :
+                      task.priority === "medium" ? "bg-wellness-mediumGreen/10 text-wellness-mediumGreen" :
+                      "bg-wellness-softGreen/30 text-wellness-darkGreen/70"
+                    )}>
+                      {task.priority}
+                    </span>
+                  )}
                 </div>
-                {task.priority && (
-                  <span className={cn(
-                    "text-xs px-2 py-1 rounded-full",
-                    task.priority === "high" ? "bg-wellness-darkGreen/10 text-wellness-darkGreen" :
-                    task.priority === "medium" ? "bg-wellness-mediumGreen/10 text-wellness-mediumGreen" :
-                    "bg-wellness-softGreen/30 text-wellness-darkGreen/70"
-                  )}>
-                    {task.priority}
-                  </span>
-                )}
-              </div>
-            ))}
-            {routineData.tasks.length === 0 && (
-              <p className="text-sm text-wellness-charcoal/50 text-center py-3">No tasks created yet.</p>
-            )}
+              ))}
           </div>
         </div>
       )}

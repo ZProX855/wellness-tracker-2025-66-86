@@ -50,15 +50,20 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
     e.preventDefault();
     if (!newTask.title) return;
     
-    const priority = newTask.priority as 'low' | 'medium' | 'high';
-    const timeOfDay = newTask.timeOfDay as 'morning' | 'afternoon' | 'evening' | 'anytime';
+    if (typeof newTask.priority !== 'string' || !['low', 'medium', 'high'].includes(newTask.priority)) {
+      newTask.priority = 'medium';
+    }
+    
+    if (typeof newTask.timeOfDay !== 'string' || !['morning', 'afternoon', 'evening', 'anytime'].includes(newTask.timeOfDay)) {
+      newTask.timeOfDay = 'anytime';
+    }
     
     const taskToSave: Task = {
       id: editingTaskId || uuidv4(),
       title: newTask.title || '',
       description: newTask.description || '',
-      priority: priority,
-      timeOfDay: timeOfDay,
+      priority: newTask.priority as 'low' | 'medium' | 'high',
+      timeOfDay: newTask.timeOfDay as 'morning' | 'afternoon' | 'evening' | 'anytime',
       createdAt: editingTaskId ? undefined : new Date().toISOString()
     };
     
