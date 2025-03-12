@@ -1,10 +1,8 @@
-
 import React, { useState } from 'react';
 import { Calendar } from '../ui/calendar';
 import RoutineBuilder from './RoutineBuilder';
 import RoutineCalendar from './RoutineCalendar';
 import AIInsights from './AIInsights';
-import TimetableIntegration from './TimetableIntegration';
 import { Button } from '../ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { 
@@ -14,7 +12,6 @@ import {
   Download, 
   RefreshCcw,
   ArrowRightCircle,
-  Link,
   Sparkles,
   Layers
 } from 'lucide-react';
@@ -45,7 +42,6 @@ const RoutineTrackerApp: React.FC = () => {
 
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [selectedTab, setSelectedTab] = useState('calendar');
-  const [showTimetableIntegration, setShowTimetableIntegration] = useState(false);
   const [showWelcomeDialog, setShowWelcomeDialog] = useState(!localStorage.getItem('habitTrackerOnboarded'));
   
   // Handle task completion toggling
@@ -243,24 +239,6 @@ const RoutineTrackerApp: React.FC = () => {
                       Export Current Month
                     </Button>
                   )}
-                  
-                  <Dialog open={showTimetableIntegration} onOpenChange={setShowTimetableIntegration}>
-                    <DialogTrigger asChild>
-                      <Button 
-                        className="w-full flex items-center justify-center gap-2 bg-wellness-darkGreen hover:bg-wellness-darkGreen/90"
-                      >
-                        <Link className="h-4 w-4" />
-                        <span>Connect with Timetable</span>
-                        <Sparkles className="h-3 w-3 ml-1" />
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-4xl bg-transparent border-none shadow-none p-0">
-                      <TimetableIntegration 
-                        onAddTasks={addMultipleTasks} 
-                        onClose={() => setShowTimetableIntegration(false)} 
-                      />
-                    </DialogContent>
-                  </Dialog>
                   
                   {routineData.tasks.length === 0 && selectedTab === 'calendar' && (
                     <div className="text-center p-4 bg-wellness-softGreen/10 rounded-lg">
