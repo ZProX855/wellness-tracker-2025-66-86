@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   addDays, 
@@ -244,14 +243,18 @@ const RoutineCalendar: React.FC<RoutineCalendarProps> = ({
                       {task.title}
                     </span>
                   </div>
-                  {task.repeatDay && task.repeatDay !== 'any' && (
-                    <span className="text-xs px-2 py-1 rounded-full bg-wellness-softGreen/20 text-wellness-darkGreen/70 mr-2">
-                      {task.repeatDay.charAt(0).toUpperCase() + task.repeatDay.slice(1)}
-                    </span>
+                  {task.repeatDays && task.repeatDays.length > 0 && (
+                    <div className="flex gap-1 flex-wrap">
+                      {task.repeatDays.map(day => (
+                        <span key={day} className="text-xs px-2 py-1 rounded-full bg-wellness-softGreen/20 text-wellness-darkGreen/70">
+                          {day.charAt(0).toUpperCase() + day.slice(1)}
+                        </span>
+                      ))}
+                    </div>
                   )}
                   {task.priority && (
                     <span className={cn(
-                      "text-xs px-2 py-1 rounded-full",
+                      "text-xs px-2 py-1 rounded-full ml-2",
                       task.priority === "high" ? "bg-wellness-darkGreen/10 text-wellness-darkGreen" :
                       task.priority === "medium" ? "bg-wellness-mediumGreen/10 text-wellness-mediumGreen" :
                       "bg-wellness-softGreen/30 text-wellness-darkGreen/70"

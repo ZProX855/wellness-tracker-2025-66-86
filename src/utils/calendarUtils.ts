@@ -117,10 +117,10 @@ export const getDayName = (day: number): string => {
 export const formatTimeFrameTitle = (date: Date, timeFrame: 'daily' | 'weekly' | 'monthly'): string => {
   switch (timeFrame) {
     case 'daily':
-      return "Today's Tasks";
+      return format(date, "EEEE, MMMM d") + "'s Tasks";
     case 'weekly':
-      return `This Week's Tasks (${format(date, 'MMM d')} - ${format(endOfWeek(date), 'MMM d')})`;
+      return `This Week's Tasks (${format(startOfWeek(date), 'MMM d')} - ${format(endOfWeek(date), 'MMM d')})`;
     case 'monthly':
-      return `This Month's Tasks (${format(date, 'MMMM yyyy')})`;
+      return `${format(date, 'MMMM yyyy')}'s Tasks`;
   }
 };
