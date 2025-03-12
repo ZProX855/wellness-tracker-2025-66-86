@@ -1,4 +1,3 @@
-
 import { RoutineData, Task, CompletionStatus } from '../types/routine';
 import { startOfWeek, endOfWeek, isSameWeek, startOfMonth, endOfMonth, isSameMonth, isSameDay, isWithinInterval, format } from 'date-fns';
 

@@ -43,34 +43,11 @@ export interface HabitStat {
   longestStreak: number;
 }
 
-// Interface for Timetable data integration
-export interface TimetableEvent {
-  id: string;
-  title: string;
-  description?: string;
-  startTime: string;
-  endTime: string;
-  day: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
-  category?: string;
-  color?: string;
-}
-
-export interface TimetableData {
-  id: string;
-  title: string;
-  description?: string;
-  events: TimetableEvent[];
-  createdAt: string;
-}
-
-// Habit suggestion from timetable
 export interface HabitSuggestion {
   title: string;
   description?: string;
   priority: 'low' | 'medium' | 'high';
   timeOfDay: 'morning' | 'afternoon' | 'evening' | 'anytime';
   repeatDays: ('monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday')[];
-  fromTimetable: boolean;
-  timetableEventId?: string;
   colorTheme?: string;
 }
