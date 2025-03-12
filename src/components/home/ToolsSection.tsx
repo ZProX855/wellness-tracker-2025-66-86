@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MessageSquare, Apple, Camera, Target, Moon, Clock, UtensilsCrossed, ArrowRight } from 'lucide-react';
+import { MessageSquare, Apple, Camera, Target, Moon, Clock, UtensilsCrossed, Brain, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -48,26 +47,33 @@ const ToolsSection: React.FC = () => {
     path: '/meal-recognition',
     delay: 300
   }, {
+    title: 'AI Psychologist',
+    description: 'Your personal mental wellness companion with natural voice conversations',
+    icon: Brain,
+    color: 'from-indigo-100 to-indigo-200',
+    path: '/ai-psychologist',
+    delay: 400
+  }, {
     title: 'Wellness Journey',
     description: 'Create your personalized wellness plan',
     icon: Target,
     color: 'from-purple-100 to-purple-200',
     path: '/wellness-journey',
-    delay: 400
+    delay: 500
   }, {
     title: 'Sleep Tracker',
     description: 'Monitor and improve your sleep patterns',
     icon: Moon,
     color: 'from-indigo-100 to-indigo-200',
     path: '/sleep-tracker',
-    delay: 500
+    delay: 600
   }, {
     title: 'Timetable Generator',
     description: 'Create your perfect daily schedule',
     icon: Clock,
     color: 'from-teal-100 to-teal-200',
     path: '/timetable-generator',
-    delay: 600
+    delay: 700
   }];
 
   const categories: ToolCategory[] = [{
@@ -79,7 +85,7 @@ const ToolsSection: React.FC = () => {
     name: "Wellness & Planning",
     icon: Target,
     color: "from-purple-100 to-purple-200",
-    tools: allTools.filter(tool => ["Wellness Journey", "Sleep Tracker", "Timetable Generator"].includes(tool.title))
+    tools: allTools.filter(tool => ["AI Psychologist", "Wellness Journey", "Sleep Tracker", "Timetable Generator"].includes(tool.title))
   }];
 
   return (
