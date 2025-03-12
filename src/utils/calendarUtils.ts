@@ -1,3 +1,4 @@
+
 import { RoutineData, Task, CompletionStatus } from '../types/routine';
 import { startOfWeek, endOfWeek, isSameWeek, startOfMonth, endOfMonth, isSameMonth, isSameDay, isWithinInterval, format } from 'date-fns';
 
@@ -10,7 +11,7 @@ export const getTasksForTimeframe = (task: Task, date: Date, timeFrame: 'daily' 
     case 'weekly': {
       // If repeatDays is specified, only show on those days of week
       if (task.repeatDays && task.repeatDays.length > 0) {
-        const dayMap = {
+        const dayMap: Record<string, number> = {
           monday: 1,
           tuesday: 2,
           wednesday: 3,
@@ -96,4 +97,59 @@ export const formatTimeFrameTitle = (date: Date, timeFrame: 'daily' | 'weekly'):
     case 'weekly':
       return `This Week's Habits (${format(startOfWeek(date), 'MMM d')} - ${format(endOfWeek(date), 'MMM d')})`;
   }
+};
+
+export const getStreakInfo = (
+  taskId: string,
+  completionStatus: CompletionStatus
+): { currentStreak: number, longestStreak: number } => {
+  // Sort dates in ascending order
+  const dateKeys = Object.keys(completionStatus).sort();
+  
+  let currentStreak = 0;
+  let longestStreak = 0;
+  let tempStreak = 0;
+  
+  for (const dateKey of dateKeys) {
+    const taskCompleted = completionStatus[dateKey]?.[taskId] || false;
+    
+    if (taskCompleted) {
+      tempStreak++;
+    } else {
+      tempStreak = 0;
+    }
+    
+    longestStreak = Math.max(longestStreak, tempStreak);
+  }
+  
+  // Calculate current streak (recent consecutive completions)
+  for (let i = dateKeys.length - 1; i >= 0; i--) {
+    const taskCompleted = completionStatus[dateKeys[i]]?.[taskId] || false;
+    
+    if (taskCompleted) {
+      currentStreak++;
+    } else {
+      break;
+    }
+  }
+  
+  return { currentStreak, longestStreak };
+};
+
+export const getCompletionRate = (
+  taskId: string,
+  completionStatus: CompletionStatus
+): number => {
+  const dateKeys = Object.keys(completionStatus);
+  if (dateKeys.length === 0) return 0;
+  
+  let completedCount = 0;
+  
+  for (const dateKey of dateKeys) {
+    if (completionStatus[dateKey]?.[taskId]) {
+      completedCount++;
+    }
+  }
+  
+  return Math.round((completedCount / dateKeys.length) * 100);
 };

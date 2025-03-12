@@ -11,7 +11,8 @@ import {
   Settings2, 
   BarChart3, 
   Download, 
-  RefreshCcw 
+  RefreshCcw,
+  ArrowRightCircle
 } from 'lucide-react';
 import { generatePDF } from '../../utils/pdfGenerator';
 import useLocalStorage from '../../hooks/useLocalStorage';
@@ -21,8 +22,8 @@ import { toast } from 'sonner';
 const RoutineTrackerApp: React.FC = () => {
   // Initial routine data structure
   const initialRoutineData: RoutineData = {
-    title: 'My Daily Habits',
-    description: 'Personal daily habits and goals',
+    title: 'My Habit Tracker',
+    description: 'Track your daily habits and build consistency',
     timeFrame: 'daily',
     tasks: [],
     completionStatus: {},
@@ -52,6 +53,13 @@ const RoutineTrackerApp: React.FC = () => {
       ...routineData,
       completionStatus: newCompletionStatus
     });
+    
+    // Show toast for better feedback
+    if (newCompletionStatus[dateKey][taskId]) {
+      toast.success("Habit marked as complete!");
+    } else {
+      toast.info("Habit marked as incomplete");
+    }
   };
 
   // Add a new task to the routine
@@ -122,6 +130,7 @@ const RoutineTrackerApp: React.FC = () => {
             variant="outline" 
             className="flex items-center gap-2 border-wellness-mediumGreen/30 hover:bg-wellness-softGreen/20 text-wellness-darkGreen"
             onClick={resetData}
+            size="sm"
           >
             <RefreshCcw className="h-4 w-4" />
             Reset
@@ -129,6 +138,7 @@ const RoutineTrackerApp: React.FC = () => {
           <Button 
             onClick={handleExportPDF}
             className="flex items-center gap-2 bg-wellness-darkGreen hover:bg-wellness-darkGreen/90"
+            size="sm"
           >
             <Download className="h-4 w-4" />
             Export PDF
@@ -137,31 +147,31 @@ const RoutineTrackerApp: React.FC = () => {
       </div>
 
       <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
-        <TabsList className="w-full max-w-md mx-auto grid grid-cols-3 bg-wellness-softGreen/30 p-1">
+        <TabsList className="w-full max-w-md mx-auto grid grid-cols-3 bg-wellness-softGreen/20 p-1 rounded-xl">
           <TabsTrigger 
             value="calendar" 
-            className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-wellness-darkGreen"
+            className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-wellness-darkGreen rounded-lg"
           >
             <CalendarIcon className="h-4 w-4" />
             Calendar
           </TabsTrigger>
           <TabsTrigger 
             value="settings" 
-            className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-wellness-darkGreen"
+            className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-wellness-darkGreen rounded-lg"
           >
             <Settings2 className="h-4 w-4" />
             Settings
           </TabsTrigger>
           <TabsTrigger 
             value="insights" 
-            className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-wellness-darkGreen"
+            className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-wellness-darkGreen rounded-lg"
           >
             <BarChart3 className="h-4 w-4" />
             Insights
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="calendar" className="mt-6">
+        <TabsContent value="calendar" className="mt-6 focus-visible:outline-none focus-visible:ring-0">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div className="lg:col-span-8">
               <RoutineCalendar 
@@ -172,7 +182,7 @@ const RoutineTrackerApp: React.FC = () => {
               />
             </div>
             <div className="lg:col-span-4">
-              <div className="bg-white/80 backdrop-blur-sm p-5 rounded-lg shadow-sm border border-wellness-softGreen/30">
+              <div className="bg-white/80 shadow-sm p-5 rounded-xl border border-wellness-softGreen/20">
                 <h3 className="text-lg font-medium mb-3 text-wellness-darkGreen">Select Date</h3>
                 <Calendar
                   mode="single"
@@ -181,12 +191,41 @@ const RoutineTrackerApp: React.FC = () => {
                   className="mx-auto"
                   highlightToday={true}
                 />
+                
+                {routineData.tasks.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-wellness-softGreen/20">
+                    <Button 
+                      onClick={handleExportPDF}
+                      variant="outline" 
+                      className="w-full flex items-center justify-center gap-2 border-wellness-mediumGreen/30 text-wellness-darkGreen hover:bg-wellness-softGreen/20"
+                    >
+                      <Download className="h-4 w-4" />
+                      Export Current Month
+                    </Button>
+                  </div>
+                )}
+                
+                {routineData.tasks.length === 0 && selectedTab === 'calendar' && (
+                  <div className="mt-4 pt-4 border-t border-wellness-softGreen/20">
+                    <div className="text-center p-4 bg-wellness-softGreen/10 rounded-lg">
+                      <p className="text-wellness-charcoal mb-2">No habits added yet</p>
+                      <Button 
+                        onClick={() => setSelectedTab('settings')}
+                        className="bg-wellness-darkGreen hover:bg-wellness-darkGreen/90"
+                        size="sm"
+                      >
+                        <ArrowRightCircle className="h-4 w-4 mr-2" />
+                        Add Your First Habit
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         </TabsContent>
 
-        <TabsContent value="settings" className="mt-6">
+        <TabsContent value="settings" className="mt-6 focus-visible:outline-none focus-visible:ring-0">
           <RoutineBuilder 
             routineData={routineData}
             updateRoutineData={updateRoutineData}
@@ -197,7 +236,7 @@ const RoutineTrackerApp: React.FC = () => {
           />
         </TabsContent>
 
-        <TabsContent value="insights" className="mt-6">
+        <TabsContent value="insights" className="mt-6 focus-visible:outline-none focus-visible:ring-0">
           <AIInsights routineData={routineData} />
         </TabsContent>
       </Tabs>

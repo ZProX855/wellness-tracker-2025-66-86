@@ -7,7 +7,7 @@ const DailyRoutineTracker = () => {
   return (
     <Layout>
       <div className="container mx-auto py-8 px-4 min-h-[calc(100vh-6rem)]">
-        <div className="max-w-7xl mx-auto bg-white/60 backdrop-blur-sm rounded-xl shadow-sm p-6 border border-wellness-softGreen/30 py-[20px] my-[40px]">
+        <div className="max-w-7xl mx-auto bg-white backdrop-blur-sm rounded-xl shadow-sm p-6 border border-wellness-softGreen/20 py-[20px] my-[40px]">
           <RoutineTrackerApp />
         </div>
       </div>
