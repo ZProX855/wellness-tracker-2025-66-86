@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MessageSquare, Apple, Camera, Target, Moon, Clock, UtensilsCrossed, ArrowRight, CheckSquare } from 'lucide-react';
@@ -69,8 +68,8 @@ const ToolsSection: React.FC = () => {
     path: '/timetable-generator',
     delay: 600
   }, {
-    title: 'Daily Routine Tracker',
-    description: 'Track your habits and routines with customizable checklists',
+    title: 'Habit Tracker',
+    description: 'Track your habits and daily routines with customizable checklists',
     icon: CheckSquare,
     color: 'from-red-100 to-red-200',
     path: '/daily-routine-tracker',
@@ -86,7 +85,7 @@ const ToolsSection: React.FC = () => {
     name: "Wellness & Planning",
     icon: Target,
     color: "from-purple-100 to-purple-200",
-    tools: allTools.filter(tool => ["Wellness Journey", "Sleep Tracker", "Timetable Generator", "Daily Routine Tracker"].includes(tool.title))
+    tools: allTools.filter(tool => ["Wellness Journey", "Sleep Tracker", "Timetable Generator", "Habit Tracker"].includes(tool.title))
   }];
 
   return (

@@ -1,7 +1,7 @@
 import { RoutineData, Task, CompletionStatus } from '../types/routine';
 import { startOfWeek, endOfWeek, isSameWeek, startOfMonth, endOfMonth, isSameMonth, isSameDay, isWithinInterval, format } from 'date-fns';
 
-export const getTasksForTimeframe = (task: Task, date: Date, timeFrame: 'daily' | 'weekly' | 'monthly'): boolean => {
+export const getTasksForTimeframe = (task: Task, date: Date, timeFrame: 'daily' | 'weekly'): boolean => {
   const taskDate = new Date(task.createdAt || Date.now());
   
   switch (timeFrame) {
@@ -25,24 +25,6 @@ export const getTasksForTimeframe = (task: Task, date: Date, timeFrame: 'daily' 
       // Otherwise, show on the same day of week as when created
       return taskDate.getDay() === date.getDay();
     }
-    case 'monthly': {
-      // If repeatDays is specified, show on those days of week each week of the month
-      if (task.repeatDays && task.repeatDays.length > 0) {
-        const dayMap = {
-          monday: 1,
-          tuesday: 2,
-          wednesday: 3,
-          thursday: 4,
-          friday: 5,
-          saturday: 6,
-          sunday: 0
-        };
-        const currentDay = date.getDay();
-        return task.repeatDays.some(day => dayMap[day] === currentDay);
-      }
-      // Otherwise, show on the same date of month as when created
-      return taskDate.getDate() === date.getDate();
-    }
     default:
       return true;
   }
@@ -51,7 +33,7 @@ export const getTasksForTimeframe = (task: Task, date: Date, timeFrame: 'daily' 
 export const getCompletionForDate = (
   completionStatus: CompletionStatus,
   date: Date,
-  timeFrame: 'daily' | 'weekly' | 'monthly'
+  timeFrame: 'daily' | 'weekly'
 ): { [taskId: string]: boolean } => {
   const dateStr = date.toISOString().split('T')[0];
   
@@ -59,15 +41,13 @@ export const getCompletionForDate = (
     return completionStatus[dateStr] || {};
   }
 
-  // For weekly/monthly, check if any day in that period has completion
+  // For weekly, check if any day in that period has completion
   const entries = Object.entries(completionStatus);
   const relevantEntries = entries.filter(([dateKey]) => {
     const entryDate = new Date(dateKey);
     
     if (timeFrame === 'weekly') {
       return isSameWeek(entryDate, date);
-    } else if (timeFrame === 'monthly') {
-      return isSameMonth(entryDate, date);
     }
     return false;
   });
@@ -79,7 +59,7 @@ export const getCompletionForDate = (
   }), {});
 };
 
-export const getDateInterval = (date: Date, timeFrame: 'daily' | 'weekly' | 'monthly') => {
+export const getDateInterval = (date: Date, timeFrame: 'daily' | 'weekly') => {
   switch (timeFrame) {
     case 'daily':
       return { start: date, end: date };
@@ -88,18 +68,13 @@ export const getDateInterval = (date: Date, timeFrame: 'daily' | 'weekly' | 'mon
         start: startOfWeek(date),
         end: endOfWeek(date)
       };
-    case 'monthly':
-      return {
-        start: startOfMonth(date),
-        end: endOfMonth(date)
-      };
   }
 };
 
 export const shouldShowTaskForDate = (
   task: Task,
   date: Date,
-  timeFrame: 'daily' | 'weekly' | 'monthly'
+  timeFrame: 'daily' | 'weekly'
 ): boolean => {
   if (!task.createdAt) return true;
   
@@ -114,13 +89,11 @@ export const getDayName = (day: number): string => {
   return days[day];
 };
 
-export const formatTimeFrameTitle = (date: Date, timeFrame: 'daily' | 'weekly' | 'monthly'): string => {
+export const formatTimeFrameTitle = (date: Date, timeFrame: 'daily' | 'weekly'): string => {
   switch (timeFrame) {
     case 'daily':
-      return format(date, "EEEE, MMMM d") + "'s Tasks";
+      return format(date, "EEEE, MMMM d") + "'s Habits";
     case 'weekly':
-      return `This Week's Tasks (${format(startOfWeek(date), 'MMM d')} - ${format(endOfWeek(date), 'MMM d')})`;
-    case 'monthly':
-      return `${format(date, 'MMMM yyyy')}'s Tasks`;
+      return `This Week's Habits (${format(startOfWeek(date), 'MMM d')} - ${format(endOfWeek(date), 'MMM d')})`;
   }
 };

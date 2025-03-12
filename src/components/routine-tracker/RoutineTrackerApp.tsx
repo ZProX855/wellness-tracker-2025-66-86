@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Calendar } from '../ui/calendar';
 import RoutineBuilder from './RoutineBuilder';
@@ -20,8 +21,8 @@ import { toast } from 'sonner';
 const RoutineTrackerApp: React.FC = () => {
   // Initial routine data structure
   const initialRoutineData: RoutineData = {
-    title: 'My Daily Routine',
-    description: 'Personal daily tasks and habits',
+    title: 'My Daily Habits',
+    description: 'Personal daily habits and goals',
     timeFrame: 'daily',
     tasks: [],
     completionStatus: {},
@@ -29,7 +30,7 @@ const RoutineTrackerApp: React.FC = () => {
 
   // Use local storage to persist user data
   const [routineData, setRoutineData] = useLocalStorage<RoutineData>(
-    'dailyRoutineTrackerData',
+    'habitTrackerData',
     initialRoutineData
   );
 
@@ -59,7 +60,7 @@ const RoutineTrackerApp: React.FC = () => {
       ...routineData,
       tasks: [...routineData.tasks, task]
     });
-    toast.success("Task added successfully!");
+    toast.success("Habit added successfully!");
   };
 
   // Update an existing task
@@ -70,7 +71,7 @@ const RoutineTrackerApp: React.FC = () => {
         task.id === taskId ? updatedTask : task
       )
     });
-    toast.success("Task updated successfully!");
+    toast.success("Habit updated successfully!");
   };
 
   // Remove a task from the routine
@@ -79,7 +80,7 @@ const RoutineTrackerApp: React.FC = () => {
       ...routineData,
       tasks: routineData.tasks.filter(task => task.id !== taskId)
     });
-    toast.success("Task removed successfully!");
+    toast.success("Habit removed successfully!");
   };
 
   // Update routine metadata
@@ -88,12 +89,12 @@ const RoutineTrackerApp: React.FC = () => {
       ...routineData,
       ...data
     });
-    toast.success("Routine updated successfully!");
+    toast.success("Habit tracker updated successfully!");
   };
 
   // Reset all data
   const resetData = () => {
-    if (confirm("Are you sure you want to reset all your routine data? This action cannot be undone.")) {
+    if (confirm("Are you sure you want to reset all your habit data? This action cannot be undone.")) {
       setRoutineData(initialRoutineData);
       toast.success("All data has been reset");
     }
@@ -110,7 +111,7 @@ const RoutineTrackerApp: React.FC = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-wellness-darkGreen to-wellness-mediumGreen bg-clip-text text-transparent">
-            Ultimate Daily Routine Tracker
+            Habit Tracker
           </h1>
           <p className="text-wellness-charcoal/70 mt-1">
             Track your habits, stay disciplined, and achieve your goals effortlessly.

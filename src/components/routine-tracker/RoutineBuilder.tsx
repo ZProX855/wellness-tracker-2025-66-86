@@ -152,7 +152,7 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-2xl font-bold text-wellness-darkGreen">Routine Builder</h2>
+        <h2 className="text-2xl font-bold text-wellness-darkGreen">Habit Builder</h2>
         <div className="flex items-center text-sm text-wellness-charcoal/70">
           <ArrowDown className="h-4 w-4 mr-1" />
           <span>Follow the steps below</span>
@@ -164,17 +164,17 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
         <div className="bg-wellness-softGreen/30 px-6 py-2 border-b border-wellness-softGreen/20">
           <div className="flex items-center">
             <div className="flex items-center justify-center h-6 w-6 rounded-full bg-wellness-darkGreen text-white text-sm mr-2">1</div>
-            <CardTitle className="text-wellness-darkGreen">Configure Your Routine</CardTitle>
+            <CardTitle className="text-wellness-darkGreen">Configure Your Habit Tracker</CardTitle>
           </div>
         </div>
         <CardContent className="space-y-4 pt-5">
           <div className="space-y-2">
-            <Label htmlFor="routine-title">Routine Title</Label>
+            <Label htmlFor="routine-title">Tracker Title</Label>
             <Input 
               id="routine-title" 
               value={routineData.title} 
               onChange={e => updateRoutineData({ title: e.target.value })} 
-              placeholder="My Daily Routine" 
+              placeholder="My Daily Habits" 
               className="border-wellness-softGreen/30 focus:border-wellness-mediumGreen focus-visible:ring-wellness-mediumGreen/20" 
             />
           </div>
@@ -185,7 +185,7 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
               id="routine-description" 
               value={routineData.description} 
               onChange={e => updateRoutineData({ description: e.target.value })} 
-              placeholder="Personal daily tasks and habits" 
+              placeholder="Personal daily habits and goals" 
               rows={2} 
               className="border-wellness-softGreen/30 focus:border-wellness-mediumGreen focus-visible:ring-wellness-mediumGreen/20" 
             />
@@ -196,7 +196,7 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
             <Select 
               value={routineData.timeFrame} 
               onValueChange={value => {
-                if (value === 'daily' || value === 'weekly' || value === 'monthly') {
+                if (value === 'daily' || value === 'weekly') {
                   updateRoutineData({ timeFrame: value });
                   setShowRepeatDayField(value !== 'daily');
                 }
@@ -208,7 +208,6 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
               <SelectContent>
                 <SelectItem value="daily">Daily</SelectItem>
                 <SelectItem value="weekly">Weekly</SelectItem>
-                <SelectItem value="monthly">Monthly</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -221,7 +220,7 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <div className="flex items-center justify-center h-6 w-6 rounded-full bg-wellness-darkGreen text-white text-sm mr-2">2</div>
-              <CardTitle className="text-wellness-darkGreen">Manage Your Tasks</CardTitle>
+              <CardTitle className="text-wellness-darkGreen">Manage Your Habits</CardTitle>
             </div>
             <Button 
               onClick={() => setShowNewTaskForm(true)} 
@@ -229,7 +228,7 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
               size="sm"
             >
               <Plus className="h-4 w-4 mr-1" />
-              Add Task
+              Add Habit
             </Button>
           </div>
         </div>
@@ -237,7 +236,7 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
           {showNewTaskForm ? (
             <form onSubmit={handleTaskSubmit} className="space-y-4 border rounded-md p-4 bg-white shadow-sm mb-4">
               <div className="space-y-2">
-                <Label htmlFor="task-title">Task Title</Label>
+                <Label htmlFor="task-title">Habit Title</Label>
                 <Input 
                   id="task-title" 
                   value={newTask.title || ''} 
@@ -333,9 +332,7 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
                     ))}
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
-                    {routineData.timeFrame === 'weekly' 
-                      ? "Task will repeat on selected days every week" 
-                      : "Task will repeat on selected days every week of the month"}
+                    Task will repeat on selected days every week
                   </p>
                 </div>
               )}
@@ -350,7 +347,7 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
                   Cancel
                 </Button>
                 <Button type="submit" className="bg-wellness-darkGreen hover:bg-wellness-darkGreen/90">
-                  {editingTaskId ? 'Update Task' : 'Add Task'}
+                  {editingTaskId ? 'Update Habit' : 'Add Habit'}
                 </Button>
               </div>
             </form>
@@ -359,19 +356,19 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
               <div className="h-16 w-16 rounded-full bg-wellness-softGreen/40 flex items-center justify-center">
                 <Calendar className="h-8 w-8 text-wellness-darkGreen" />
               </div>
-              <p className="text-gray-500">No tasks added yet. Click the "Add Task" button to create your first task.</p>
+              <p className="text-gray-500">No habits added yet. Click the "Add Habit" button to create your first habit.</p>
               <Button 
                 onClick={() => setShowNewTaskForm(true)} 
                 className="bg-wellness-darkGreen hover:bg-wellness-darkGreen/90 mt-2"
               >
                 <Plus className="h-4 w-4 mr-1" />
-                Add Your First Task
+                Add Your First Habit
               </Button>
             </div>
           ) : (
             <div>
               <p className="text-sm text-wellness-charcoal/70 mb-3">
-                {routineData.tasks.length} {routineData.tasks.length === 1 ? 'task' : 'tasks'} in your routine
+                {routineData.tasks.length} {routineData.tasks.length === 1 ? 'habit' : 'habits'} in your tracker
               </p>
               <div className="space-y-2">
                 {routineData.tasks.map(task => (
@@ -422,7 +419,7 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Delete Task</AlertDialogTitle>
+                            <AlertDialogTitle>Delete Habit</AlertDialogTitle>
                             <AlertDialogDescription>
                               Are you sure you want to delete "{task.title}"? This action cannot be undone.
                             </AlertDialogDescription>
@@ -457,9 +454,9 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
             <div className="mb-4 flex justify-center">
               <CheckCircle className="h-12 w-12 text-wellness-mediumGreen" />
             </div>
-            <h3 className="text-lg font-medium mb-2">Ready to Track Your Routine!</h3>
+            <h3 className="text-lg font-medium mb-2">Ready to Track Your Habits!</h3>
             <p className="text-gray-500 mb-4">
-              You've set up your routine. Switch to the Calendar tab to start tracking your daily progress.
+              You've set up your habits. Switch to the Calendar tab to start tracking your daily progress.
             </p>
             <Button 
               className="bg-wellness-darkGreen hover:bg-wellness-darkGreen/90"
