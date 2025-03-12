@@ -7,9 +7,10 @@ import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
-import { Plus, Edit, Trash2, Clock, Calendar, ArrowDown, CheckCircle } from 'lucide-react';
+import { Plus, Edit, Trash2, Clock, Calendar, ArrowDown, CheckCircle, Check } from 'lucide-react';
 import { RoutineData, Task } from '../../types/routine';
 import { v4 as uuidv4 } from 'uuid';
+import { Checkbox } from '../ui/checkbox';
 
 interface RoutineBuilderProps {
   routineData: RoutineData;
@@ -35,7 +36,7 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
     description: '',
     priority: 'medium',
     timeOfDay: 'anytime',
-    repeatDay: 'any'
+    repeatDays: []
   });
   
   const [showRepeatDayField, setShowRepeatDayField] = useState(routineData.timeFrame !== 'daily');
@@ -50,7 +51,7 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
       description: '',
       priority: 'medium',
       timeOfDay: 'anytime',
-      repeatDay: 'any'
+      repeatDays: []
     });
     setShowNewTaskForm(false);
     setEditingTaskId(null);
@@ -68,9 +69,9 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
       newTask.timeOfDay = 'anytime';
     }
     
-    const validRepeatDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday', 'any'];
-    if (typeof newTask.repeatDay !== 'string' || !validRepeatDays.includes(newTask.repeatDay)) {
-      newTask.repeatDay = 'any';
+    // Ensure repeatDays is valid
+    if (!newTask.repeatDays || !Array.isArray(newTask.repeatDays)) {
+      newTask.repeatDays = [];
     }
     
     const taskToSave: Task = {
@@ -79,9 +80,7 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
       description: newTask.description || '',
       priority: newTask.priority as 'low' | 'medium' | 'high',
       timeOfDay: newTask.timeOfDay as 'morning' | 'afternoon' | 'evening' | 'anytime',
-      repeatDay: showRepeatDayField ? 
-        (newTask.repeatDay as 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday' | 'any') : 
-        undefined,
+      repeatDays: showRepeatDayField ? newTask.repeatDays : undefined,
       createdAt: editingTaskId ? undefined : new Date().toISOString()
     };
     
@@ -99,10 +98,28 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
       description: task.description,
       priority: task.priority,
       timeOfDay: task.timeOfDay,
-      repeatDay: task.repeatDay || 'any'
+      repeatDays: task.repeatDays || []
     });
     setEditingTaskId(task.id);
     setShowNewTaskForm(true);
+  };
+
+  const handleDayToggle = (day: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday') => {
+    const repeatDays = [...(newTask.repeatDays || [])];
+    
+    if (repeatDays.includes(day)) {
+      // Remove day if already selected
+      const index = repeatDays.indexOf(day);
+      repeatDays.splice(index, 1);
+    } else {
+      // Add day if not selected
+      repeatDays.push(day);
+    }
+    
+    setNewTask({
+      ...newTask,
+      repeatDays
+    });
   };
 
   const getPriorityColor = (priority: string) => {
@@ -126,6 +143,10 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
   
   const goToCalendarView = () => {
     setSelectedTab('calendar');
+  };
+
+  const getDayLabel = (day: string) => {
+    return day.charAt(0).toUpperCase() + day.slice(1);
   };
 
   return (
@@ -292,37 +313,29 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
               
               {showRepeatDayField && (
                 <div className="space-y-2">
-                  <Label htmlFor="repeat-day">Repeat on Day</Label>
-                  <Select 
-                    value={newTask.repeatDay as 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday' | 'any'} 
-                    onValueChange={(value: string) => {
-                      const validValues = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday', 'any'];
-                      if (validValues.includes(value)) {
-                        setNewTask({
-                          ...newTask,
-                          repeatDay: value as 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday' | 'any'
-                        });
-                      }
-                    }}
-                  >
-                    <SelectTrigger id="repeat-day" className="border-wellness-softGreen/30 focus:ring-wellness-mediumGreen/20">
-                      <SelectValue placeholder="Select repeat day" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="any">Any day (default)</SelectItem>
-                      <SelectItem value="monday">Monday</SelectItem>
-                      <SelectItem value="tuesday">Tuesday</SelectItem>
-                      <SelectItem value="wednesday">Wednesday</SelectItem>
-                      <SelectItem value="thursday">Thursday</SelectItem>
-                      <SelectItem value="friday">Friday</SelectItem>
-                      <SelectItem value="saturday">Saturday</SelectItem>
-                      <SelectItem value="sunday">Sunday</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label>Repeat on Days</Label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
+                    {(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const).map(day => (
+                      <div key={day} className="flex items-center space-x-2">
+                        <Checkbox 
+                          id={`day-${day}`} 
+                          checked={(newTask.repeatDays || []).includes(day)}
+                          onCheckedChange={() => handleDayToggle(day)}
+                          className="border-wellness-softGreen data-[state=checked]:bg-wellness-darkGreen"
+                        />
+                        <label 
+                          htmlFor={`day-${day}`}
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        >
+                          {getDayLabel(day)}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
                   <p className="text-xs text-gray-500 mt-1">
                     {routineData.timeFrame === 'weekly' 
-                      ? "Task will repeat on this day every week" 
-                      : "Task will repeat on this day every week of the month"}
+                      ? "Task will repeat on selected days every week" 
+                      : "Task will repeat on selected days every week of the month"}
                   </p>
                 </div>
               )}
@@ -382,9 +395,11 @@ const RoutineBuilder: React.FC<RoutineBuilderProps> = ({
                           <span className="mr-1">{getTimeOfDayIcon(task.timeOfDay)}</span>
                           {task.timeOfDay}
                         </span>
-                        {task.repeatDay && task.repeatDay !== 'any' && (
+                        {task.repeatDays && task.repeatDays.length > 0 && (
                           <span className="px-2 py-0.5 rounded-full bg-wellness-softGreen/30 text-wellness-darkGreen">
-                            {task.repeatDay.charAt(0).toUpperCase() + task.repeatDay.slice(1)}
+                            {task.repeatDays.length === 7 ? 'Every day' : 
+                              task.repeatDays.length <= 2 ? task.repeatDays.map(day => getDayLabel(day)).join(', ') : 
+                              `${task.repeatDays.length} days`}
                           </span>
                         )}
                       </div>

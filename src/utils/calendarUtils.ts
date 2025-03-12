@@ -8,8 +8,8 @@ export const getTasksForTimeframe = (task: Task, date: Date, timeFrame: 'daily' 
     case 'daily':
       return true; // Show task every day
     case 'weekly': {
-      // If repeatDay is specified, only show on that day of week
-      if (task.repeatDay && task.repeatDay !== 'any') {
+      // If repeatDays is specified, only show on those days of week
+      if (task.repeatDays && task.repeatDays.length > 0) {
         const dayMap = {
           monday: 1,
           tuesday: 2,
@@ -19,14 +19,15 @@ export const getTasksForTimeframe = (task: Task, date: Date, timeFrame: 'daily' 
           saturday: 6,
           sunday: 0
         };
-        return date.getDay() === dayMap[task.repeatDay];
+        const currentDay = date.getDay();
+        return task.repeatDays.some(day => dayMap[day] === currentDay);
       }
       // Otherwise, show on the same day of week as when created
       return taskDate.getDay() === date.getDay();
     }
     case 'monthly': {
-      // If repeatDay is specified, show on that day of week each week of the month
-      if (task.repeatDay && task.repeatDay !== 'any') {
+      // If repeatDays is specified, show on those days of week each week of the month
+      if (task.repeatDays && task.repeatDays.length > 0) {
         const dayMap = {
           monday: 1,
           tuesday: 2,
@@ -36,7 +37,8 @@ export const getTasksForTimeframe = (task: Task, date: Date, timeFrame: 'daily' 
           saturday: 6,
           sunday: 0
         };
-        return date.getDay() === dayMap[task.repeatDay];
+        const currentDay = date.getDay();
+        return task.repeatDays.some(day => dayMap[day] === currentDay);
       }
       // Otherwise, show on the same date of month as when created
       return taskDate.getDate() === date.getDate();

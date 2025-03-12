@@ -9,7 +9,7 @@ export interface Task {
   timeOfDay: 'morning' | 'afternoon' | 'evening' | 'anytime';
   createdAt?: string;
   // Day selection for weekly/monthly routines
-  repeatDay?: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday' | 'any';
+  repeatDays?: ('monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday')[];
 }
 
 export interface CompletionStatus {
