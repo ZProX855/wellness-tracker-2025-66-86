@@ -3,8 +3,8 @@ import { useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { useConversation } from '@11labs/react';
 
-export const ELEVENLABS_AGENT_ID = "PBIwiIwBWi1HsMvF0Llj";
-export const DEFAULT_ELEVENLABS_API_KEY = "sk_c12587e6581cef5f4f275b7a6d1e4acd591bee7c5a13465b";
+export const ELEVENLABS_AGENT_ID = "ctxd7K7arO9acnJi5xqW";
+export const DEFAULT_ELEVENLABS_API_KEY = "sk_b1fa23eda2ed418861e92dbffa848de8d306e02f18bcf3a6";
 
 interface UseElevenLabsConversationProps {
   onMessage?: (message: any) => void;
