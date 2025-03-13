@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MessageSquare, Apple, Camera, Target, Moon, Clock, UtensilsCrossed, Brain, ArrowRight } from 'lucide-react';
@@ -125,9 +124,9 @@ const ToolsSection: React.FC = () => {
         </div>
         
         <div className="flex flex-wrap justify-center gap-4 sm:gap-6 lg:gap-8">
-          {categories[activeCategory].tools.map((tool, idx) => (
+          {categories[activeCategory].tools.map((tool) => (
             <div 
-              key={idx} 
+              key={tool.title} 
               className="opacity-0 animate-fade-in" 
               style={{
                 animationDelay: `300ms`
