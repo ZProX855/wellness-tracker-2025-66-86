@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MessageSquare, Apple, Camera, Target, Moon, Clock, UtensilsCrossed, ArrowRight } from 'lucide-react';
+import { MessageSquare, Apple, Camera, Target, Moon, Clock, UtensilsCrossed, Brain, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -47,6 +47,13 @@ const ToolsSection: React.FC = () => {
     path: '/meal-recognition',
     delay: 300
   }, {
+    title: 'AI Psychologist',
+    description: 'Your personal mental wellness companion with natural voice conversations',
+    icon: Brain,
+    color: 'from-indigo-100 to-indigo-200',
+    path: '/ai-psychologist',
+    delay: 400
+  }, {
     title: 'Wellness Journey',
     description: 'Create your personalized wellness plan',
     icon: Target,
@@ -78,7 +85,7 @@ const ToolsSection: React.FC = () => {
     name: "Wellness & Planning",
     icon: Target,
     color: "from-purple-100 to-purple-200",
-    tools: allTools.filter(tool => ["Wellness Journey", "Sleep Tracker", "Timetable Generator"].includes(tool.title))
+    tools: allTools.filter(tool => ["AI Psychologist", "Wellness Journey", "Sleep Tracker", "Timetable Generator"].includes(tool.title))
   }];
 
   return (
