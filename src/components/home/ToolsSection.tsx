@@ -39,42 +39,42 @@ const ToolsSection: React.FC = () => {
     icon: Apple,
     color: 'from-amber-100 to-amber-200',
     path: '/food-compare',
-    delay: 200
+    delay: 100
   }, {
     title: 'Meal Recognition',
     description: 'Analyze your meal with a simple photo',
     icon: Camera,
     color: 'from-blue-100 to-blue-200',
     path: '/meal-recognition',
-    delay: 300
+    delay: 100
   }, {
     title: 'AI Psychologist',
     description: 'Your personal mental wellness companion with natural voice conversations',
     icon: Brain,
     color: 'from-indigo-100 to-indigo-200',
     path: '/ai-psychologist',
-    delay: 400
+    delay: 100
   }, {
     title: 'Wellness Journey',
     description: 'Create your personalized wellness plan',
     icon: Target,
     color: 'from-purple-100 to-purple-200',
     path: '/wellness-journey',
-    delay: 500
+    delay: 100
   }, {
     title: 'Sleep Tracker',
     description: 'Monitor and improve your sleep patterns',
     icon: Moon,
     color: 'from-indigo-100 to-indigo-200',
     path: '/sleep-tracker',
-    delay: 600
+    delay: 100
   }, {
     title: 'Timetable Generator',
     description: 'Create your perfect daily schedule',
     icon: Clock,
     color: 'from-teal-100 to-teal-200',
     path: '/timetable-generator',
-    delay: 700
+    delay: 100
   }];
 
   const categories: ToolCategory[] = [{
@@ -124,13 +124,13 @@ const ToolsSection: React.FC = () => {
           ))}
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 justify-items-center">
+        <div className="flex flex-wrap justify-center items-center gap-6">
           {categories[activeCategory].tools.map((tool, idx) => (
             <div 
               key={idx} 
-              className="opacity-0 animate-fade-in w-full flex justify-center" 
+              className="opacity-0 animate-fade-in" 
               style={{
-                animationDelay: `${300 + idx * 100}ms`
+                animationDelay: `300ms`
               }}
             >
               <button 
