@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -17,7 +16,6 @@ import MealRecognition from "./pages/MealRecognition";
 import WellnessJourney from "./pages/WellnessJourney";
 import SleepTracker from "./pages/SleepTracker";
 import TimetableGenerator from "./pages/TimetableGenerator";
-import AIPsychologist from "./pages/AIPsychologist";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
@@ -82,7 +80,6 @@ function App() {
                 <Route path="/wellness-journey" element={<WellnessJourney />} />
                 <Route path="/sleep-tracker" element={<SleepTracker />} />
                 <Route path="/timetable-generator" element={<TimetableGenerator />} />
-                <Route path="/ai-psychologist" element={<AIPsychologist />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route 
