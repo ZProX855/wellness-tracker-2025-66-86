@@ -1,8 +1,10 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MessageSquare, Apple, Camera, Target, Moon, Clock, UtensilsCrossed, Brain, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
+
 interface Tool {
   title: string;
   description: string;
@@ -11,16 +13,19 @@ interface Tool {
   path: string;
   delay: number;
 }
+
 interface ToolCategory {
   name: string;
   icon: React.ElementType;
   color: string;
   tools: Tool[];
 }
+
 const ToolsSection: React.FC = () => {
   const navigate = useNavigate();
   const [activeCategory, setActiveCategory] = useState(0);
   const isMobile = useIsMobile();
+
   const allTools: Tool[] = [{
     title: 'AI Nutrition Assistant',
     description: 'Get personalized nutrition advice from our intelligent assistant',
@@ -71,6 +76,7 @@ const ToolsSection: React.FC = () => {
     path: '/timetable-generator',
     delay: 300
   }];
+
   const categories: ToolCategory[] = [{
     name: "Diet & Nutrition",
     icon: UtensilsCrossed,
@@ -82,8 +88,9 @@ const ToolsSection: React.FC = () => {
     color: "from-purple-100 to-purple-200",
     tools: allTools.filter(tool => ["AI Psychologist", "Wellness Journey", "Sleep Tracker", "Timetable Generator"].includes(tool.title))
   }];
+
   return <section className="px-4 sm:px-6 bg-white py-12 sm:py-[60px]">
-      <div className="max-w-6xl mx-auto py-0 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto py-0 px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-8 sm:mb-16">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-medium text-wellness-darkGreen mb-3 sm:mb-4 opacity-0 animate-fade-in" style={{
           animationDelay: '100ms'
@@ -105,9 +112,9 @@ const ToolsSection: React.FC = () => {
             </button>)}
         </div>
         
-        <div className="flex flex-wrap justify-center gap-4 sm:gap-6 lg:gap-8">
-          {categories[activeCategory].tools.map(tool => <div key={tool.title} className="opacity-0 animate-fade-in" style={{
-          animationDelay: `300ms`
+        <div className="flex flex-nowrap justify-center gap-4 sm:gap-6 overflow-x-auto pb-4 max-w-full">
+          {categories[activeCategory].tools.map(tool => <div key={tool.title} className="opacity-0 animate-fade-in flex-shrink-0" style={{
+          animationDelay: '300ms'
         }}>
               <button onClick={() => navigate(tool.path)} className="w-[220px] h-[220px] sm:w-[240px] sm:h-[240px] md:w-[260px] md:h-[260px] lg:w-[280px] lg:h-[280px] rounded-full bg-wellness-softBeige hover:scale-[1.02] active:scale-[0.98] transition-all duration-500 ease-out-expo flex flex-col items-center justify-center text-center group p-3 sm:p-4 shadow-sm hover:shadow-md mx-0 my-[17px] px-0 py-[109px]">
                 <div className={`h-12 w-12 sm:h-14 sm:w-14 rounded-full bg-gradient-to-r ${tool.color} flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-110 transition-transform duration-500`}>
@@ -124,4 +131,5 @@ const ToolsSection: React.FC = () => {
       </div>
     </section>;
 };
+
 export default ToolsSection;
