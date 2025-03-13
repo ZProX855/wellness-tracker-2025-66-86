@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MessageSquare, Apple, Camera, Target, Moon, Clock, UtensilsCrossed, Brain, ArrowRight } from 'lucide-react';
@@ -124,7 +123,7 @@ const ToolsSection: React.FC = () => {
           ))}
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 justify-items-center">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 justify-items-center">
           {categories[activeCategory].tools.map((tool, idx) => (
             <div 
               key={idx} 
