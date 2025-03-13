@@ -39,42 +39,42 @@ const ToolsSection: React.FC = () => {
     icon: Apple,
     color: 'from-amber-100 to-amber-200',
     path: '/food-compare',
-    delay: 100
+    delay: 200
   }, {
     title: 'Meal Recognition',
     description: 'Analyze your meal with a simple photo',
     icon: Camera,
     color: 'from-blue-100 to-blue-200',
     path: '/meal-recognition',
-    delay: 100
+    delay: 300
   }, {
     title: 'AI Psychologist',
     description: 'Your personal mental wellness companion with natural voice conversations',
     icon: Brain,
     color: 'from-indigo-100 to-indigo-200',
     path: '/ai-psychologist',
-    delay: 100
+    delay: 400
   }, {
     title: 'Wellness Journey',
     description: 'Create your personalized wellness plan',
     icon: Target,
     color: 'from-purple-100 to-purple-200',
     path: '/wellness-journey',
-    delay: 100
+    delay: 500
   }, {
     title: 'Sleep Tracker',
     description: 'Monitor and improve your sleep patterns',
     icon: Moon,
     color: 'from-indigo-100 to-indigo-200',
     path: '/sleep-tracker',
-    delay: 100
+    delay: 600
   }, {
     title: 'Timetable Generator',
     description: 'Create your perfect daily schedule',
     icon: Clock,
     color: 'from-teal-100 to-teal-200',
     path: '/timetable-generator',
-    delay: 100
+    delay: 700
   }];
 
   const categories: ToolCategory[] = [{
@@ -124,18 +124,18 @@ const ToolsSection: React.FC = () => {
           ))}
         </div>
         
-        <div className="flex flex-wrap justify-center items-center gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 justify-items-center">
           {categories[activeCategory].tools.map((tool, idx) => (
             <div 
               key={idx} 
-              className="opacity-0 animate-fade-in" 
+              className="opacity-0 animate-fade-in w-full flex justify-center" 
               style={{
-                animationDelay: `300ms`
+                animationDelay: `${300 + idx * 100}ms`
               }}
             >
               <button 
                 onClick={() => navigate(tool.path)} 
-                className="w-[220px] h-[220px] sm:w-[240px] sm:h-[240px] rounded-full bg-wellness-softBeige hover:scale-[1.02] active:scale-[0.98] transition-all duration-500 ease-out-expo flex flex-col items-center justify-center text-center group p-3 sm:p-4 shadow-sm hover:shadow-md"
+                className="w-[220px] h-[220px] sm:w-[240px] sm:h-[240px] md:w-[260px] md:h-[260px] lg:w-[280px] lg:h-[280px] rounded-full bg-wellness-softBeige hover:scale-[1.02] active:scale-[0.98] transition-all duration-500 ease-out-expo flex flex-col items-center justify-center text-center group p-3 sm:p-4 shadow-sm hover:shadow-md"
               >
                 <div className={`h-12 w-12 sm:h-14 sm:w-14 rounded-full bg-gradient-to-r ${tool.color} flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-110 transition-transform duration-500`}>
                   <tool.icon className="h-6 w-6 sm:h-7 sm:w-7 text-wellness-darkGreen" />

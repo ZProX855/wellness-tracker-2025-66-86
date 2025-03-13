@@ -1,15 +1,12 @@
-
 import React from 'react';
 import { Mic, MicOff, RefreshCw } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-
 interface VoiceTherapistStatusProps {
   isConversationActive: boolean;
   isConnecting: boolean;
   onStartConversation: () => void;
   onEndConversation: () => void;
 }
-
 const VoiceTherapistStatus: React.FC<VoiceTherapistStatusProps> = ({
   isConversationActive,
   isConnecting,
@@ -45,5 +42,4 @@ const VoiceTherapistStatus: React.FC<VoiceTherapistStatusProps> = ({
         </div>}
     </div>;
 };
-
 export default VoiceTherapistStatus;
