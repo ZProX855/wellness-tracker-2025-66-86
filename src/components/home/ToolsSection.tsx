@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MessageSquare, Apple, Camera, Target, Moon, Clock, UtensilsCrossed, Brain, ArrowRight } from 'lucide-react';
@@ -123,7 +124,7 @@ const ToolsSection: React.FC = () => {
           ))}
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 justify-items-center">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 justify-items-center">
           {categories[activeCategory].tools.map((tool, idx) => (
             <div 
               key={idx} 
@@ -134,7 +135,7 @@ const ToolsSection: React.FC = () => {
             >
               <button 
                 onClick={() => navigate(tool.path)} 
-                className="w-[220px] h-[220px] sm:w-[240px] sm:h-[240px] md:w-[260px] md:h-[260px] lg:w-[280px] lg:h-[280px] rounded-full bg-wellness-softBeige hover:scale-[1.02] active:scale-[0.98] transition-all duration-500 ease-out-expo flex flex-col items-center justify-center text-center group p-3 sm:p-4 shadow-sm hover:shadow-md"
+                className="w-[220px] h-[220px] sm:w-[240px] sm:h-[240px] rounded-full bg-wellness-softBeige hover:scale-[1.02] active:scale-[0.98] transition-all duration-500 ease-out-expo flex flex-col items-center justify-center text-center group p-3 sm:p-4 shadow-sm hover:shadow-md"
               >
                 <div className={`h-12 w-12 sm:h-14 sm:w-14 rounded-full bg-gradient-to-r ${tool.color} flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-110 transition-transform duration-500`}>
                   <tool.icon className="h-6 w-6 sm:h-7 sm:w-7 text-wellness-darkGreen" />
