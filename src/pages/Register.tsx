@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Mail, Lock, Eye, EyeOff, User, UserPlus } from 'lucide-react';
@@ -37,6 +38,7 @@ const Register: React.FC = () => {
       try {
         const { data, error } = await supabase.auth.getSession();
         if (data?.session && !error && isMounted) {
+          console.log("OAuth session detected:", data.session);
           toast.success("Successfully signed up with Google!");
           navigate('/dashboard', { replace: true });
         }
@@ -88,7 +90,7 @@ const Register: React.FC = () => {
       if (error) {
         throw error;
       }
-      // This will redirect to Google, so no need to navigate
+      // This will redirect to Google's OAuth page
     } catch (error) {
       console.error('Google signup failed:', error);
       toast.error(error instanceof Error ? error.message : 'Google signup failed. Please try again.');
@@ -187,7 +189,7 @@ const Register: React.FC = () => {
                   </button>
                 </div>
                 <p className="mt-1 text-xs text-wellness-charcoal">
-                  Password must be at least a characters
+                  Password must be at least 8 characters
                 </p>
               </div>
               

@@ -1,4 +1,3 @@
-
 import { User, UserData, BMIRecord, FoodComparison, MealRecord, SleepRecord } from '../types/auth';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../lib/supabase';

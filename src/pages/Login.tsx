@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, Mail, Lock, Eye, EyeOff, LogIn } from 'lucide-react';
@@ -25,6 +26,7 @@ const Login: React.FC = () => {
       try {
         const { data, error } = await supabase.auth.getSession();
         if (data?.session && !error && isMounted) {
+          console.log("OAuth session detected:", data.session);
           toast.success("Successfully signed in with Google!");
           navigate('/dashboard', { replace: true });
         }
@@ -64,7 +66,21 @@ const Login: React.FC = () => {
   const handleGoogleLogin = async () => {
     try {
       setIsSubmitting(true);
-      await login.loginWithGoogle();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
+        }
+      });
+      
+      if (error) {
+        throw error;
+      }
+      // This will redirect to Google's OAuth page
     } catch (error) {
       console.error('Google login failed:', error);
       toast.error(error instanceof Error ? error.message : 'Google login failed. Please try again.');

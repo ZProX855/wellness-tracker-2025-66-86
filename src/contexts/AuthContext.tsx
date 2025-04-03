@@ -74,10 +74,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (event === 'SIGNED_IN' && session?.user) {
         const mappedUser: User = {
           id: session.user.id,
-          username: session.user.email?.split('@')[0] || 'User',
+          username: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
           name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
-          avatar: session.user.user_metadata?.avatar_url,
+          avatar: session.user.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(session.user.email || 'User')}&background=random`,
           createdAt: session.user.created_at || new Date().toISOString(),
+          googleId: session.user.app_metadata?.provider === 'google' ? session.user.id : undefined,
         };
         
         if (mounted) {
