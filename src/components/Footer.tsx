@@ -29,7 +29,7 @@ const Footer: React.FC = () => {
               <div className="w-5 h-5 bg-wellness-mediumGreen rounded-sm"></div>
               <h3 className="font-semibold text-wellness-darkGreen">Get Started Today</h3>
             </div>
-            <p className="text-wellness-charcoal mb-4">
+            <p className="text-wellness-charcoal mb-4 text-xs">
               Wellness Tracker is your personal health companion, designed to help you achieve your wellness goals through intuitive tracking and AI-powered insights.
             </p>
             <div className="flex items-center text-wellness-charcoal/80 text-sm">
