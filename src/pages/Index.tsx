@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState, useRef } from 'react';
-import Header from '../components/Header';
+import Layout from '../components/Layout';
 import HeroSection from '../components/home/HeroSection';
 import ToolsSection from '../components/home/ToolsSection';
 import BenefitsSection from '../components/home/BenefitsSection';
@@ -66,18 +66,12 @@ const Index = () => {
       </div>
       
       <div className="relative z-10">
-        <Header />
-        
-        <main className="pt-24 pb-16 py-0">
+        <Layout>
           <HeroSection scrollY={scrollY} />
           <ToolsSection />
           <BenefitsSection />
           <CallToAction />
-        </main>
-        
-        <footer className="border-t border-wellness-softGreen/30 my-0 py-0 bg-white/80 backdrop-blur-sm">
-          
-        </footer>
+        </Layout>
       </div>
     </div>
   );
