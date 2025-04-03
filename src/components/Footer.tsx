@@ -44,7 +44,7 @@ const Footer: React.FC = () => {
           {/* Resources Section */}
           <div>
             <h3 className="font-semibold text-wellness-darkGreen mb-4">Features</h3>
-            <ul className="space-y-2">
+            <ul className="space-y-2 text-xs">
               <li><Link to="/food-compare" className="text-wellness-charcoal hover:text-wellness-darkGreen transition-colors">Food Compare</Link></li>
               <li><Link to="/bmi-calculator" className="text-wellness-charcoal hover:text-wellness-darkGreen transition-colors">BMI Calculator</Link></li>
               <li><Link to="/meal-recognition" className="text-wellness-charcoal hover:text-wellness-darkGreen transition-colors">Meal Recognition</Link></li>
@@ -56,7 +56,7 @@ const Footer: React.FC = () => {
           {/* Community Section */}
           <div>
             <h3 className="font-semibold text-wellness-darkGreen mb-4">Community</h3>
-            <ul className="space-y-2">
+            <ul className="space-y-2 text-xs">
               <li><a href="#" className="text-wellness-charcoal hover:text-wellness-darkGreen transition-colors">GitHub</a></li>
               <li><a href="#" className="text-wellness-charcoal hover:text-wellness-darkGreen transition-colors">YouTube</a></li>
               <li><a href="#" className="text-wellness-charcoal hover:text-wellness-darkGreen transition-colors">Forums</a></li>
@@ -68,7 +68,7 @@ const Footer: React.FC = () => {
           {/* Help Section */}
           <div>
             <h3 className="font-semibold text-wellness-darkGreen mb-4">Help</h3>
-            <ul className="space-y-2">
+            <ul className="space-y-2 text-xs">
               <li><a href="#" className="text-wellness-charcoal hover:text-wellness-darkGreen transition-colors">Support</a></li>
               <li><a href="#" className="text-wellness-charcoal hover:text-wellness-darkGreen transition-colors">Troubleshooting</a></li>
               <li><a href="#" className="text-wellness-charcoal hover:text-wellness-darkGreen transition-colors">Contact Us</a></li>
