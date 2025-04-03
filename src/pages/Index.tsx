@@ -6,6 +6,7 @@ import ToolsSection from '../components/home/ToolsSection';
 import BenefitsSection from '../components/home/BenefitsSection';
 import CallToAction from '../components/home/CallToAction';
 import CyberBackground from '../components/home/CyberBackground';
+import Footer from '../components/Footer';
 
 const Index = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -68,16 +69,14 @@ const Index = () => {
       <div className="relative z-10">
         <Header />
         
-        <main className="pt-24 pb-16 py-0">
+        <main className="pt-24 pb-0">
           <HeroSection scrollY={scrollY} />
           <ToolsSection />
           <BenefitsSection />
           <CallToAction />
         </main>
         
-        <footer className="border-t border-wellness-softGreen/30 my-0 py-0 bg-white/80 backdrop-blur-sm">
-          
-        </footer>
+        <Footer />
       </div>
     </div>
   );
