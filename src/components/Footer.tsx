@@ -1,9 +1,7 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, ArrowUp, Mail, Instagram, Linkedin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-
 const Footer: React.FC = () => {
   const scrollToTop = () => {
     window.scrollTo({
@@ -11,17 +9,15 @@ const Footer: React.FC = () => {
       behavior: 'smooth'
     });
   };
-
-  return (
-    <footer className="py-8 relative overflow-hidden backdrop-blur-sm">
+  return <footer className="py-8 relative overflow-hidden backdrop-blur-sm">
       {/* Transparent overlay */}
-      <div className="absolute inset-0 bg-wellness-softBeige/30 -z-10" />
+      <div className="absolute inset-0 -z-10 bg-[#f8f4e3]/0 rounded-lg" />
       
       <div className="container-lg">
         <div className="flex flex-col md:flex-row justify-between items-center gap-6">
           {/* Logo & Tagline */}
           <div className="text-center md:text-left">
-            <h3 className="font-medium text-wellness-darkGreen text-2xl">NutriWell</h3>
+            <h3 className="font-medium text-wellness-darkGreen text-2xl">Wellness Tracker</h3>
             <p className="text-sm text-wellness-charcoal/70 mt-1">Your wellness journey starts here</p>
           </div>
           
@@ -52,12 +48,7 @@ const Footer: React.FC = () => {
               </a>
             </div>
             
-            <Button 
-              onClick={scrollToTop} 
-              size="sm" 
-              variant="ghost" 
-              className="p-2 ml-2 rounded-full hover:bg-wellness-softGreen/50"
-            >
+            <Button onClick={scrollToTop} size="sm" variant="ghost" className="p-2 ml-2 rounded-full hover:bg-wellness-softGreen/50">
               <ArrowUp size={18} className="text-wellness-darkGreen" />
             </Button>
           </div>
@@ -67,12 +58,10 @@ const Footer: React.FC = () => {
           <div className="flex items-center">
             <span>Made with</span> 
             <Heart size={12} className="mx-1 text-wellness-darkGreen" fill="#68A688" /> 
-            <span>© {new Date().getFullYear()} NutriWell</span>
+            <span className="font-norm">© {new Date().getFullYear()} NutriWell</span>
           </div>
         </div>
       </div>
-    </footer>
-  );
+    </footer>;
 };
-
 export default Footer;
