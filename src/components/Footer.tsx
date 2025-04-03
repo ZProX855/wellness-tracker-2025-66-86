@@ -1,10 +1,8 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, ArrowUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Logo from './Logo';
-
 const Footer: React.FC = () => {
   const scrollToTop = () => {
     window.scrollTo({
@@ -12,9 +10,7 @@ const Footer: React.FC = () => {
       behavior: 'smooth'
     });
   };
-
-  return (
-    <footer className="py-12 bg-wellness-softBeige text-wellness-charcoal relative overflow-hidden">
+  return <footer className="py-12 bg-wellness-softBeige text-wellness-charcoal relative overflow-hidden">
       <div className="container mx-auto px-4">
         {/* Top Heading */}
         <div className="text-center mb-10">
@@ -27,7 +23,7 @@ const Footer: React.FC = () => {
           <div className="md:w-1/3">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-5 h-5 bg-wellness-mediumGreen rounded-sm"></div>
-              <h3 className="text-xs font-semibold text-wellness-darkGreen">Get Started Today</h3>
+              <h3 className="font-semibold text-wellness-darkGreen text-xl">Get Started Today</h3>
             </div>
             <p className="text-wellness-charcoal mb-4 text-sm">
               Wellness Tracker is your personal health companion, designed to help you achieve your wellness goals through intuitive tracking and AI-powered insights.
@@ -43,7 +39,7 @@ const Footer: React.FC = () => {
 
           {/* Resources Section */}
           <div>
-            <h3 className="text-xs font-semibold text-wellness-darkGreen mb-4">Features</h3>
+            <h3 className="font-semibold text-wellness-darkGreen mb-4 text-lg">Features</h3>
             <ul className="space-y-2 text-sm">
               <li><Link to="/food-compare" className="text-wellness-charcoal hover:text-wellness-darkGreen transition-colors">Food Compare</Link></li>
               <li><Link to="/bmi-calculator" className="text-wellness-charcoal hover:text-wellness-darkGreen transition-colors">BMI Calculator</Link></li>
@@ -55,7 +51,7 @@ const Footer: React.FC = () => {
 
           {/* Community Section */}
           <div>
-            <h3 className="text-xs font-semibold text-wellness-darkGreen mb-4">Community</h3>
+            <h3 className="font-semibold text-wellness-darkGreen mb-4 text-lg">Community</h3>
             <ul className="space-y-2 text-sm">
               <li><a href="#" className="text-wellness-charcoal hover:text-wellness-darkGreen transition-colors">GitHub</a></li>
               <li><a href="#" className="text-wellness-charcoal hover:text-wellness-darkGreen transition-colors">YouTube</a></li>
@@ -67,7 +63,7 @@ const Footer: React.FC = () => {
 
           {/* Help Section */}
           <div>
-            <h3 className="text-xs font-semibold text-wellness-darkGreen mb-4">Help</h3>
+            <h3 className="font-semibold text-wellness-darkGreen mb-4 text-lg">Help</h3>
             <ul className="space-y-2 text-sm">
               <li><a href="#" className="text-wellness-charcoal hover:text-wellness-darkGreen transition-colors">Support</a></li>
               <li><a href="#" className="text-wellness-charcoal hover:text-wellness-darkGreen transition-colors">Troubleshooting</a></li>
@@ -91,12 +87,7 @@ const Footer: React.FC = () => {
             <a href="#" className="text-wellness-charcoal hover:text-wellness-darkGreen text-sm">Terms of Service</a>
             <a href="#" className="text-wellness-charcoal hover:text-wellness-darkGreen text-sm">Privacy Policy</a>
             <a href="#" className="text-wellness-charcoal hover:text-wellness-darkGreen text-sm">Cookie Settings</a>
-            <Button 
-              onClick={scrollToTop} 
-              size="sm" 
-              variant="outline" 
-              className="p-2 rounded-full hover:bg-wellness-mediumGreen/20 border-wellness-mediumGreen"
-            >
+            <Button onClick={scrollToTop} size="sm" variant="outline" className="p-2 rounded-full hover:bg-wellness-mediumGreen/20 border-wellness-mediumGreen">
               <ArrowUp size={16} className="text-wellness-darkGreen" />
             </Button>
           </div>
@@ -106,8 +97,6 @@ const Footer: React.FC = () => {
           </div>
         </div>
       </div>
-    </footer>
-  );
+    </footer>;
 };
-
 export default Footer;
