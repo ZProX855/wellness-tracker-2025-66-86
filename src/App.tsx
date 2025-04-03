@@ -23,6 +23,7 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import ProfileSettings from "./pages/ProfileSettings";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AuthCallback from "./pages/AuthCallback";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -85,6 +86,7 @@ function App() {
                 <Route path="/ai-psychologist" element={<AIPsychologist />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
+                <Route path="/auth/callback" element={<AuthCallback />} />
                 <Route 
                   path="/dashboard" 
                   element={

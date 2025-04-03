@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import Header from '../components/Header';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
+import { googleAuthService } from '../services/googleAuthService';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -66,21 +67,8 @@ const Login: React.FC = () => {
   const handleGoogleLogin = async () => {
     try {
       setIsSubmitting(true);
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/dashboard`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          }
-        }
-      });
-      
-      if (error) {
-        throw error;
-      }
-      // This will redirect to Google's OAuth page
+      await googleAuthService.signIn(from);
+      // The redirect to Google's OAuth page will happen automatically
     } catch (error) {
       console.error('Google login failed:', error);
       toast.error(error instanceof Error ? error.message : 'Google login failed. Please try again.');
@@ -92,16 +80,16 @@ const Login: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-b from-wellness-softBeige to-wellness-softGreen/30">
       <Header />
       
-      <main className="pt-24 pb-16 px-4 sm:px-6">
+      <main className="pt-16 sm:pt-24 pb-16 px-4 sm:px-6">
         <div className="max-w-md mx-auto">
-          <Link to="/" className="inline-flex items-center text-wellness-darkGreen hover:text-wellness-mediumGreen transition-colors mb-8">
+          <Link to="/" className="inline-flex items-center text-wellness-darkGreen hover:text-wellness-mediumGreen transition-colors mb-6 sm:mb-8">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Home
           </Link>
           
-          <div className="bg-white bg-opacity-70 backdrop-blur-sm rounded-2xl p-8 border border-wellness-softGreen/30 shadow-sm">
-            <div className="text-center mb-8">
-              <h1 className="text-2xl font-medium text-wellness-darkGreen mb-2">Welcome Back!</h1>
+          <div className="bg-white bg-opacity-70 backdrop-blur-sm rounded-2xl p-6 sm:p-8 border border-wellness-softGreen/30 shadow-sm">
+            <div className="text-center mb-6 sm:mb-8">
+              <h1 className="text-xl sm:text-2xl font-medium text-wellness-darkGreen mb-2">Welcome Back!</h1>
               <p className="text-wellness-charcoal">Sign in to access your wellness dashboard</p>
             </div>
             
@@ -111,7 +99,7 @@ const Login: React.FC = () => {
               </div>
             )}
             
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-wellness-charcoal mb-1">
                   Email
