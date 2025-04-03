@@ -1,14 +1,10 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, ShieldCheck, Activity, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-
 const CallToAction: React.FC = () => {
   const navigate = useNavigate();
-  
-  return (
-    <section className="py-20 bg-wellness-darkGreen text-white relative overflow-hidden">
+  return <section className="py-20 bg-wellness-darkGreen text-white relative overflow-hidden">
       <div className="container mx-auto px-4">
         <div className="flex flex-col md:flex-row items-center justify-between gap-10">
           <div className="md:w-1/2">
@@ -44,21 +40,12 @@ const CallToAction: React.FC = () => {
             </div>
             
             <div className="mt-8 space-x-4">
-              <Button 
-                onClick={() => navigate('/register')} 
-                className="bg-wellness-lightGreen hover:bg-wellness-mediumGreen text-wellness-darkGreen font-medium"
-                size="lg"
-              >
+              <Button onClick={() => navigate('/register')} className="bg-wellness-lightGreen hover:bg-wellness-mediumGreen text-wellness-darkGreen font-medium" size="lg">
                 Get Started Free
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
               
-              <Button 
-                onClick={() => navigate('/bmi-calculator')} 
-                variant="outline" 
-                className="border-white/30 text-white hover:bg-white/10"
-                size="lg"
-              >
+              <Button onClick={() => navigate('/bmi-calculator')} variant="outline" size="lg" className="border-white/30 text-white bg-emerald-950 hover:bg-emerald-800">
                 Try BMI Calculator
               </Button>
             </div>
@@ -87,8 +74,6 @@ const CallToAction: React.FC = () => {
           </div>
         </div>
       </div>
-    </section>
-  );
+    </section>;
 };
-
 export default CallToAction;
