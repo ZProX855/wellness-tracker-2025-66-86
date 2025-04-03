@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Mail, Lock, Eye, EyeOff, User, UserPlus } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -31,6 +30,28 @@ const Register: React.FC = () => {
     return true;
   };
 
+  useEffect(() => {
+    let isMounted = true;
+    
+    const checkForOAuthRedirect = async () => {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (data?.session && !error && isMounted) {
+          toast.success("Successfully signed up with Google!");
+          navigate('/dashboard', { replace: true });
+        }
+      } catch (err) {
+        console.error('Error checking for OAuth redirect:', err);
+      }
+    };
+    
+    checkForOAuthRedirect();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [navigate]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validatePassword()) {
@@ -56,7 +77,11 @@ const Register: React.FC = () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/dashboard`
+          redirectTo: `${window.location.origin}/dashboard`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
         }
       });
       
@@ -214,7 +239,7 @@ const Register: React.FC = () => {
                   disabled={isSubmitting}
                   className="flex items-center justify-center w-full py-2 px-4 border border-wellness-softGreen/40 rounded-lg bg-white hover:bg-gray-50 transition-colors duration-200"
                 >
-                  <svg viewBox="0 0 24 24" width="16" height="16" className="mr-2">
+                  <svg viewBox="0 0 24 24" width="18" height="18" className="mr-2">
                     <g transform="matrix(1, 0, 0, 1, 27.009001, -39.238998)">
                       <path fill="#4285F4" d="M -3.264 51.509 C -3.264 50.719 -3.334 49.969 -3.454 49.239 L -14.754 49.239 L -14.754 53.749 L -8.284 53.749 C -8.574 55.229 -9.424 56.479 -10.684 57.329 L -10.684 60.329 L -6.824 60.329 C -4.564 58.239 -3.264 55.159 -3.264 51.509 Z"/>
                       <path fill="#34A853" d="M -14.754 63.239 C -11.514 63.239 -8.804 62.159 -6.824 60.329 L -10.684 57.329 C -11.764 58.049 -13.134 58.489 -14.754 58.489 C -17.884 58.489 -20.534 56.379 -21.484 53.529 L -25.464 53.529 L -25.464 56.619 C -23.494 60.539 -19.444 63.239 -14.754 63.239 Z"/>

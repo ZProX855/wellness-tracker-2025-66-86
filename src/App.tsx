@@ -34,7 +34,7 @@ const queryClient = new QueryClient({
 });
 
 // Google Client ID from the provided credentials
-const GOOGLE_CLIENT_ID = "200715478376-gkm3iv6safptugc1enc7nlk184b5dafm.apps.googleusercontent.com";
+const GOOGLE_CLIENT_ID = "484533780768-lqgm2fp3u57eddfujrvvhgpdeu7kt6m0.apps.googleusercontent.com";
 
 function App() {
   // Set up Supabase auth to sync across browser tabs/windows
