@@ -46,7 +46,7 @@ const Header: React.FC = () => {
           <div className="flex items-center">
             {user ? (
               <div className="relative group">
-                <button className="flex items-center space-x-2 text-sm font-medium text-wellness-darkGreen">
+                <button className="flex items-center space-x-2 text-base font-medium text-wellness-darkGreen">
                   {user.avatar ? (
                     <img 
                       src={user.avatar} 
@@ -58,20 +58,20 @@ const Header: React.FC = () => {
                       {user.name.charAt(0)}
                     </div>
                   )}
-                  <span className="hidden md:inline">{user.name}</span>
+                  <span className="hidden md:inline text-lg">{user.name}</span>
                 </button>
                 
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg overflow-hidden z-20 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300">
                   <div className="py-2">
-                    <Link to="/dashboard" className="block px-4 py-2 text-sm text-wellness-charcoal hover:bg-wellness-softGreen/20 hover:text-wellness-darkGreen">
+                    <Link to="/dashboard" className="block px-4 py-2 text-base text-wellness-charcoal hover:bg-wellness-softGreen/20 hover:text-wellness-darkGreen">
                       Dashboard
                     </Link>
-                    <Link to="/dashboard/profile" className="block px-4 py-2 text-sm text-wellness-charcoal hover:bg-wellness-softGreen/20 hover:text-wellness-darkGreen">
+                    <Link to="/dashboard/profile" className="block px-4 py-2 text-base text-wellness-charcoal hover:bg-wellness-softGreen/20 hover:text-wellness-darkGreen">
                       Profile Settings
                     </Link>
                     <button 
                       onClick={handleLogout}
-                      className="block w-full text-left px-4 py-2 text-sm text-wellness-charcoal hover:bg-wellness-softGreen/20 hover:text-wellness-darkGreen"
+                      className="block w-full text-left px-4 py-2 text-base text-wellness-charcoal hover:bg-wellness-softGreen/20 hover:text-wellness-darkGreen"
                     >
                       Log Out
                     </button>
@@ -81,7 +81,7 @@ const Header: React.FC = () => {
             ) : (
               <Link 
                 to="/login" 
-                className="flex items-center bg-wellness-softGreen hover:bg-wellness-mediumGreen text-wellness-darkGreen px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200"
+                className="flex items-center bg-wellness-softGreen hover:bg-wellness-mediumGreen text-wellness-darkGreen px-4 py-2 rounded-full text-base font-medium transition-colors duration-200"
               >
                 <User className="w-4 h-4 mr-2" />
                 Sign In
