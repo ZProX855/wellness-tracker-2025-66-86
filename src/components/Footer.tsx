@@ -21,25 +21,6 @@ const Footer: React.FC = () => {
           <h2 className="text-xl font-bold tracking-wider text-amber-300">THE WELLNESS JOURNEY STARTS WITH HEALTHY HABITS</h2>
         </div>
 
-        {/* Brand Logos */}
-        <div className="flex flex-wrap justify-center gap-8 md:gap-16 mb-12">
-          <div className="opacity-80 hover:opacity-100 transition-opacity w-24">
-            <img src="https://cdn-icons-png.flaticon.com/512/2413/2413089.png" alt="Nutrition Icon" className="w-full h-auto" />
-          </div>
-          <div className="opacity-80 hover:opacity-100 transition-opacity w-24">
-            <img src="https://cdn-icons-png.flaticon.com/512/2531/2531195.png" alt="Fitness Icon" className="w-full h-auto" />
-          </div>
-          <div className="opacity-80 hover:opacity-100 transition-opacity w-24">
-            <img src="https://cdn-icons-png.flaticon.com/512/3076/3076134.png" alt="Sleep Icon" className="w-full h-auto" />
-          </div>
-          <div className="opacity-80 hover:opacity-100 transition-opacity w-24">
-            <img src="https://cdn-icons-png.flaticon.com/512/3823/3823395.png" alt="Mental Health Icon" className="w-full h-auto" />
-          </div>
-          <div className="opacity-80 hover:opacity-100 transition-opacity w-24">
-            <img src="https://cdn-icons-png.flaticon.com/512/3050/3050158.png" alt="Water Icon" className="w-full h-auto" />
-          </div>
-        </div>
-
         {/* Main Content */}
         <div className="flex flex-col md:flex-row justify-between gap-8 mb-10">
           {/* Get Started Section */}
