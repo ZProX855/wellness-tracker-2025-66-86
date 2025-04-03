@@ -40,12 +40,12 @@ const CallToAction: React.FC = () => {
             </div>
             
             <div className="mt-8 space-x-4">
-              <Button onClick={() => navigate('/register')} className="bg-wellness-lightGreen hover:bg-wellness-mediumGreen text-wellness-darkGreen font-medium" size="lg">
+              <Button onClick={() => navigate('/register')} size="lg" className="bg-wellness-lightGreen font-medium text-slate-50 bg-emerald-800 hover:bg-emerald-700">
                 Get Started Free
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
               
-              <Button onClick={() => navigate('/bmi-calculator')} variant="outline" size="lg" className="border-white/30 text-white bg-emerald-950 hover:bg-emerald-800">
+              <Button onClick={() => navigate('/bmi-calculator')} variant="outline" size="lg" className="border-white/30 text-white bg-emerald-800 hover:bg-emerald-700">
                 Try BMI Calculator
               </Button>
             </div>
