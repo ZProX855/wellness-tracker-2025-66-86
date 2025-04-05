@@ -4,6 +4,7 @@ import { Heart, ArrowUp, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Logo from './Logo';
 import { Separator } from '@/components/ui/separator';
+
 const Footer: React.FC = () => {
   const scrollToTop = () => {
     window.scrollTo({
@@ -56,8 +57,8 @@ const Footer: React.FC = () => {
             <ul className="space-y-4 text-sm">
               <li className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-wellness-mediumGreen" />
-                <a href="mailto:wellnesstracker@gmail.com" className="text-wellness-charcoal hover:text-wellness-darkGreen transition-colors">
-                  wellnesstracker@gmail.com
+                <a href="mailto:welnesstracker@gmail.com" className="text-wellness-charcoal hover:text-wellness-darkGreen transition-colors">
+                  welnesstracker@gmail.com
                 </a>
               </li>
               <li><a href="#" className="text-wellness-charcoal hover:text-wellness-darkGreen transition-colors">Support</a></li>
@@ -83,4 +84,5 @@ const Footer: React.FC = () => {
       </div>
     </footer>;
 };
+
 export default Footer;
