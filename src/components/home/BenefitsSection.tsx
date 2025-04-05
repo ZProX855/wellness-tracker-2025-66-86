@@ -1,7 +1,5 @@
-
 import React from 'react';
 import { HeartPulse, Target, UtensilsCrossed } from 'lucide-react';
-
 const BenefitsSection: React.FC = () => {
   const benefits = [{
     title: 'Personalized Insights',
@@ -19,12 +17,6 @@ const BenefitsSection: React.FC = () => {
     icon: <UtensilsCrossed className="h-8 w-8 text-wellness-darkGreen" />,
     delay: 400
   }];
-  
-  return (
-    <div>
-      {/* Component content would go here */}
-    </div>
-  );
+  return;
 };
-
 export default BenefitsSection;
