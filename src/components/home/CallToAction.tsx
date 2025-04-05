@@ -4,7 +4,7 @@ import { ArrowRight, ShieldCheck, Activity, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 const CallToAction: React.FC = () => {
   const navigate = useNavigate();
-  return <section className="text-white px-0 mx-0 bg-[v] bg-[#518e70]/85 py-[40px] my-[75px]">
+  return <section className="text-white px-0 mx-0 bg-[v] py-[40px] my-[75px] bg-[#518e70]/75">
       <div className="container mx-auto text-center px-0 py-0">
         <h2 className="text-3xl md:text-4xl font-bold mb-6">
           Start Your Wellness Journey Today
