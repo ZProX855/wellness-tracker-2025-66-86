@@ -1,9 +1,11 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, ArrowUp, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Logo from './Logo';
 import { Separator } from '@/components/ui/separator';
+
 const Footer: React.FC = () => {
   const scrollToTop = () => {
     window.scrollTo({
@@ -11,10 +13,11 @@ const Footer: React.FC = () => {
       behavior: 'smooth'
     });
   };
+  
   return <footer className="text-wellness-charcoal relative overflow-hidden bg-transparent py-[3px] my-[31px]">
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-4 text-center">
         {/* Main Content */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-10 text-center">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-10">
           {/* Brand Section */}
           <div className="flex flex-col items-center">
             <Logo className="h-8 w-auto mb-4" />
@@ -72,7 +75,7 @@ const Footer: React.FC = () => {
 
         {/* Bottom Copyright & Back to Top */}
         <div className="flex flex-col md:flex-row justify-between items-center">
-          <div className="text-wellness-charcoal/70 text-sm mb-4 md:mb-0 text-center md:text-left">
+          <div className="text-wellness-charcoal/70 text-sm mb-4 md:mb-0">
             © {new Date().getFullYear()} Wellness Tracker Inc. All rights reserved.
           </div>
           
@@ -83,4 +86,5 @@ const Footer: React.FC = () => {
       </div>
     </footer>;
 };
+
 export default Footer;
