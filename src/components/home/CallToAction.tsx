@@ -8,40 +8,38 @@ const CallToAction: React.FC = () => {
   const navigate = useNavigate();
   
   return (
-    <section className="py-16 bg-gradient-to-br from-wellness-softGreen to-wellness-softGreen/20">
+    <section className="py-16 bg-wellness-darkGreen text-white">
       <div className="container mx-auto px-4 text-center">
-        <div className="max-w-3xl mx-auto">
-          <h2 className="text-3xl font-medium text-wellness-darkGreen mb-6">
-            Ready to Start Your Wellness Journey?
-          </h2>
-          
-          <p className="text-lg text-wellness-charcoal mb-8">
-            Join thousands of users who have transformed their health with our AI-powered wellness platform.
-          </p>
-          
-          <div className="flex flex-wrap justify-center gap-6 mb-12">
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="h-5 w-5 text-wellness-darkGreen" />
-              <span>Privacy Focused</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Activity className="h-5 w-5 text-wellness-darkGreen" />
-              <span>Evidence-Based</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Heart className="h-5 w-5 text-wellness-darkGreen" />
-              <span>User-Centered Design</span>
-            </div>
+        <h2 className="text-3xl md:text-4xl font-bold mb-6">
+          Start Your Wellness Journey Today
+        </h2>
+        <p className="text-lg mb-8 max-w-2xl mx-auto">
+          Join thousands of users who have transformed their health with our AI-powered wellness tracker.
+          Get personalized insights, track your progress, and achieve your health goals.
+        </p>
+        
+        <div className="flex flex-wrap justify-center gap-4 mb-12">
+          <div className="flex items-center">
+            <ShieldCheck className="h-5 w-5 mr-2" />
+            <span>Privacy Protected</span>
           </div>
-          
-          <Button 
-            onClick={() => navigate('/register')}
-            className="bg-wellness-darkGreen hover:bg-wellness-darkGreen/90 text-white px-8 py-6 rounded-full text-lg"
-          >
-            Get Started For Free
-            <ArrowRight className="ml-2 h-5 w-5" />
-          </Button>
+          <div className="flex items-center">
+            <Activity className="h-5 w-5 mr-2" />
+            <span>Backed by Science</span>
+          </div>
+          <div className="flex items-center">
+            <Heart className="h-5 w-5 mr-2" />
+            <span>Loved by Users</span>
+          </div>
         </div>
+        
+        <Button 
+          size="lg"
+          onClick={() => navigate('/register')}
+          className="bg-white text-wellness-darkGreen hover:bg-wellness-softBeige"
+        >
+          Get Started Free <ArrowRight className="ml-2 h-4 w-4" />
+        </Button>
       </div>
     </section>
   );
