@@ -1,11 +1,9 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, ArrowUp, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Logo from './Logo';
 import { Separator } from '@/components/ui/separator';
-
 const Footer: React.FC = () => {
   const scrollToTop = () => {
     window.scrollTo({
@@ -13,9 +11,7 @@ const Footer: React.FC = () => {
       behavior: 'smooth'
     });
   };
-  
-  return (
-    <footer className="py-12 text-wellness-charcoal relative overflow-hidden bg-wellness-softBeige">
+  return <footer className="text-wellness-charcoal relative overflow-hidden bg-transparent py-[3px] my-[31px]">
       <div className="container mx-auto px-4">
         {/* Main Content */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-10 text-center">
@@ -28,7 +24,7 @@ const Footer: React.FC = () => {
             <div className="flex items-center justify-center text-wellness-charcoal/80 text-sm">
               <span>Made with</span> 
               <Heart size={14} className="mx-1 text-wellness-mediumGreen" fill="#8FC0A9" /> 
-              <span>in Health Valley, California</span>
+              <span>by Scientists &amp; Coaches</span>
             </div>
           </div>
 
@@ -85,8 +81,6 @@ const Footer: React.FC = () => {
           </Button>
         </div>
       </div>
-    </footer>
-  );
+    </footer>;
 };
-
 export default Footer;

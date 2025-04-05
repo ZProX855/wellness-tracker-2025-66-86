@@ -1,48 +1,35 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, ShieldCheck, Activity, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-
 const CallToAction: React.FC = () => {
   const navigate = useNavigate();
-  
-  return (
-    <section className="py-16 bg-wellness-darkGreen text-white">
-      <div className="container mx-auto px-4 text-center">
+  return <section className="text-white px-0 mx-0 my-[100px] bg-[#68a688]/85 py-[40px]">
+      <div className="container mx-auto text-center px-0 py-0">
         <h2 className="text-3xl md:text-4xl font-bold mb-6">
           Start Your Wellness Journey Today
         </h2>
-        <p className="text-lg mb-8 max-w-2xl mx-auto">
-          Join thousands of users who have transformed their health with our AI-powered wellness tracker.
-          Get personalized insights, track your progress, and achieve your health goals.
-        </p>
         
-        <div className="flex flex-wrap justify-center gap-4 mb-12">
-          <div className="flex items-center">
+        
+        <div className="flex flex-wrap justify-center gap-4 mb-12 mx-0 px-[54px] py-[6px] my-[26px]">
+          <div className="flex items-center px-[20px]">
             <ShieldCheck className="h-5 w-5 mr-2" />
             <span>Privacy Protected</span>
           </div>
-          <div className="flex items-center">
+          <div className="flex items-center px-[20px]">
             <Activity className="h-5 w-5 mr-2" />
             <span>Backed by Science</span>
           </div>
-          <div className="flex items-center">
+          <div className="flex items-center px-[20px]">
             <Heart className="h-5 w-5 mr-2" />
             <span>Loved by Users</span>
           </div>
         </div>
         
-        <Button 
-          size="lg"
-          onClick={() => navigate('/register')}
-          className="bg-white text-wellness-darkGreen hover:bg-wellness-softBeige"
-        >
+        <Button size="lg" onClick={() => navigate('/register')} className="bg-white text-wellness-darkGreen hover:bg-wellness-softBeige py-0">
           Get Started Free <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </div>
-    </section>
-  );
+    </section>;
 };
-
 export default CallToAction;
