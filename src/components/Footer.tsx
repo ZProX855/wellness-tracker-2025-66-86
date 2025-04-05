@@ -10,7 +10,7 @@ const Footer: React.FC = () => {
       behavior: 'smooth'
     });
   };
-  return <footer className="py-12 bg-wellness-softBeige text-wellness-charcoal relative overflow-hidden">
+  return <footer className="py-12 text-wellness-charcoal relative overflow-hidden bg-transparent">
       <div className="container mx-auto px-4">
         {/* Top Heading */}
         <div className="text-center mb-10">
