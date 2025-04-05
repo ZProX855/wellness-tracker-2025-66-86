@@ -4,14 +4,14 @@ import { ArrowRight, ShieldCheck, Activity, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 const CallToAction: React.FC = () => {
   const navigate = useNavigate();
-  return <section className="text-white px-0 mx-0 my-[100px] bg-[#68a688]/85 py-[40px]">
+  return <section className="text-white px-0 mx-0 bg-[v] bg-[#518e70]/85 py-[40px] my-[75px]">
       <div className="container mx-auto text-center px-0 py-0">
         <h2 className="text-3xl md:text-4xl font-bold mb-6">
           Start Your Wellness Journey Today
         </h2>
         
         
-        <div className="flex flex-wrap justify-center gap-4 mb-12 mx-0 px-[54px] py-[6px] my-[26px]">
+        <div className="flex flex-wrap justify-center gap-4 mb-12 mx-0 px-[54px] py-[4px] my-[23px]">
           <div className="flex items-center px-[20px]">
             <ShieldCheck className="h-5 w-5 mr-2" />
             <span>Privacy Protected</span>

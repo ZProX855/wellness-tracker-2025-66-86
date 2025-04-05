@@ -4,7 +4,6 @@ import { Heart, ArrowUp, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Logo from './Logo';
 import { Separator } from '@/components/ui/separator';
-
 const Footer: React.FC = () => {
   const scrollToTop = () => {
     window.scrollTo({
@@ -12,14 +11,12 @@ const Footer: React.FC = () => {
       behavior: 'smooth'
     });
   };
-  
-  return (
-    <footer className="text-wellness-charcoal relative overflow-hidden bg-transparent py-[3px] my-[31px]">
+  return <footer className="text-wellness-charcoal relative overflow-hidden bg-transparent py-[3px] my-[31px]">
       <div className="container mx-auto px-4">
         {/* Main Content */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
           {/* Brand Section */}
-          <div className="flex flex-col space-y-4">
+          <div className="flex flex-col space-y-4 mx-[20px]">
             <Logo className="h-8 w-auto self-start" />
             <p className="text-wellness-charcoal text-sm leading-relaxed max-w-xs">
               Your personal health companion designed to help you achieve wellness goals through intuitive tracking and AI-powered insights.
@@ -32,7 +29,7 @@ const Footer: React.FC = () => {
           </div>
 
           {/* Features Section */}
-          <div className="flex flex-col space-y-4">
+          <div className="flex flex-col space-y-4 px-0 mx-[76px]">
             <h3 className="font-semibold text-wellness-darkGreen text-lg">Features</h3>
             <ul className="space-y-4 text-sm">
               <li><Link to="/food-compare" className="text-wellness-charcoal hover:text-wellness-darkGreen transition-colors">Food Compare</Link></li>
@@ -43,7 +40,7 @@ const Footer: React.FC = () => {
           </div>
 
           {/* Community Section */}
-          <div className="flex flex-col space-y-4">
+          <div className="flex flex-col space-y-4 mx-[45px]">
             <h3 className="font-semibold text-wellness-darkGreen text-lg">Community</h3>
             <ul className="space-y-4 text-sm">
               <li><a href="#" className="text-wellness-charcoal hover:text-wellness-darkGreen transition-colors">GitHub</a></li>
@@ -54,7 +51,7 @@ const Footer: React.FC = () => {
           </div>
 
           {/* Contact Section */}
-          <div className="flex flex-col space-y-4">
+          <div className="flex flex-col space-y-4 mx-[12px]">
             <h3 className="font-semibold text-wellness-darkGreen text-lg">Contact & Help</h3>
             <ul className="space-y-4 text-sm">
               <li className="flex items-center gap-2">
@@ -84,8 +81,6 @@ const Footer: React.FC = () => {
           </Button>
         </div>
       </div>
-    </footer>
-  );
+    </footer>;
 };
-
 export default Footer;
